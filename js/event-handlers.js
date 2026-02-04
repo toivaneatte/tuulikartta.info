@@ -202,7 +202,7 @@ var saa = saa || {};
         if(layer){
             var opacity = this.value;
             layer.setOpacity(this.value/100);
-            radarLayerOpacity = this.value
+            window.radarLayerOpacity = this.value
             localStorage.setItem('radarLayerOpacity', this.value)
         }
     }
