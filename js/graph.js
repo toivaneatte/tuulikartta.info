@@ -62,7 +62,7 @@ var saa = saa || {};
     weatherGraph.getObservationGraph = function(fmisid,type,timestamp) {
         if(fmisid !== undefined) {
           saa.Tuulikartta.debug('Getting data for graph... ');
-          $('#graph-box-loader').html("<span align=center>"+translations[selectedLanguage]['loadObservations']+"... <img src='symbols/default.gif' style='width:20px;'></img></span>");
+          $('#graph-box-loader').html("<span align=center>"+translations[window.selectedLanguage]['loadObservations']+"... <img src='symbols/default.gif' style='width:20px;'></img></span>");
 
           $.ajax({
               dataType: "json",
@@ -167,7 +167,7 @@ var saa = saa || {};
                 endOnTick: false,
                 showLastLabel: true,
                 title: {
-                    text: translations[selectedLanguage]['frequency']+' (%)'
+                    text: translations[window.selectedLanguage]['frequency']+' (%)'
                 },
                 labels: {
                     formatter: function () {
@@ -183,7 +183,7 @@ var saa = saa || {};
               enabled: false
             },
             subtitle: {
-              text: translations[selectedLanguage]['windroseTitle'],
+              text: translations[window.selectedLanguage]['windroseTitle'],
               style: {
                   color: 'black',
                   font: '12px Roboto, sans-serif'
@@ -225,7 +225,7 @@ var saa = saa || {};
                   selected: 1
               },
               subtitle: {
-                  text: translations[selectedLanguage]['windTitle'],
+                  text: translations[window.selectedLanguage]['windTitle'],
                   style: {
                       color: 'black',
                       font: '12px Roboto, sans-serif'
@@ -307,7 +307,7 @@ var saa = saa || {};
               },
               series: [{
                   type: 'columnrange',
-                  name: translations[selectedLanguage]['ws_10min']+' - '+translations[selectedLanguage]['wg_10min'],
+                  name: translations[window.selectedLanguage]['ws_10min']+' - '+translations[window.selectedLanguage]['wg_10min'],
                   data: data.obs.wind,
                   xAxis: 0,
                   tooltip: {
@@ -317,7 +317,7 @@ var saa = saa || {};
               {
                   type: 'windbarb',
                   data: data.obs.dir,
-                  name: translations[selectedLanguage]['wd_10min'],
+                  name: translations[window.selectedLanguage]['wd_10min'],
                   // enableMouseTracking: false,
                   tooltip: {
                       valueSuffix: ' °'
@@ -361,7 +361,7 @@ var saa = saa || {};
                   selected: 1
               },
               subtitle: {
-                  text: translations[selectedLanguage]['weatherTitle'],
+                  text: translations[window.selectedLanguage]['weatherTitle'],
                   style: {
                       color: 'black',
                       font: '12px Roboto, sans-serif'
@@ -460,7 +460,7 @@ var saa = saa || {};
               series: [
               {
                   type: 'spline',
-                  name: translations[selectedLanguage]['t2m'],
+                  name: translations[window.selectedLanguage]['t2m'],
                   color: '#FF0000',
                   negativeColor: '#0088FF',
                   data: data.obs.temp,
@@ -472,7 +472,7 @@ var saa = saa || {};
               },
               {
                   type: 'column',
-                  name: translations[selectedLanguage]['rr_1h'],
+                  name: translations[window.selectedLanguage]['rr_1h'],
                   zIndex: 9,
                   data: data.obs.rr1h,
                   tooltip: {
@@ -486,7 +486,7 @@ var saa = saa || {};
               },
               {
                   type: 'column',
-                  name: translations[selectedLanguage]['rr_1h_calc'],
+                  name: translations[window.selectedLanguage]['rr_1h_calc'],
                   zIndex: 2,
                   color: '#89CFF0',
                   data: data.obs.rr1h_calc,
@@ -537,7 +537,7 @@ var saa = saa || {};
                 selected: 1
             },
             subtitle: {
-                text: translations[selectedLanguage]['cloudVisTitle'],
+                text: translations[window.selectedLanguage]['cloudVisTitle'],
                 style: {
                     color: 'black',
                     font: '12px Roboto, sans-serif'
@@ -631,7 +631,7 @@ var saa = saa || {};
             series: [
             {
                 type: 'column',
-                name: translations[selectedLanguage]['n_man'],
+                name: translations[window.selectedLanguage]['n_man'],
                 color: '#828282',//'#A8A8A8',
                 data: data.obs.n_man,
                 zIndex: 10,
@@ -642,7 +642,7 @@ var saa = saa || {};
             },
             {
                 type: 'areaspline',
-                name: translations[selectedLanguage]['vis'],
+                name: translations[window.selectedLanguage]['vis'],
                 zIndex: 11,
                 data: data.obs.vis,
                 tooltip: {

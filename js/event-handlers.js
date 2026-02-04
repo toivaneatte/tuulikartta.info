@@ -19,13 +19,13 @@ var saa = saa || {};
       Tuulikartta.clearMarkers()
       Tuulikartta.drawData($(this).val())
 
-      selectedParameter = $(this).val()
-      startPosition = resolveGraphStartposition(selectedParameter)
+      window.selectedParameter = $(this).val()
+      window.startPosition = window.resolveGraphStartposition(window.selectedParameter)
 
       var lat = saa.Tuulikartta.map.getCenter().lat
       var lon = saa.Tuulikartta.map.getCenter().lng
       var zoom = saa.Tuulikartta.map.getZoom()
-      window.location.replace('#lang='+selectedLanguage+'#latlon='+Math.round(lat*100)/100+','+Math.round(lon*100)/100+'#zoom='+zoom+'#parameter='+$(this).val())
+      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+Math.round(lat*100)/100+','+Math.round(lon*100)/100+'#zoom='+zoom+'#parameter='+$(this).val())
     })
 
     // Popup open handler
@@ -54,7 +54,7 @@ var saa = saa || {};
       localStorage.setItem('longitude', lon)
       localStorage.setItem('zoomlevel', zoom)
 
-      window.location.replace('#lang='+selectedLanguage+'#latlon='+Math.round(lat*100)/100+','+Math.round(lon*100)/100+','+zoom+'#parameter='+selectedParameter)
+      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+Math.round(lat*100)/100+','+Math.round(lon*100)/100+','+zoom+'#parameter='+window.selectedParameter)
     })
 
     // Get observations with timestamp
@@ -157,16 +157,16 @@ var saa = saa || {};
 
     // Language selector
     $('#language-selector-value').click(function () {
-      if(selectedLanguage === 'fi') {
+      if(window.selectedLanguage === 'fi') {
         $(this).html('FI')
         selectedLanguage = 'en'
         localStorage.setItem('language', 'en')
       } else {
         $(this).html('EN')
-        selectedLanguage = 'fi'
+        window.selectedLanguage = 'fi'
         localStorage.setItem('language', 'fi')
       }
-      window.location.replace('#lang='+selectedLanguage+'#latlon='+latitude+','+longtitude+'#zoom='+zoomlevel+'#parameter='+selectedParameter)
+      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+window.latitude+','+window.longtitude+'#zoom='+window.zoomlevel+'#parameter='+window.selectedParameter)
       window.location.reload()
     })
 

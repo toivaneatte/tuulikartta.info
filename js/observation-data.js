@@ -66,9 +66,9 @@ var saa = saa || {};
                 saa.Tuulikartta.map.spin(false)
                 // store the Map-instance in map variable
                 saa.Tuulikartta.data = data
-                Tuulikartta.drawData(selectedParameter)
-                selectedParameter = $('#select-wind-parameter').val()
-                startPosition = resolveGraphStartposition(selectedParameter)
+                Tuulikartta.drawData(window.selectedParameter)
+                window.selectedParameter = $('#select-wind-parameter').val()
+                window.startPosition = window.resolveGraphStartposition(window.selectedParameter)
                 Tuulikartta.populateObservationTable()
               }
             })
@@ -100,9 +100,9 @@ var saa = saa || {};
             // store the Map-instance in map variable
             saa.Tuulikartta.data = data
             Tuulikartta.populateObservationTable()
-            Tuulikartta.drawData(selectedParameter)
-            selectedParameter = $('#select-wind-parameter').val()
-            startPosition = resolveGraphStartposition(selectedParameter)
+            Tuulikartta.drawData(window.selectedParameter)
+            window.selectedParameter = $('#select-wind-parameter').val()
+            window.startPosition = window.resolveGraphStartposition(window.selectedParameter)
           }
         })
       
@@ -133,9 +133,9 @@ var saa = saa || {};
         saa.Tuulikartta.map.spin(false)
         // store the Map-instance in map variable
         saa.Tuulikartta.data = data
-        Tuulikartta.drawData(selectedParameter)
-        selectedParameter = $('#select-wind-parameter').val()
-        startPosition = resolveGraphStartposition(selectedParameter)
+        Tuulikartta.drawData(window.selectedParameter)
+        window.selectedParameter = $('#select-wind-parameter').val()
+        window.startPosition = window.resolveGraphStartposition(window.selectedParameter)
         Tuulikartta.populateObservationTable()
       }
     })
@@ -165,7 +165,7 @@ var saa = saa || {};
           saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
           Tuulikartta.callData()
 
-          if(getLightningData) {
+          if(window.getLightningData) {
             saa.lightning.geoLayer.clearLayers()
             saa.lightning.init(endTime)
           }
@@ -174,7 +174,7 @@ var saa = saa || {};
     } else {
       Tuulikartta.callData()
       saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
-      if(getLightningData) {
+      if(window.getLightningData) {
         saa.lightning.geoLayer.clearLayers()
         saa.lightning.init(saa.Tuulikartta.timeStamp)
       }

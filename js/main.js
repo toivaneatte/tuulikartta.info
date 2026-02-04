@@ -29,20 +29,20 @@ var saa = saa || {};
   var geoLocation
 
   // Set parameters to localstorage to remember previous state
-  var latitude = localStorage.getItem('latitude') ? localStorage.getItem('latitude') : 65
-  var longtitude = localStorage.getItem('longtitude') ? localStorage.getItem('longtitude') : 25
-  var zoomlevel = localStorage.getItem('zoomlevel') ? localStorage.getItem('zoomlevel') : 8
-  var observationSource = localStorage.getItem('observationSource') ? localStorage.getItem('observationSource') : 'Näytä vain synop-asemat'
-  var selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('longtitude') : 'ws_10min'
-  var startPosition = 0
+  window.latitude = localStorage.getItem('latitude') ? localStorage.getItem('latitude') : 65
+  window.longtitude = localStorage.getItem('longtitude') ? localStorage.getItem('longtitude') : 25
+  window.zoomlevel = localStorage.getItem('zoomlevel') ? localStorage.getItem('zoomlevel') : 8
+  window.observationSource = localStorage.getItem('observationSource') ? localStorage.getItem('observationSource') : 'Näytä vain synop-asemat'
+  window.selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('longtitude') : 'ws_10min'
+  window.startPosition = 0
   var toggleDataSelect = 'close'
   var minRoadZoomLevel = 8
 
   var showStationObservations = true
   var showRoadObservations = false
   var showOldObservations = false
-  var getLightningData = false
-  var getTrafficCamData = false
+  window.getLightningData = false
+  window.getTrafficCamData = false
   saa.Tuulikartta.showCloudStrikes = localStorage.getItem('showCloudStrikes') ? localStorage.getItem('showCloudStrikes') : true
   saa.Tuulikartta.lightningInterval = 5
 
@@ -62,10 +62,10 @@ var saa = saa || {};
   }
 
   Tuulikartta.handleUrlParams = function(lat, lon, zoom, initParam) {
-    latitude = lat
-    longtitude = lon
-    zoomlevel = zoom
-    selectedParameter = initParam
+    window.latitude = lat
+    window.longtitude = lon
+    window.zoomlevel = zoom
+    window.selectedParameter = initParam
   }
 
   // ---------------------------------------------------------
@@ -89,7 +89,7 @@ var saa = saa || {};
 
   Tuulikartta.dataLoader = function (param) {
     var dataLoader = document.getElementById('data-loader')
-    dataLoader.innerHTML = translations[selectedLanguage]['loadObservations']
+    dataLoader.innerHTML = translations[window.selectedLanguage]['loadObservations']
     if(param) {
       dataLoader.style.display = 'block'
       document.body.style.cursor = 'wait'
@@ -130,7 +130,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
 
      // remove default zoomcontrol and add a new one with custom titles
     map.zoomControl.remove()
-    L.control.zoom({zoomInTitle: translations[selectedLanguage]['zoomIn'], zoomOutTitle: translations[selectedLanguage]['zoomOut']}).addTo(map)
+    L.control.zoom({zoomInTitle: translations[window.selectedLanguage]['zoomIn'], zoomOutTitle: translations[window.selectedLanguage]['zoomOut']}).addTo(map)
 
     L.control.locate({
       drawCircle: false,
@@ -142,7 +142,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       icon: 'fas fa-map-marker-alt',
       showPopup: false,
       strings: {
-        title: translations[selectedLanguage]['geolocation']
+        title: translations[window.selectedLanguage]['geolocation']
       }
     }).addTo(map);
 
@@ -170,7 +170,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         container.onclick = function(){
           sidebar.toggle()
         }
-        container.title = translations[selectedLanguage]['settings']
+        container.title = translations[window.selectedLanguage]['settings']
         return container
       }
     })
@@ -196,7 +196,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
             $(this).addClass('active')
           }
         }
-        container.title = translations[selectedLanguage]['radarTitle']
+        container.title = translations[window.selectedLanguage]['radarTitle']
         return container
       }
     })
@@ -215,17 +215,17 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
           if(saa.Tuulikartta.map.hasLayer(saa.lightning.geoLayer)) {
             saa.Tuulikartta.map.removeLayer(saa.lightning.geoLayer)
             $(this).removeClass('active')
-            getLightningData = false
+            window.getLightningData = false
             saa.lightning.geoLayer.clearLayers()
           } else {
             saa.lightning.init(saa.Tuulikartta.timeStamp)
             saa.Tuulikartta.map.addLayer(saa.lightning.geoLayer)
             $(this).addClass('active')
-            getLightningData = true
+            window.getLightningData = true
           }
           saa.Tuulikartta.updateRadarData()
         }
-        container.title = translations[selectedLanguage]['lightningTitle']
+        container.title = translations[window.selectedLanguage]['lightningTitle']
         return container
       }
     })
@@ -245,7 +245,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
           modal.style.display = "block";
         }
 
-        container.title = translations[selectedLanguage]['tableTitle']
+        container.title = translations[window.selectedLanguage]['tableTitle']
         return container
       }
     })
@@ -276,7 +276,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     //       }
     //     }
 
-    //     container.title = translations[selectedLanguage]['camTitle']
+    //     container.title = translations[window.selectedLanguage]['camTitle']
     //     return container
     //   }
     // })
@@ -299,7 +299,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
             x.style.display = "none";
           }
         }
-        container.title = translations[selectedLanguage]['info']
+        container.title = translations[window.selectedLanguage]['info']
         return container
       }
     })
@@ -309,42 +309,42 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
   function populateSidebar() {
     var html = ""
     html += '<div class="sidebar-container">'
-    html += '<h1>'+translations[selectedLanguage]['settings']+'</h1>'
-    html += '<input id="show-observations" type="checkbox" checked> '+translations[selectedLanguage]['showObservations'] 
+    html += '<h1>'+translations[window.selectedLanguage]['settings']+'</h1>'
+    html += '<input id="show-observations" type="checkbox" checked> '+translations[window.selectedLanguage]['showObservations'] 
     html += '<br/>'
-    html += '<input id="road-observations" type="checkbox" disabled> '+translations[selectedLanguage]['roadObs']
+    html += '<input id="road-observations" type="checkbox" disabled> '+translations[window.selectedLanguage]['roadObs']
     html += '<br/>'
     html += '<br/>'
-    html += '<span><b>'+translations[selectedLanguage]['layerOpacity']+'</b></span>'
+    html += '<span><b>'+translations[window.selectedLanguage]['layerOpacity']+'</b></span>'
     html += '<table>'
     html +=   '<tr>'
-    html +=     '<td>'+translations[selectedLanguage]['radarLayer']+':</td><td><input type="range" id="radar-opacity" name="opacity" min="0" max="100" value="'+radarLayerOpacity+'"></td>'
+    html +=     '<td>'+translations[window.selectedLanguage]['radarLayer']+':</td><td><input type="range" id="radar-opacity" name="opacity" min="0" max="100" value="'+radarLayerOpacity+'"></td>'
     html +=   '</tr>'
     html += '</table>'
     html += '<br/>'
-    html += '<span><b>'+translations[selectedLanguage]['lightningObs']+'</b></span>'
+    html += '<span><b>'+translations[window.selectedLanguage]['lightningObs']+'</b></span>'
     html += '<table>'
     html +=   '<tr>'
-    html +=     '<td>'+translations[selectedLanguage]['lightningShow']+':</td>'
+    html +=     '<td>'+translations[window.selectedLanguage]['lightningShow']+':</td>'
     html +=     '<td>'
     html +=       '<select id="lightning-source">'
     if(saa.Tuulikartta.showCloudStrikes == true || saa.Tuulikartta.showCloudStrikes == 'true') {
-      html +=         '<option value="1" selected>'+translations[selectedLanguage]['allObs']+'</option>'
-      html +=         '<option value="0">'+translations[selectedLanguage]['groundOnly']+'</option>'
+      html +=         '<option value="1" selected>'+translations[window.selectedLanguage]['allObs']+'</option>'
+      html +=         '<option value="0">'+translations[window.selectedLanguage]['groundOnly']+'</option>'
     } else {
-      html +=         '<option value="1">'+translations[selectedLanguage]['allObs']+'</option>'
-      html +=         '<option value="0" selected>'+translations[selectedLanguage]['groundOnly']+'</option>'
+      html +=         '<option value="1">'+translations[window.selectedLanguage]['allObs']+'</option>'
+      html +=         '<option value="0" selected>'+translations[window.selectedLanguage]['groundOnly']+'</option>'
     }
     html +=       '</select>'
     html +=     '</td>'
     html +=   '</tr>'
     html +=   '<tr>'
-    html +=     '<td>'+translations[selectedLanguage]['timeWindow']+':</td>'
+    html +=     '<td>'+translations[window.selectedLanguage]['timeWindow']+':</td>'
     html +=     '<td>'
     html +=       '<select id="lightning-interval">'
-    html +=         '<option value="5">5 '+translations[selectedLanguage]['minutes']+'</option>'
-    html +=         '<option value="15">15 '+translations[selectedLanguage]['minutes']+'</option>'
-    html +=         '<option value="30">30 '+translations[selectedLanguage]['minutes']+'</option>'
+    html +=         '<option value="5">5 '+translations[window.selectedLanguage]['minutes']+'</option>'
+    html +=         '<option value="15">15 '+translations[window.selectedLanguage]['minutes']+'</option>'
+    html +=         '<option value="30">30 '+translations[window.selectedLanguage]['minutes']+'</option>'
     html +=       '</select>'
     html +=     '</td>'
     html +=   '</tr>'
@@ -973,19 +973,19 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     }
 
     if (data['type'] === 'synop') {
-      var stationType = '<b>'+translations[selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[selectedLanguage]['synop']+'</span> <br>'
+      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['synop']+'</span> <br>'
     } else {
-      var stationType = '<b>'+translations[selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[selectedLanguage]['road']+'</span> <br>'
+      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['road']+'</span> <br>'
     }
 
     var output = '<div style="text-align:center;">'
-    output += '<b>'+translations[selectedLanguage]['observationStation']+': </b>' + data['station'] + '<br>'
+    output += '<b>'+translations[window.selectedLanguage]['observationStation']+': </b>' + data['station'] + '<br>'
     output += stationType
 
     if (saa.Tuulikartta.timeValue === 'now') {
-      output += '<b>'+translations[selectedLanguage]['latestObservation']+': </b>' + time + '<br>'
+      output += '<b>'+translations[window.selectedLanguage]['latestObservation']+': </b>' + time + '<br>'
     } else {
-      output += '<b>'+translations[selectedLanguage]['observationTime']+': </b>' + time + '<br>'
+      output += '<b>'+translations[window.selectedLanguage]['observationTime']+': </b>' + time + '<br>'
     }
     output += '</div>'
 
@@ -1002,7 +1002,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     return output
   }
 
-  function resolveGraphStartposition(value) {
+  window.resolveGraphStartposition = function(value) {
     if(value === 'ws_10min' || value === 'wg_10min' || value === 'ws_1d' || value === 'wg_1d')
     return 1
     else if(value === 'ri_10min' || value === 'ri_10min' || value === 'rr_1h' || value === 'rr_1d' || value === 't2m' || value === 'dewpoint' || value === 'tmax' || value === 'tmin' || value === 'wawa')
