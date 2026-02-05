@@ -30,10 +30,10 @@ var saa = saa || {};
 
   // Set parameters to localstorage to remember previous state
   window.latitude = localStorage.getItem('latitude') ? localStorage.getItem('latitude') : 65
-  window.longtitude = localStorage.getItem('longtitude') ? localStorage.getItem('longtitude') : 25
+  window.longitude = localStorage.getItem('longitude') ? localStorage.getItem('longitude') : 25
   window.zoomlevel = localStorage.getItem('zoomlevel') ? localStorage.getItem('zoomlevel') : 8
   window.observationSource = localStorage.getItem('observationSource') ? localStorage.getItem('observationSource') : 'Näytä vain synop-asemat'
-  window.selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('longtitude') : 'ws_10min'
+  window.selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('longitude') : 'ws_10min'
   window.startPosition = 0
   var toggleDataSelect = 'close'
   var minRoadZoomLevel = 8
@@ -63,7 +63,7 @@ var saa = saa || {};
 
   Tuulikartta.handleUrlParams = function(lat, lon, zoom, initParam) {
     window.latitude = lat
-    window.longtitude = lon
+    window.longitude = lon
     window.zoomlevel = zoom
     window.selectedParameter = initParam
   }
@@ -106,7 +106,7 @@ var saa = saa || {};
   Tuulikartta.initMap = function () {
 
     var lat = parseFloat(latitude)
-    var lon = parseFloat(longtitude)
+    var lon = parseFloat(longitude)
     var zoom = parseInt(zoomlevel)
 
     var map = L.map('map', {

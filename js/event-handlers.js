@@ -167,7 +167,7 @@ var saa = saa || {};
         window.selectedLanguage = 'fi'
         localStorage.setItem('language', 'fi')
       }
-      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+window.latitude+','+window.longtitude+'#zoom='+window.zoomlevel+'#parameter='+window.selectedParameter)
+      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+window.latitude+','+window.longitude+'#zoom='+window.zoomlevel+'#parameter='+window.selectedParameter)
       window.location.reload()
     })
 
