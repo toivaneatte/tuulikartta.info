@@ -51,8 +51,8 @@ var saa = saa || {};
 
   var radarLayerOpacity = localStorage.getItem('radarLayerOpacity') ? localStorage.getItem('radarLayerOpacity') : 80
 
-  // popup max width
-  var maxWidth = 650
+  // declare popup max width
+  var maxWidth
   var maxheight = 320
 
   Tuulikartta.debug = function (par) {
@@ -333,8 +333,11 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
     saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
 
+    // Choose correct max width
     if (L.Browser.mobile) {
       maxWidth = 250
+    } else {
+      maxWidth = 650
     }
 
     for (var i = 0; i < sizeofdata; i++) {
@@ -884,50 +887,8 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       }
     }
   }
-  
-  // ---------------------------------------------------------
-  // populate infowindow with observations
-  // ---------------------------------------------------------
 
-  Tuulikartta.populateInfoWindow = function (data,fmisid) {
-    var location = { lat: parseFloat(data['lat']), lng: parseFloat(data['lon']) }
-    var time = Tuulikartta.timeTotime(data['epochtime'])
-    var latlon = data['lat'] + ',' + data['lon']
-
-    if (L.Browser.mobile) {
-      maxWidth = 250
-      // maxHeight = 320
-    }
-
-    if (data['type'] === 'synop') {
-      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['synop']+'</span> <br>'
-    } else {
-      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['road']+'</span> <br>'
-    }
-
-    var output = '<div style="text-align:center;">'
-    output += '<b>'+translations[window.selectedLanguage]['observationStation']+': </b>' + data['station'] + '<br>'
-    output += stationType
-
-    if (saa.Tuulikartta.timeValue === 'now') {
-      output += '<b>'+translations[window.selectedLanguage]['latestObservation']+': </b>' + time + '<br>'
-    } else {
-      output += '<b>'+translations[window.selectedLanguage]['observationTime']+': </b>' + time + '<br>'
-    }
-    output += '</div>'
-
-    output += `<div id="graph-box-loader" style="text-align: center;"></div>`;
-    output += `<div id="graph-box" style="width:${maxWidth}px;">`
-    output += `<div id="owl-carousel-chart-${fmisid}" class="owl-carousel owl-theme">`
-    output += `<div id="weather-chart-${fmisid}_windrose"></div>`
-    output += `<div id="weather-chart-${fmisid}"></div>`
-    output += `<div id="weather-chart-${fmisid}_alt"></div>`
-    output += `<div id="weather-chart-${fmisid}_alt2"></div>`
-    output += '</div>'
-    output += `</div>`
-
-    return output
-  }
+  // oli ennen populateInfoWindow
 
   window.resolveGraphStartposition = function(value) {
     if(value === 'ws_10min' || value === 'wg_10min' || value === 'ws_1d' || value === 'wg_1d')
