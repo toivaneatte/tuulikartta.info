@@ -167,9 +167,10 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-source'
         )
-        container.onclick = function(){
-          sidebar.toggle()
-        }
+
+        // moved eventhandler setting to event-handlers.js
+        Tuulikartta.settingsHandler(container, sidebar);
+        
         container.title = translations[window.selectedLanguage]['settings']
         return container
       }
@@ -185,17 +186,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-radar'
         )
-        container.onclick = function(){
-          saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
-          if(saa.Tuulikartta.map.hasLayer(saa.Tuulikartta.radarLayer)) {
-            saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.radarLayer)
-            $(this).removeClass('active')
-          } else {
-            saa.Tuulikartta.updateRadarData()
-            saa.Tuulikartta.map.addLayer(saa.Tuulikartta.radarLayer)
-            $(this).addClass('active')
-          }
-        }
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.radarHandler(container);
+
         container.title = translations[window.selectedLanguage]['radarTitle']
         return container
       }
@@ -211,27 +204,16 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-flash'
         )
-        container.onclick = function(){
-          if(saa.Tuulikartta.map.hasLayer(saa.lightning.geoLayer)) {
-            saa.Tuulikartta.map.removeLayer(saa.lightning.geoLayer)
-            $(this).removeClass('active')
-            window.getLightningData = false
-            saa.lightning.geoLayer.clearLayers()
-          } else {
-            saa.lightning.init(saa.Tuulikartta.timeStamp)
-            saa.Tuulikartta.map.addLayer(saa.lightning.geoLayer)
-            $(this).addClass('active')
-            window.getLightningData = true
-          }
-          saa.Tuulikartta.updateRadarData()
-        }
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.lightningHandler(container);
+        
         container.title = translations[window.selectedLanguage]['lightningTitle']
         return container
       }
     })
     map.addControl(new lightningControl());
 
-    /* radar control */
+    /* table control */ // tässä aiempi kommentti oli radar control ?
     var tableDataControl = L.Control.extend({
       options: {
         position: 'topright'
@@ -241,9 +223,8 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-table'
         )
         
-        container.onclick = function(){
-          modal.style.display = "block";
-        }
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.tableHandler(container);
 
         container.title = translations[window.selectedLanguage]['tableTitle']
         return container
@@ -290,15 +271,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-toggle-info'
         )
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.infoHandler(container);
 
-        container.onclick = function(){
-          var x = document.getElementById("site-info");
-          if (x.style.display === "none") {
-            x.style.display = "block";
-          } else {
-            x.style.display = "none";
-          }
-        }
         container.title = translations[window.selectedLanguage]['info']
         return container
       }
