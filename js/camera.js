@@ -1,74 +1,170 @@
 /*
-* Tuulikartta.info
+* Tuulikartta.info - Modernized Camera Module
 * Copyright (C) 2017 Ville Ilkka
+* Modernized: 2025
 */
 
 var saa = saa || {};
 
 (function(camera, undefined) {
+  'use strict';
 
+  // Constants
+  const API_BASE = 'https://tie.digitraffic.fi/api/weathercam/v1';
+  const SYMBOL_PATH = '../symbols/';
+  const MAX_CAMERA_AGE_MINUTES = 24 * 60;
+  const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+  const API_TIMEOUT_MS = 10000;
+  
+  const IMAGE_CONFIG = {
+    mobile: { width: 280, maxWidth: 280 },
+    desktop: { width: 600, maxWidth: 750 }
+  };
 
-  var now = moment(new Date()),
-      stations = '',
-      imageWidth = 600, // pixels
-      maxWidth = 750,
-      maxCameraAgeMinutes = 24 * 60
+  const CAMERA_STATUS = {
+    FRESH: { maxAge: 15, icon: 'cameragre.svg' },    // 0-15 min: green
+    RECENT: { maxAge: 60, icon: 'camerayel.svg' },   // 15-60 min: yellow
+    OLD: { maxAge: 360, icon: 'cameragry.svg' },     // 60-360 min: gray
+    STALE: { maxAge: MAX_CAMERA_AGE_MINUTES, icon: 'cameragry.svg' }
+  };
 
-  camera.stationCache = {}
+  // State management
+  let imageWidth = IMAGE_CONFIG.desktop.width;
+  let maxWidth = IMAGE_CONFIG.desktop.maxWidth;
+  let isLoading = false;
 
+  // Cache with TTL
+  const stationCache = {
+    data: {},
+    timestamps: {},
+    
+    get(stationId) {
+      const cached = this.data[stationId];
+      const timestamp = this.timestamps[stationId];
+      
+      if (cached && timestamp && (Date.now() - timestamp < CACHE_TTL_MS)) {
+        return cached;
+      }
+      return null;
+    },
+    
+    set(stationId, data) {
+      this.data[stationId] = data;
+      this.timestamps[stationId] = Date.now();
+    },
+    
+    clear() {
+      this.data = {};
+      this.timestamps = {};
+    }
+  };
+
+  // Utility: API request with timeout
+  function fetchWithTimeout(url, timeout = API_TIMEOUT_MS) {
+    return $.ajax({
+      url: url,
+      dataType: 'json',
+      timeout: timeout
+    });
+  }
+
+  // Utility: Get translation safely
+  function getTranslation(key) {
+    const lang = window.selectedLanguage || 'fi';
+    const translations = window.translations || {};
+    const langTranslations = translations[lang] || translations['fi'] || {};
+    return langTranslations[key] || key;
+  }
+
+  // Normalize station data from various API formats
   camera.normalizeStation = function(raw, fallback) {
     if (raw && raw.properties) {
-      return raw
+      return raw;
     }
-    var source = raw || {}
-    var fallbackProps = (fallback && fallback.properties) ? fallback.properties : {}
+    
+    const source = raw || {};
+    const fallbackProps = (fallback && fallback.properties) ? fallback.properties : {};
+    
+    const id = source.id || fallbackProps.id;
+    if (!id) {
+      console.warn('Station missing ID', { raw, fallback });
+      return null;
+    }
+    
     return {
       properties: {
-        id: source.id || fallbackProps.id,
-        name: source.name || fallbackProps.name,
+        id: id,
+        name: source.name || fallbackProps.name || id,
         dataUpdatedTime: source.dataUpdatedTime || fallbackProps.dataUpdatedTime,
         presets: source.presets || fallbackProps.presets || []
       },
       latestUpdate: source.latestUpdate || (fallback && fallback.latestUpdate)
-    }
-  }
+    };
+  };
 
+  // Find the most recent timestamp from station presets
   camera.resolveLatestTime = function(station) {
-    if (!station) return null
-    if (station.latestUpdate) return moment(station.latestUpdate)
-    var presets = (station.properties && station.properties.presets) ? station.properties.presets : []
-    var latest = null
-    for (var i = 0; i < presets.length; i++) {
-      var candidate = presets[i].measuredTime || presets[i].imageTime || presets[i].time
-      if (!candidate) continue
-      var candidateMoment = moment(candidate)
+    if (!station) return null;
+    if (station.latestUpdate) return moment(station.latestUpdate);
+    
+    const presets = (station.properties && station.properties.presets) ? station.properties.presets : [];
+    let latest = null;
+    
+    for (let i = 0; i < presets.length; i++) {
+      const candidate = presets[i].measuredTime || presets[i].imageTime || presets[i].time;
+      if (!candidate) continue;
+      
+      const candidateMoment = moment(candidate);
       if (!latest || candidateMoment.isAfter(latest)) {
-        latest = candidateMoment
+        latest = candidateMoment;
       }
     }
-    if (latest) return latest
+    
+    if (latest) return latest;
+    
     if (station.properties && station.properties.dataUpdatedTime) {
-      return moment(station.properties.dataUpdatedTime)
+      return moment(station.properties.dataUpdatedTime);
     }
-    return latest
-  }
+    
+    return null;
+  };
 
+  // Extract image URL from preset (handles multiple field names)
   camera.resolvePresetImageUrl = function(preset) {
-    if (!preset) return null
-    return preset.imageUrl || preset.imageURL || preset.url || preset.image || preset.thumbnailUrl || null
-  }
+    if (!preset) return null;
+    return preset.imageUrl || preset.imageURL || preset.url || 
+           preset.image || preset.thumbnailUrl || null;
+  };
 
+  // Get preset display title
   camera.resolvePresetTitle = function(preset) {
-    return preset.presentationName || preset.name || preset.id || ''
-  }
+    return preset.presentationName || preset.name || preset.id || '';
+  };
 
+  // Determine camera icon based on age
+  camera.getCameraIcon = function(ageMinutes) {
+    if (ageMinutes === null) return CAMERA_STATUS.OLD.icon;
+    
+    for (const status of Object.values(CAMERA_STATUS)) {
+      if (ageMinutes <= status.maxAge) {
+        return status.icon;
+      }
+    }
+    
+    return CAMERA_STATUS.OLD.icon;
+  };
+
+  // Initialize Owl Carousel for popup
   camera.initPopupCarousel = function(popup) {
-    if (!popup || !popup._contentNode) return
-    var $carousels = $(popup._contentNode).find('.owl-carousel')
-    if (!$carousels.length) return
+    if (!popup || !popup._contentNode) return;
+    
+    const $carousels = $(popup._contentNode).find('.owl-carousel');
+    if (!$carousels.length) return;
+    
     $carousels.each(function() {
-      var $el = $(this)
-      if ($el.hasClass('owl-loaded')) return
+      const $el = $(this);
+      if ($el.hasClass('owl-loaded')) return;
+      
       $el.owlCarousel({
         navigation: true,
         slideSpeed: 300,
@@ -76,127 +172,103 @@ var saa = saa || {};
         items: 1,
         pagination: false,
         startPosition: 0
-      })
-    })
-  }
+      });
+    });
+  };
 
-  camera.loadStationDetails = function(stationId, done) {
+  // Destroy carousel to prevent memory leaks
+  camera.destroyPopupCarousel = function(popup) {
+    if (!popup || !popup._contentNode) return;
+    
+    const $carousels = $(popup._contentNode).find('.owl-carousel');
+    $carousels.each(function() {
+      const $el = $(this);
+      if ($el.hasClass('owl-loaded')) {
+        $el.owlCarousel('destroy');
+      }
+    });
+  };
+
+  // Load detailed station data from API
+  camera.loadStationDetails = function(stationId, callback) {
     if (!stationId) {
-      done(null)
-      return
-    }
-    if (camera.stationCache[stationId]) {
-      done(camera.stationCache[stationId])
-      return
+      callback(null, 'Missing station ID');
+      return;
     }
     
-    var metadataUrl = 'https://tie.digitraffic.fi/api/weathercam/v1/stations/' + encodeURIComponent(stationId);
-    var dataUrl = 'https://tie.digitraffic.fi/api/weathercam/v1/stations/' + encodeURIComponent(stationId) + '/data';
+    // Check cache first
+    const cached = stationCache.get(stationId);
+    if (cached) {
+      callback(cached, null);
+      return;
+    }
+    
+    const metadataUrl = `${API_BASE}/stations/${encodeURIComponent(stationId)}`;
+    const dataUrl = `${API_BASE}/stations/${encodeURIComponent(stationId)}/data`;
     
     $.when(
-      $.get({ dataType: 'json', url: metadataUrl }),
-      $.get({ dataType: 'json', url: dataUrl })
+      fetchWithTimeout(metadataUrl),
+      fetchWithTimeout(dataUrl)
     ).done(function(metadataResponse, dataResponse) {
-      var metadata = metadataResponse[0];
-      var freshData = dataResponse[0];
+      const metadata = metadataResponse[0];
+      const freshData = dataResponse[0];
       
-      if (metadata && metadata.properties && metadata.properties.presets && freshData && freshData.presets) {
-        for (var i = 0; i < metadata.properties.presets.length; i++) {
-          var metaPreset = metadata.properties.presets[i];
-          for (var j = 0; j < freshData.presets.length; j++) {
+      // Merge metadata with fresh data
+      if (metadata && metadata.properties && metadata.properties.presets && 
+          freshData && freshData.presets) {
+        
+        for (let i = 0; i < metadata.properties.presets.length; i++) {
+          const metaPreset = metadata.properties.presets[i];
+          
+          for (let j = 0; j < freshData.presets.length; j++) {
             if (freshData.presets[j].id === metaPreset.id) {
               metaPreset.measuredTime = freshData.presets[j].measuredTime;
               break;
             }
           }
         }
+        
         if (freshData.dataUpdatedTime) {
           metadata.properties.dataUpdatedTime = freshData.dataUpdatedTime;
         }
       }
       
-      camera.stationCache[stationId] = metadata;
-      done(metadata);
-    }).fail(function(xhr, status, error) {
-      console.error('Virhe haettaessa aseman tietoja:', status, error);
-      done(null);
-    });
-  }
-
-  saa.camera.markers = L.markerClusterGroup({
-        spiderfyOnMaxZoom: false,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-        removeOutsideVisibleBounds: true,
-        chunkedLoading: true,
-        chunkInterval: 1000,
-        maxClusterRadius: 100,
-        disableClusteringAtZoom: 10,
-        iconCreateFunction: function(cluster) {
-          return L.divIcon({ html:
-            '<div style="text-align:center; width:40px;font-size:13px;">'+
-               '<img src="../symbols/cameragry.svg" style="width:50px;height:50px;margin-bottom:-7px">' +
-               '<b>' + cluster.getChildCount() + '</b>' +
-            '</div>'
-          });
-        }
-      });
-
-  camera.init = function() {
-    
-    saa.Tuulikartta.map.spin(true, {
-      lines: 14,
-      length: 25,
-      width: 27,
-      radius: 80,
-      scale: 0.35,
-      corners: 1,
-      speed: 1.4,
-      animation: 'spinner-line-fade-quick',
-      color: '#b1b1b1'
-    })
-    
-    var metadataUrl = 'https://tie.digitraffic.fi/api/weathercam/v1/stations';
-    var dataUrl = 'https://tie.digitraffic.fi/api/weathercam/v1/stations/data';
-    
-    $.when(
-      $.get({ dataType: 'json', url: metadataUrl }),
-      $.get({ dataType: 'json', url: dataUrl })
-    ).done(function(metadataResponse, dataResponse) {
-      var metadata = metadataResponse[0];
-      var cameraData = dataResponse[0];
-      var mergedData = camera.mergeMetadataAndData(metadata, cameraData);
+      stationCache.set(stationId, metadata);
+      callback(metadata, null);
       
-      saa.Tuulikartta.map.spin(false);
-      camera.draw(mergedData);
     }).fail(function(xhr, status, error) {
-      console.error('Camera API error:', status, error);
-      saa.Tuulikartta.map.spin(false);
+      const errorMsg = `API error: ${status} - ${error}`;
+      console.error('Failed to load station details:', errorMsg);
+      callback(null, errorMsg);
     });
-  }
-  
+  };
+
+  // Merge metadata and real-time data
   camera.mergeMetadataAndData = function(metadata, cameraData) {
     if (!metadata || !metadata.features) return metadata;
     if (!cameraData || !cameraData.stations) return metadata;
     
-    var dataLookup = {};
-    for (var i = 0; i < cameraData.stations.length; i++) {
-      var station = cameraData.stations[i];
+    // Create lookup table for O(1) access
+    const dataLookup = {};
+    for (let i = 0; i < cameraData.stations.length; i++) {
+      const station = cameraData.stations[i];
       dataLookup[station.id] = station;
     }
     
-    for (var i = 0; i < metadata.features.length; i++) {
-      var feature = metadata.features[i];
-      var stationId = feature.properties.id;
-      var freshData = dataLookup[stationId];
+    // Merge data into features
+    for (let i = 0; i < metadata.features.length; i++) {
+      const feature = metadata.features[i];
+      const stationId = feature.properties.id;
+      const freshData = dataLookup[stationId];
       
       if (freshData && freshData.presets) {
         feature.properties.dataUpdatedTime = freshData.dataUpdatedTime;
         
         if (feature.properties.presets) {
-          for (var j = 0; j < feature.properties.presets.length; j++) {
-            var preset = feature.properties.presets[j];
-            for (var k = 0; k < freshData.presets.length; k++) {
+          for (let j = 0; j < feature.properties.presets.length; j++) {
+            const preset = feature.properties.presets[j];
+            
+            for (let k = 0; k < freshData.presets.length; k++) {
               if (freshData.presets[k].id === preset.id) {
                 preset.measuredTime = freshData.presets[k].measuredTime;
                 break;
@@ -208,148 +280,264 @@ var saa = saa || {};
     }
     
     return metadata;
-  }
+  };
 
+  // Initialize marker cluster
+  saa.camera.markers = L.markerClusterGroup({
+    spiderfyOnMaxZoom: false,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+    removeOutsideVisibleBounds: true,
+    chunkedLoading: true,
+    chunkInterval: 1000,
+    maxClusterRadius: 100,
+    disableClusteringAtZoom: 10,
+    iconCreateFunction: function(cluster) {
+      return L.divIcon({ 
+        html: `
+          <div style="text-align:center; width:40px; font-size:13px;">
+            <img src="${SYMBOL_PATH}cameragry.svg" style="width:50px; height:50px; margin-bottom:-7px">
+            <b>${cluster.getChildCount()}</b>
+          </div>
+        `
+      });
+    }
+  });
+
+  // Initialize camera layer
+  camera.init = function() {
+    // Prevent duplicate loading
+    if (isLoading) {
+      console.warn('Camera init already in progress');
+      return;
+    }
+    
+    isLoading = true;
+    
+    saa.Tuulikartta.map.spin(true, {
+      lines: 14,
+      length: 25,
+      width: 27,
+      radius: 80,
+      scale: 0.35,
+      corners: 1,
+      speed: 1.4,
+      animation: 'spinner-line-fade-quick',
+      color: '#b1b1b1'
+    });
+    
+    const metadataUrl = `${API_BASE}/stations`;
+    const dataUrl = `${API_BASE}/stations/data`;
+    
+    $.when(
+      fetchWithTimeout(metadataUrl),
+      fetchWithTimeout(dataUrl)
+    ).done(function(metadataResponse, dataResponse) {
+      const metadata = metadataResponse[0];
+      const cameraData = dataResponse[0];
+      const mergedData = camera.mergeMetadataAndData(metadata, cameraData);
+      
+      camera.draw(mergedData);
+      
+    }).fail(function(xhr, status, error) {
+      console.error('Camera API initialization failed:', status, error);
+      alert(`Kamerakerroksen lataus epäonnistui: ${status}. Yritä päivittää sivu.`);
+      
+    }).always(function() {
+      saa.Tuulikartta.map.spin(false);
+      isLoading = false;
+    });
+  };
+
+  // Draw camera markers on map
   camera.draw = function(data) {
-
-    now = moment()
-
+    // Set responsive image sizes
     if (L.Browser.mobile) {
-      maxWidth = 280
-      imageWidth = 280
+      imageWidth = IMAGE_CONFIG.mobile.width;
+      maxWidth = IMAGE_CONFIG.mobile.maxWidth;
+    } else {
+      imageWidth = IMAGE_CONFIG.desktop.width;
+      maxWidth = IMAGE_CONFIG.desktop.maxWidth;
     }
 
-    $('#graph-box-loader').html("");
-    saa.camera.markers.clearLayers()
+    $('#graph-box-loader').html('');
+    saa.camera.markers.clearLayers();
 
-    // Check if data has features
-    if(!data || !data.features) {
+    if (!data || !data.features) {
       console.error('No features in camera data');
       return;
     }
 
-    var cameraCount = 0;
+    const now = moment();
+    let cameraCount = 0;
     
-    for (var i = 0; i < data.features.length; i++) {
+    for (let i = 0; i < data.features.length; i++) {
+      const feature = data.features[i];
       
-      var feature = data.features[i]
-      
-      // Skip if no presets available
-      if(!feature.properties || !feature.properties.presets || feature.properties.presets.length === 0) {
+      // Skip stations without presets
+      if (!feature.properties || !feature.properties.presets || 
+          feature.properties.presets.length === 0) {
         continue;
       }
       
-      var latestTime = camera.resolveLatestTime(feature)
-      var diff = null
+      const latestTime = camera.resolveLatestTime(feature);
+      let ageMinutes = null;
+      
       if (latestTime) {
-        diff = (moment.duration(now.diff(latestTime))).asMinutes()
-        if (diff < 0) continue
+        ageMinutes = moment.duration(now.diff(latestTime)).asMinutes();
+        
+        // Skip future timestamps
+        if (ageMinutes < 0) continue;
+        
+        // Skip cameras older than max age
+        if (ageMinutes > MAX_CAMERA_AGE_MINUTES) continue;
       }
 
-      var symbol = '';
-      if (diff === null) {
-        symbol = 'cameragry.svg';
-      } else if (diff >= 0 && diff <= 15) {
-        symbol = 'cameragre.svg';
-      } else if (diff > 15 && diff <= 60) {
-        symbol = 'camerayel.svg';
-      } else if (diff > 60 && diff <= 360) { // 6 hours
-        symbol = 'cameragry.svg';
-      } else if (diff > maxCameraAgeMinutes) {
-        continue;
-      } else {
-        symbol = 'cameragry.svg';
-      }
-
-      var icon = L.icon({
-        iconUrl: "../symbols/"+symbol,
+      // Create marker icon based on camera age
+      const iconFile = camera.getCameraIcon(ageMinutes);
+      const icon = L.icon({
+        iconUrl: SYMBOL_PATH + iconFile,
         iconSize: [30, 30],
         iconAnchor: [5, 5],
         popupAnchor: [0, 0]
       });
 
-      var coords = feature.geometry.coordinates;
-      var marker = L.marker([coords[1], coords[0]], {
-        icon: icon
-      });
+      // Create marker
+      const coords = feature.geometry.coordinates;
+      const marker = L.marker([coords[1], coords[0]], { icon: icon });
       
-      // Store latest time in feature for popup
+      // Store latest time for popup
       feature.latestUpdate = latestTime ? latestTime.toISOString() : null;
       
-      marker.bindPopup(saa.camera.populateInfoWindow(feature),{
+      // Bind popup with initial content
+      marker.bindPopup(camera.populateInfoWindow(feature), {
         maxWidth: maxWidth
       });
 
+      // Handle popup open: load detailed data and init carousel
       marker.on('popupopen', (function(stationFeature) {
         return function(e) {
-          camera.initPopupCarousel(e.popup)
-          var stationId = stationFeature.properties && stationFeature.properties.id
-          if (!stationId || stationFeature._detailsLoaded) return
-          camera.loadStationDetails(stationId, function(details) {
-            if (!details) return
-            stationFeature._detailsLoaded = true
-            var normalized = camera.normalizeStation(details, stationFeature)
-            if (!normalized.latestUpdate && stationFeature.latestUpdate) {
-              normalized.latestUpdate = stationFeature.latestUpdate
+          const popup = e.popup;
+          const requestId = Date.now();
+          popup._requestId = requestId;
+          
+          // Initialize carousel with existing data
+          camera.initPopupCarousel(popup);
+          
+          // Load fresh station details if not already loaded
+          const stationId = stationFeature.properties && stationFeature.properties.id;
+          if (!stationId || stationFeature._detailsLoaded) return;
+          
+          camera.loadStationDetails(stationId, function(details, error) {
+            // Check if popup is still open and request is current
+            if (popup._requestId !== requestId || !popup._map) return;
+            
+            if (error) {
+              popup.setContent(`
+                <div style="padding: 20px; text-align: center;">
+                  <p>⚠️ Virhe ladattaessa kameran tietoja</p>
+                  <p style="font-size: 12px; color: #666;">${error}</p>
+                </div>
+              `);
+              return;
             }
-            e.popup.setContent(camera.populateInfoWindow(normalized))
-            camera.initPopupCarousel(e.popup)
-          })
-        }
-      })(feature))
+            
+            if (!details) {
+              popup.setContent(`
+                <div style="padding: 20px; text-align: center;">
+                  <p>Aseman tietoja ei löytynyt</p>
+                </div>
+              `);
+              return;
+            }
+            
+            // Mark as loaded and update popup
+            stationFeature._detailsLoaded = true;
+            const normalized = camera.normalizeStation(details, stationFeature);
+            
+            if (!normalized.latestUpdate && stationFeature.latestUpdate) {
+              normalized.latestUpdate = stationFeature.latestUpdate;
+            }
+            
+            popup.setContent(camera.populateInfoWindow(normalized));
+            camera.initPopupCarousel(popup);
+          });
+        };
+      })(feature));
+      
+      // Clean up carousel on popup close
+      marker.on('popupclose', function(e) {
+        camera.destroyPopupCarousel(e.popup);
+      });
       
       saa.camera.markers.addLayer(marker);
       cameraCount++;
     }
     
+    console.log(`Loaded ${cameraCount} camera stations`);
     saa.Tuulikartta.map.addLayer(saa.camera.markers);
-  }
+  };
 
+  // Generate popup content HTML
   camera.populateInfoWindow = function(data) {
-
-    var station = camera.normalizeStation(data)
-    var localNow = moment()
-    var latestTime = camera.resolveLatestTime(station)
-    var diff = latestTime ? Math.round((moment.duration(localNow.diff(latestTime))).asMinutes()) : null
+    const station = camera.normalizeStation(data);
+    if (!station) {
+      return '<div style="padding: 20px;">Invalid station data</div>';
+    }
     
-    // Use name instead of names.fi in new API
-    var stationName = station.properties.name || station.properties.id;
+    const now = moment();
+    const latestTime = camera.resolveLatestTime(station);
+    const ageMinutes = latestTime ? Math.round(moment.duration(now.diff(latestTime)).asMinutes()) : null;
+    
+    const stationName = station.properties.name || station.properties.id;
 
-    var output = '<div style="text-align:center;width:'+imageWidth+'px;">';
+    let output = `<div style="text-align:center; width:${imageWidth}px;">`;
     output += '<div>';
-    output += '<span id="station-update-cam-name"><b>'+translations[window.selectedLanguage]['cameraStationName']+':</b> '+stationName+'</span><br/>';
-    if (diff !== null) {
-      output += '<span id="station-update-cam-update"><b>'+translations[window.selectedLanguage]['latestUpdate']+'</b>: '+diff+' '+translations[window.selectedLanguage]['minutesAgo']+'</span>';
+    output += `<span id="station-update-cam-name"><b>${getTranslation('cameraStationName')}:</b> ${stationName}</span><br/>`;
+    
+    if (ageMinutes !== null) {
+      output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: ${ageMinutes} ${getTranslation('minutesAgo')}</span>`;
     } else {
-      output += '<span id="station-update-cam-update"><b>'+translations[window.selectedLanguage]['latestUpdate']+'</b>: -</span>';
+      output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: -</span>`;
     }
     output += '</div>';
 
-    var presets = station.properties.presets || []
-    var imagePresets = []
-    for (var i = 0; i < presets.length; i++) {
-      var presetUrl = camera.resolvePresetImageUrl(presets[i])
+    // Collect presets with images
+    const presets = station.properties.presets || [];
+    const imagePresets = [];
+    
+    for (let i = 0; i < presets.length; i++) {
+      const presetUrl = camera.resolvePresetImageUrl(presets[i]);
       if (presetUrl) {
-        imagePresets.push({ preset: presets[i], url: presetUrl })
+        imagePresets.push({ preset: presets[i], url: presetUrl });
       }
     }
 
     if (imagePresets.length === 0) {
-      output += '<div>Loading images...</div>'
-      return output + '</div>'
+      output += '<div style="padding: 20px;">Ladataan kuvia...</div>';
+      return output + '</div>';
     }
 
+    // Create carousel with all camera images
     output += '<div class="owl-carousel owl-theme">';
-    for (var i = 0; i < imagePresets.length; i++) {
-      var preset = imagePresets[i].preset
+    for (let i = 0; i < imagePresets.length; i++) {
+      const preset = imagePresets[i].preset;
+      const presetTitle = camera.resolvePresetTitle(preset);
+      
       output += '<div>';
-      output += '<span><b>'+translations[window.selectedLanguage]['cameraName']+': </b>'+camera.resolvePresetTitle(preset)+'</span><br/>';
-      output += '<img src="'+imagePresets[i].url+'" style="width:'+imageWidth+'px;">';
+      output += `<span><b>${getTranslation('cameraName')}: </b>${presetTitle}</span><br/>`;
+      output += `<img src="${imagePresets[i].url}" style="width:${imageWidth}px;" alt="${presetTitle}">`;
       output += '</div>';
     }
     output += '</div>';
 
     return output;
-  }
+  };
+
+  // Expose cache clear for manual maintenance
+  camera.clearCache = function() {
+    stationCache.clear();
+    console.log('Camera cache cleared');
+  };
 
 }(saa.camera = saa.camera || {}));
