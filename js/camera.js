@@ -435,7 +435,7 @@ var saa = saa || {};
             if (error) {
               popup.setContent(`
                 <div style="padding: 20px; text-align: center;">
-                  <p>⚠️ Virhe ladattaessa kameran tietoja</p>
+                  <p>Virhe ladattaessa kameran tietoja</p>
                   <p style="font-size: 12px; color: #666;">${error}</p>
                 </div>
               `);
