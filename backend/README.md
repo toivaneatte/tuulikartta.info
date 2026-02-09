@@ -18,6 +18,7 @@ A small Node.js / Express backend that fetches weather observation data from the
 - Express
 - node-fetch
 - xml2js
+- Redis
 
 
 ## Getting Started
@@ -25,6 +26,7 @@ A small Node.js / Express backend that fetches weather observation data from the
 ### Prerequisites
 - Node.js (v14+)
 - npm or yarn
+- Docker and Docker Compose
 
 ### Installation
 ```bash
@@ -33,6 +35,7 @@ npm install
 
 ### Running the Server with nodemon
 ```bash
+docker compose -f docker-compose.dev.yml up -d
 npm run dev
 ```
 
@@ -69,7 +72,6 @@ npm test
 ## TODO
 - Dockerfile 
 - saving data to a file / database
-- caching
 - periodic fetching
 - proper config file (csv or JSON)
 - kelikamerat

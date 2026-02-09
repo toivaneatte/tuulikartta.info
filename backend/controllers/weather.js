@@ -27,9 +27,9 @@ http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedqu
 
 */
 
-/*
-Functions for fetching and processing weather data from FMI API
-*/
+// ---------------------------------------------------------
+// Functions for fetching and processing weather data from FMI API
+// ---------------------------------------------------------
 const fetchNewFMIData = async (url) => {
   logger.info(`Fetching weather data from FMI API with URL: ${url}`);
   const parsedData = await fetch(url)
@@ -41,9 +41,7 @@ const fetchNewFMIData = async (url) => {
   result2 = []; // this has [{ name: 'Helsinki-Vantaa', coordinates: [24.963, 60.317] }]
   const members = parsedData['wfs:FeatureCollection']['wfs:member'] 
   
-  /*
-  Start the iteration of members
-  */
+  //Start the iteration of members
   members.forEach(member => {
     // station names and fmisids
     const stations =
@@ -71,17 +69,14 @@ const fetchNewFMIData = async (url) => {
         ['sams:SF_SpatialSamplingFeature'][0]
         ['sams:shape'][0]
         ['gml:MultiPoint'][0];
-    
     const pointMembers = stationLocations['gml:pointMember'];
 
     pointMembers.forEach(station => {
       const point = station['gml:Point'][0];
-
       //logger.info(`Processing station: ${JSON.stringify(point)}`);
 
       const name = point['gml:name']?.[0] ?? null;
       const pos = point['gml:pos']?.[0] ?? null;
-
       //logger.info(`Station name: ${name}, Coordinates: ${pos}`);
 
       result2.push({
@@ -101,9 +96,9 @@ const fetchNewFMIData = async (url) => {
   return final;
 }
 
-/*
-GET /api/weather endpoint for fetching weather station data from FMI API
-*/
+// ---------------------------------------------------------
+// GET /api/weather endpoint for fetching weather station data from FMI API
+// ---------------------------------------------------------
 weatherRouter.get('/', async (req, res) => {
   const cached = await redisClient.get('weather:stations'); // Check Redis cache first
 
