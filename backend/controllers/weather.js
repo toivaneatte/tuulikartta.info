@@ -4,6 +4,7 @@ const xml2js = require('xml2js');
 
 const csvReader = require('../utils/csvReader');
 const logger = require('../utils/logger');
+const redisClient = require('../utils/redisClient');
 
 const config = csvReader.readConfig();
 const xmlParser = new xml2js.Parser();
@@ -26,10 +27,11 @@ http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedqu
 
 */
 
-
-
-weatherRouter.get('/', async (req, res) => {
-  const url = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=tampere&place=helsinki&'
+/*
+Functions for fetching and processing weather data from FMI API
+*/
+const fetchNewFMIData = async (url) => {
+  logger.info(`Fetching weather data from FMI API with URL: ${url}`);
   const parsedData = await fetch(url)
     .then(r => r.text())
     .then(xmlString => xmlParser.parseStringPromise(xmlString))
@@ -90,11 +92,39 @@ weatherRouter.get('/', async (req, res) => {
   })
   
   // The final array of stations with both fmisid and coordinates
-  const stations = result1.map((station, index) => ({
+  const final = result1.map((station, index) => ({
     ...station,
     ...result2[index]
   }));
 
+  logger.info(`Fetched and processed ${final.length} weather stations from FMI API.`);
+  return final;
+}
+
+/*
+GET /api/weather endpoint for fetching weather station data from FMI API
+*/
+weatherRouter.get('/', async (req, res) => {
+  const cached = await redisClient.get('weather:stations'); // Check Redis cache first
+
+  if (cached) {
+    logger.info('Returning cached weather station data');
+    return res.send(JSON.parse(cached));
+  }
+
+  const url = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=tampere&place=helsinki&'
+  
+  // get data from FMI API
+  const stations = await fetchNewFMIData(url);
+
+  // cache the data in Redis for 1 hour
+  await redisClient.set(
+    'weather:stations',
+    JSON.stringify(stations),
+    { EX: 3600 }
+  );
+  logger.info('Cached weather station data in Redis for 1 hour');
+  // return that data
   res.send(stations);
 })
 

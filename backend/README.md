@@ -41,9 +41,7 @@ The server will start on the configured port (default: 3000).
 ## Project Structure
 ```
 src/
-├── routes/
 ├── controllers/
-├── models/
 └── utils/
 ```
 
