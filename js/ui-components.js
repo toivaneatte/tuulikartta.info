@@ -21,6 +21,7 @@ var saa = saa || {};
     html = html + '<option value="ri_10min">'+translations[window.selectedLanguage]["ri_10min"]+'</option>'
     html = html + '<option value="rr_1h">'+translations[window.selectedLanguage]["rr_1h"]+'</option>'
     html = html + '<option value="t2m">'+translations[window.selectedLanguage]["t2m"]+'</option>'
+    html = html + '<option value="radiation">'+translations[window.selectedLanguage]["radiation"]+'</option>'
     html = html + '<option value="t2mdewpoint">'+translations[window.selectedLanguage]["t2mdewpoint"]+'</option>'
     html = html + '<option value="dewpoint">'+translations[window.selectedLanguage]["dewpoint"]+'</option>'
     html = html + '<option value="vis">'+translations[window.selectedLanguage]["vis"]+'</option>'
@@ -176,6 +177,15 @@ var saa = saa || {};
           }
         }},
         {title: translations[window.selectedLanguage]['dewpoint'], field: 'dewpoint', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
+          if(cell.getValue() !== null) {
+            cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveTemperature(cell.getValue()),0.4);
+            return cell.getValue()
+          } else {
+            cell.getElement().style.backgroundColor = 'rgba(1,1,1,0)'
+            return null
+          }
+        }},
+        {title: translations[window.selectedLanguage]['radiation'], field: 'radiation', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
           if(cell.getValue() !== null) {
             cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveTemperature(cell.getValue()),0.4);
             return cell.getValue()

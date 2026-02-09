@@ -673,5 +673,124 @@ var saa = saa || {};
         }
     }
 
+var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
+    chart: {
+        spacingTop: 0,
+        spacingBottom: 0,
+        spacingLeft: 0,
+        marginLeft: 40,
+        marginBottom: 30,
+        height: '300px'
+    },
+    title: {
+        text: null
+    },
+    time: {
+        timezoneOffset: weatherGraph.getTimeZoneDirrerence()
+    },
+    rangeSelector: {
+        selected: 1
+    },
+    subtitle: {
+        text: translations[window.selectedLanguage]['radiation'],
+        style: {
+            color: 'black',
+            font: '12px Roboto, sans-serif'
+        }
+    },
+    xAxis: {
+        type: 'datetime',
+        labels: {
+            formatter: function () {
+                var date    = new Date(this.value),
+                    hours   = weatherGraph.formatTimeLabel(date.getHours()),
+                    minutes = weatherGraph.formatTimeLabel(date.getMinutes()),
+                    day     = weatherGraph.resolveWeekDay(date.getDay());
+
+                if( hours !== "00" ) {
+                    return hours + ":" + minutes;
+                }
+                else {
+                    return day; 
+                }
+            }
+        },
+        style: {
+            color: 'black',
+            font: '12px Roboto, sans-serif'
+        },
+        minorTickInterval: 'auto',
+        minorTickColor: '#f2f2f2'
+    },
+    yAxis: {
+        title: {
+            align: 'high',
+            offset: 0,
+            text: 'W/m²',
+            rotation: 0,
+            y: -14,
+            x: -10
+        },
+        min: 0,
+        labels: {
+            style: {
+                color: 'black',
+                font: '12px Roboto, sans-serif'
+            }
+        },
+        tickInterval: 100, 
+        minorTickInterval: 'auto',
+        minorTickColor: '#f2f2f2'
+    },
+    tooltip: {
+        crosshairs: true,
+        shared: true,
+        labels: {
+            style: {
+                color: 'black',
+                font: '12px Roboto, sans-serif'
+            }
+        }
+    },
+    exporting: {
+        enabled: false
+    },
+
+    legend: {
+        enabled: false
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        type: 'areaspline',
+        name: translations[window.selectedLanguage]['radiation'],
+        color: '#FFD700',
+        data: data.obs.radiation,
+        tooltip: {
+            valueSuffix: ' W/m²'
+        },
+    }],
+    responsive: {
+        rules: [{
+            condition: {
+                maxHeight: 150
+            },
+            chartOptions: {
+                legend: {
+                    enabled: true
+                }   
+            }
+        }]
+    },
+    plotOptions: {
+        areaspline: {
+            fillOpacity: 0.4
+        }
+    }
+});
+//saa.Tuulikartta.graphIds = {chart1,chart2}
+
+
 
 }(saa.weatherGraph = saa.weatherGraph || {}));
