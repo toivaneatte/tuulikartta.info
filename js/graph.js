@@ -789,7 +789,7 @@ var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
         }
     }
 });
-//saa.Tuulikartta.graphIds = {chart1,chart2}
+
 
 
 
