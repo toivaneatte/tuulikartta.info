@@ -726,7 +726,7 @@ var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
         title: {
             align: 'high',
             offset: 0,
-            text: 'W/m²',
+            text: 'µBq/m³',
             rotation: 0,
             y: -14,
             x: -10
@@ -768,7 +768,7 @@ var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
         color: '#FFD700',
         data: data.obs.radiation,
         tooltip: {
-            valueSuffix: ' W/m²'
+            valueSuffix: ' µBq/m³'
         },
     }],
     responsive: {

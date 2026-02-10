@@ -572,7 +572,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         }
       }
 
-      if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax' || param === 'radiation') {
+      if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax' || param === 'dose_rate' || param === 'air_activity') {
 
         var fillColor = Tuulikartta.resolveTemperature(saa.Tuulikartta.data[i][param])
         var hex = fillColor.substr(1)
@@ -1005,7 +1005,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
   window.resolveGraphStartposition = function(value) {
     if(value === 'ws_10min' || value === 'wg_10min' || value === 'ws_1d' || value === 'wg_1d')
     return 1
-    else if(value === 'ri_10min' || value === 'ri_10min' || value === 'rr_1h' || value === 'rr_1d' || value === 't2m' || value === 'dewpoint' || value === 'tmax' || value === 'tmin' || value === 'radiation' || value === 'wawa')
+    else if(value === 'ri_10min' || value === 'ri_10min' || value === 'rr_1h' || value === 'rr_1d' || value === 't2m' || value === 'dewpoint' || value === 'tmax' || value === 'tmin' || value === 'dose_rate' || value === 'air_activity' || value === 'wawa')
     return 2
     else if(value === 'vis' || value === 'n_man')
     return 3
