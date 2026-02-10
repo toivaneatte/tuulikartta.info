@@ -15,7 +15,7 @@ var saa = saa || {};
   Tuulikartta.initEventHandlers = function() {
     // nämä ilmeisesti jQuerylla kirjoitettu
 
-    // Select wind parameter
+    // Select weather parameter
     $('#select-wind-parameter').change(function () {
       Tuulikartta.clearMarkers()
       Tuulikartta.drawData($(this).val())
