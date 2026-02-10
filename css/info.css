@@ -9,6 +9,11 @@ html, body {
     font-family: 'Roboto, sans-serif';
 }
 
+th, td {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
 body:before {
     content: "";
     position: fixed;
@@ -41,7 +46,6 @@ body {
 
 }
 
-
 /* https://stackoverflow.com/questions/202557/what-is-the-best-absolute-width-for-a-webpage 
    https://stackoverflow.com/questions/20039765/how-to-apply-a-css-3-blur-filter-to-a-background-image */
 
@@ -66,8 +70,20 @@ body {
     -webkit-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
     -moz-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
     box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
+}    
 
-}                                       
+#main-breadcrumb-wrapper {
+    overflow: auto;
+    z-index: 10;
+    /*height: 70px;*/
+    width: 90%;
+    max-width: 960px;
+
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 3px;
+} 
 
 #main-content-wrapper {
     position: relative;
@@ -84,7 +100,7 @@ body {
     
     margin-left: auto;
     margin-right: auto;
-    margin-top: 10px;
+    margin-top: 1px;
     margin-bottom: 50px;
 
     border: 1px solid grey;
@@ -95,7 +111,6 @@ body {
     -webkit-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
     -moz-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
     box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
-    
 }
 
 
@@ -185,3 +200,99 @@ footer p {
         position: relative;
     }
 }
+
+.media-content {
+    margin: 10px 0 35px 0;
+    padding: 2px 0 2px 0;
+    max-height: 30px;
+}
+
+.media-button {
+    margin: 0 5px 0 5px;
+    display:inline-block;
+    border:0;
+    width:50px;
+    height:50px;
+    position: relative;
+    -webkit-transition: all 200ms ease-in;
+    -webkit-transform: scale(1); 
+    -ms-transition: all 200ms ease-in;
+    -ms-transform: scale(1); 
+    -moz-transition: all 200ms ease-in;
+    -moz-transform: scale(1);
+    transition: all 200ms ease-in;
+    transform: scale(1);   
+}
+
+.media-button-img {
+    width: 100%;
+    height: 100%;
+}
+
+.media-button:hover {
+    /* box-shadow: 0px 0px 10px #000000; */
+    z-index: 2;
+    -webkit-transition: all 200ms ease-in;
+    -webkit-transform: scale(1.1);
+    -ms-transition: all 200ms ease-in;
+    -ms-transform: scale(1.2);   
+    -moz-transition: all 200ms ease-in;
+    -moz-transform: scale(1.2);
+    transition: all 200ms ease-in;
+    transform: scale(1.2);
+}
+
+
+/* Style the list */
+ul.breadcrumb {
+    margin-bottom: 0px;
+    list-style: none;
+}
+
+ul.breadcrumb li {
+    display: inline;
+}
+
+ul.breadcrumb li+li:before {
+    padding: 8px;
+    color: black;
+    content: "/\00a0";
+}
+
+ul.breadcrumb li a {
+    color: #0275d8;
+    text-decoration: none;
+}
+
+ul.breadcrumb li a:hover {
+    color: #01447e;
+    text-decoration: underline;
+}
+
+
+/* Create two equal columns that floats next to each other */
+.legend-column {
+    float: left;
+    width: 50%;
+    height: 220px; /* Should be removed. Only for demonstration */
+    margin-bottom: 30px;
+  }
+
+  .legend-column th, .legend-column td {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+  
+  /* Clear floats after the columns */
+  .löegend-row:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  
+  /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+  @media screen and (max-width: 600px) {
+    .legend-column {
+      width: 100%;
+    }
+  }

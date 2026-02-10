@@ -1,3 +1,5 @@
 # tuulikartta.info
 
-![alt text](symbols/flowchart.png?raw=true "javascript flowchart")
+Display and visualize finnish meteorological observations.
+
+Private clone of https://github.com/nakkim/tuulikartta.info.

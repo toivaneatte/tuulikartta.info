@@ -2,10 +2,14 @@
 <html lang="fi">
 <head>
     <meta charset="utf-8">
-    <title>tuulikartta.info - tieota palvelusta</title>
-    <meta name="description" content="tuulikaetta.info - tietoa palvelusta, tietosuoja sekä evästeet">
+    <title>tuulikartta.info - tietoa palvelusta</title>
+
+    <link rel="icon" type="image/png" href="../favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../favicon/favicon-16x16.png" sizes="16x16">
+
+    <meta name="description" content="tuulikartta.info - tietoa palvelusta, tietosuoja sekä evästeet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <link href="../css/normalize.css" rel="stylesheet" media="all">
+    <!-- <link href="../css/normalize.css" rel="stylesheet" media="all"> -->
     <link href="../css/info.css" rel="stylesheet" media="all">
 
     <!-- bootstrap -->
@@ -13,61 +17,159 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
+    <script src="../serviceWorker.js"></script>
+
 </head>
 <body>
 
-  <div id="main-navigation-wrapper">
-    <nav role="navigation">
-      <div class="nav">
-        <ul>
-          <li><a href="https://www.tuulikartta.info/">Tuulikartta</a></li>
-          <li><a class="active" href="#">Tietoa palvelusta</a></li>
-          <li><a href="#">Seuraa kehitystä</a></li>
-          <li><a href="#">Ota yhteyttä</a></li>
-        </ul>
-      </div>
-    </nav>
-  </div>
+  <nav role="navigation">
+    <div id="main-navigation-wrapper">
+        <div class="nav">
+          <ul>
+            <li><a href="../">Tuulikartta</a></li>
+            <li><a class="active" href="#">Tietoa palvelusta</a></li>
+          </ul>
+        </div>
+    </div>
+    <div id="main-breadcrumb-wrapper">
+      <ul class="breadcrumb">
+        <li><a href="../">tuulikartta.info</a></li>
+        <li>Tietoa Palvelusta</li>
+      </ul>
+    </div>
+  </nav>
   
   <div id="main-content-wrapper">
 
     <div class="wrap">
       <header role="banner">
-        <h2>Tietoa palvelusta</h1>
+        <h1>Tietoa palvelusta</h1>
       </header>
-      <main role="main">
-        <p><span style="font-weight:bold">tuulikartta.info</span> on oman lennokkiharrastuksen kylkeen syntynyt nettisivuprojekti, joka ajatuksena on tarjota
-          k&auml;ytt&auml;jille tuulihavaintoja (lähes) reaaliajassa.</p>
-        <p>Tällä hetkellä sivustolla voi tarkastella Ilmatieteen laitoksen havaintoasemien sekä Liikenneviraston tiesääasemien keskituulen 
-          sekä maksimipuuskan 10 minuutin välein päivittyviä havaintoja.
+      <main role="main">     
+        <p><span style="font-weight:bold">tuulikartta.info</span> on oman lennokkiharrastuksen kylkeen syntynyt nettisivuprojekti, jonka ajatuksena on tarjota
+          k&auml;ytt&auml;jille tuulihavaintoja (lähes) reaaliajassa. Sittemmin tuulihavainnot ovat laajenneet yleisemmin säähavainnoiksi.</p>
+        <p>
+          Sivustolla voi tarkastella Ilmatieteen laitoksen havaintoasemien sekä Liikenneviraston tiesääasemien keskituulen 
+          sekä maksimipuuskan, lämpötilan, sademäärän ja -intensiteetin, näkyvyyden, kokonaispilvisyyden sekä havaitun vallitsevan sään 10 minuutin välein päivittyviä havaintoja.
+          Lisäksi sivusto laskee lennossa havaintohetkeä edeltävän tunnin maksimipuuskan ja keskituulen arvot.
         </p>
-        <p>Havaintojakson keskituulella tarkoitetaan tyypillisesti 10 minuutin mittaisen havaintojakson keskiarvoa, puuska kuvaa 3 sekunnin mittaisten mittausjaksojen 10 minuutin maksimiarvoa.</p>
-        <p><span style="font-weight:bold">Tuuliluokat</span></p>
+        <p>10 minuutin havainnoilla tarkoitetaan tyypillisesti 10 minuutin mittaisen havaintojakson keskiarvoa, tuulen puuska kuvaa 3 sekunnin mittaisten mittausjaksojen 10 minuutin maksimiarvoa.</p>
+        <h2 style="font-size:18px; font-weight:bold;">Havaintoparametrit</h2>
+        <h3 style="font-size:14px; font-weight:bold;">Tuuliluokat</h3>
         <div id="legend-wrapper" style="overflow:auto; margin-bottom:20px;">
-            <img src="../symbols/legend.png" style="float:left;"></img>
-            <p>Tuulen nopeudet on jaoteltu yhdeksään eri osaan ja ne piirrtään oheisen taulukon mukaisin värein.</p>
-            <p>Kovia tuulia sekä myrskytuulia esiintyy Suomessa tyypillisesti vain ajoittain merialueilla sekä tuntureilla,
-              puuskittainen tuuli voi sen sijaan ajoittain yltää maa-alueillakin myrskylukemiin.
-            </p>
-            <p>
-              Esimerkiksi kesäiset ukkosmyräkät eivät siis varsinaisesti ole myrskyjä, vaan enemmänkin rajuilmoja tai myräköitä.
-            </p>
+          <img src="../symbols/legend.png" style="float:left;"></img>
+          <p>Tuulen nopeudet on jaoteltu yhdeksään eri osaan ja ne piirretään oheisen taulukon mukaisin värein.</p>
+          <p>
+            Kovia tuulia sekä myrskytuulia esiintyy Suomessa tyypillisesti vain ajoittain merialueilla sekä tuntureilla,
+            puuskittainen tuuli voi sen sijaan ajoittain yltää maa-alueillakin myrskylukemiin.
+          </p>
+          <p>
+            Esimerkiksi kesäiset ukkosmyräkät eivät siis varsinaisesti ole myrskyjä, vaan enemmänkin rajuilmoja tai myräköitä.
+          </p>
         </div>
-        <p>Vahinkoja aiheuttavat tuulet ovat usein hyvin puuskittaisia. Hetkelliset, lyhytaikaiset 5–10 sekunnin puuskat ylittävät
+        <p>
+          Vahinkoja aiheuttavat tuulet ovat usein hyvin puuskittaisia. Hetkelliset, lyhytaikaiset 5–10 sekunnin puuskat ylittävät
           10 minuutin keskituulen nopeuden säätilanteesta riippuen noin 1,5-kertaisina, enimmillään noin 2-kertaisina.
         </p>
-        <p>Tuulen nopeudenylittäessä 16-17 m/s alkavat puiden oksat katkeilla, yli 20 m/s nopeudet alkavat katkoa
+        <p>
+          Tuulen nopeuden ylittäessä 16-17 m/s alkavat puiden oksat katkeilla, yli 20 m/s nopeudet alkavat katkoa
           ja kaataa jo puita ja tehdä pientä vahinkoa kattorakenteille.
         </p>
-        <p>Lisätietoja voi lukea Ilmatieteen laitoksen <a href="http://ilmatieteenlaitos.fi/tuulet">teemasivuilta</a>.</p>
+        <p>Lisätietoja voi lukea Ilmatieteen laitoksen <a href="https://ilmatieteenlaitos.fi/tuulet">teemasivuilta</a>.</p>
 
-              
-
-        <p><span style="font-weight:bold">Käytetty aineisto</span></p>
+        <h3 style="font-size:14px; font-weight:bold;">Näkyvyys ja vallitseva sää</h3>
+        <p>
+          Vallitsevan sään ja näkyvyyden mittausten toiminta perustuu valon sironnan mittaamiseen. Tällaisessa optisessa mittarissa on lähi-infrapunavalon lähetin ja vastaanotin. 
+          Mitä enemmän ilmassa on vesipisaroita, jääkiteitä tai muita hiukkasia (esim. vesi- tai lumisade, pöly, savu) sitä enemmän lähetteen valoa siroaa vastaanottimelle. Optinen mittari laskee siroavasta 
+          valosta näkyvyystiedon, sekä pyrkii määrittämään vallitsevan sään (esim. sateen tyypin ja olomuodon).  
+        </p>
+        <p>
+          Meteorologisella näkyvyydellä tarkoitetaan ilman läpinäkyvyyttä. Näkyvyyteen eivät vaikuta pimeys tai maaston esteet. Meteorologista näkyvyyttä pienentää ilman kuiva sameus 
+          (auer, pöly, savu) tai kostea sameus (utu, sumu, sade). Näkyvyyden ollessa hyvä, voi kohteita havaita yli 10 kilometrin, kohtalaisella näkyvyydellä 4-10 kilometrin ja huonolla näkyvyydellä 1-4 
+          kilometrin päähän. Alle 1 kilometrin näkyvyys on erittäin huono.
+        </p>
+        <h3 style="font-size:14px; font-weight:bold; display:inline-block">Kokonaispilvisyys</h3>
+        <div class="legend-row">
+          <div class="legend-column" style="padding-right:30px;">
+            <p>
+                Kokonaispilvisyyttä mitataan usein kahdeksasosina. Taivaankansi voidaan jakaa kahdeksaan osaan, jolloin kokonaispilvisyyden arviointi helpottuu.
+            </p>
+            <p>
+                Puhuttaessa vaihtelevasta pilvisyydesta tarkoitetaan useina tilannetta, jossa ennustusjakson aikana pilvisyys vaihtelee alle 3/8 ja yli 6/8 välillä. 
+                Vaihteleva pilvisyys on kesällä yleistä, mutta talvella selvästi harvinaisempaa.
+            </p>
+          </div>
+          <div class="legend-column">
+            <table>
+              <tr>
+                  <th>Selite</th>
+                  <th>Arvo</th>
+                  <th>Selite</th> 
+              </tr>
+              <tr>
+                  <td><img src="../symbols/nn/0.svg" style="width:15px;"/></td>
+                  <td>0/8</td>
+                  <td>Selkeää</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/1.svg" style="width:15px;"/></td>
+                <td>1/8</td>
+                <td>Melkein selkeää</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/2.svg" style="width:15px;"/></td>
+                <td>2/8</td>
+                <td>Verrattain selkeää</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/3.svg" style="width:15px;"/></td>
+                <td>3/8</td>
+                <td>Puolipilvistä</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/4.svg" style="width:15px;"/></td>
+                <td>4/8</td>
+                <td>Verrattain pilvistä</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/5.svg" style="width:15px;"/></td>
+                <td>5/8</td>
+                <td>Puolipilvistä</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/6.svg" style="width:15px;"/></td>
+                <td>6/8</td>
+                <td>Verrattain pilvistä</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/7.svg" style="width:15px;"/></td>
+                <td>7/8</td>
+                <td>Melkein pilvistä</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/8.svg" style="width:15px;"/></td>
+                <td>8/8</td>
+                <td>Pilvistä</td> 
+              </tr>
+              <tr>
+                <td><img src="../symbols/nn/9.svg" style="width:15px;"/></td>
+                <td>9/8</td>
+                <td>Pilvisyyttä ei voida määrittää</td> 
+              </tr>
+            </table>
+          </div>
+        </div>
+        <h2 style="font-size:18px; font-weight:bold;">Havaintosarja</h2>
+        <p>
+          Sääsymbolia klikkammalla voi tarkastella myös asemakohtaisia havaintosarjoja. Kaikki asemat eivät kuitenkaan mittaa kaikkia samoja parametreja,
+          joten havannoissa voi olla puutteita. Eri parametrien havaintoja voi tarkastella raahaamalla kuvaajaa sivuttaissuunnassa tai klikkaamalla harmaita palluroita.
+        </p>
+        <img src="../symbols/site1.png" style="width: 100%; margin: 10px 5px 10px 5px; max-width: 400px"></img>
+        <img src="../symbols/site2.png" style="width: 100%; margin: 10px 5px 10px 5px; max-width: 400px"></img>
+        <h2 style="font-size:18px; font-weight:bold;">Käytetty aineisto</h2>
         <p>Havaintoaineisto on Ilmatieteen laitoksen tarjoamaa avointa dataa.</p>
         <p>Tulevia ominaisuuksia ovat mm. kattavammat tutkatuotteet, sekä jatkossa mahdollisesti myös lähialueiden (Ruotsi, Norja yms.) tuulihavainnot.</p>
-
-        <p><span style="font-weight:bold">Tietosuoja</span></p>
+        <h2 style="font-size:18px; font-weight:bold;">Tietosuoja</h2>
         <P>Sivustolla käytettäviä cookie- eli evästetiedostoja käytetään siten, että palvelun
           käyttäjän yksityisyydensuojaa ei loukata. Sivusto kerää toiminnallisia evästetiedostoja, joiden avulla
           palvelu muistaa valintasi sekä tarjoaa yksilöllisempiä ominaisuuksia. Sivuston suorituskykyä mittaavat evästeet (Google Analytics)
@@ -75,22 +177,25 @@
           Nämä evästeet eivät kerää käyttäjistä tunnistettavia tietoja, vaan ne ovat anonyymejä ja niitä käytetään ainoastaan
           parantamaan nettisivujen toimivuutta.
         </p>
-
-        <p>Evästeiden vastaanotto voidaan haluttaessa kieltää käyttäjän Internet-selaimesta mutta se voi aiheuttaa sivujen
+        <p>
+          Evästeiden vastaanotto voidaan haluttaessa kieltää käyttäjän Internet-selaimesta mutta se voi aiheuttaa sivujen
           toimimattomuutta eikä ole suositeltavaa.
         </p>
-
         <p>Palvelun käyttäjistä ei kerätä henkilötietoja. Palvelun käyttöä tilastoidaan sivuston kehittämistä varten.</p>
-        </br>
-
-        <p><span style="font-weight:bold">Muuta</span></p>
+        <h2 style="font-size:18px; font-weight:bold;">Muuta</h2>
         <p>Seuraa sivuston kehitystä sekä kehittäjän edesottamuksia:</p>
         <a href="https://twitter.com/viilkka" class="twitter-follow-button" data-show-count="false">Follow</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
         <a href="https://twitter.com/intent/tweet?screen_name=viilkka" class="twitter-mention-button" data-show-count="false">Tweet to @viilkka</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
       </main>
-    </div> 
-    <footer>
-      <p>Kysymykset ja palaute: <a href="mailto:contact@tuulikarta.info">contact@tuulikarta.info</a></p>
+    </div>
+
+    <footer role="contentinfo">
+      <p>Kysymykset ja palaute: <a href="mailto:contact@tuulikartta.info">contact@tuulikartta.info</a></p>
+      <div class="media-content" align="center">
+        <a href="https://twitter.com/viilkka"><div class="media-button" ><img class="media-button-img" src="../symbols/twitter.png"></img></div></a>
+        <a href="https://github.com/nakkim"><div class="media-button" ><img class="media-button-img" src="../symbols/github.png"></img></div></a>
+        <a href="https://fi.linkedin.com/in/ville-ilkka-1a0622146"><div class="media-button" > <img class="media-button-img" src="../symbols/linkedin.png"></img></div></a>
+      </div>  
       <p>Ville Ilkka, 2016-<span id="footer-year"></span></p>
     </footer> 
   </div>

@@ -2,26 +2,20 @@
 require_once("dataMiner.php");
 date_default_timezone_set('Europe/Helsinki');
 
+header('Content-Type: application/json');
+
+$timestamp = $_GET["time"];
 
 $dataMiner = new DataMiner();
 
-$synopdata = $dataMiner->synopdata();
-$roaddata = $dataMiner->roaddata();
+// synop observations
+$settings = array();
+$settings["stationtype"]    = "synop";
+$settings["parameters"]     = "ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint";
+$settings["storedquery_id"] = "fmi::observations::weather::multipointcoverage";
+$settings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+$settings["timestep"]       = "10";
+$synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
 
-// change parameter names to ws_10min, wg_10min and wd_10min
-foreach($roaddata as &$val){
-    $val['ws_10min'] = $val['windspeedms'];
-    $val['wd_10min'] = $val['winddirection'];
-    $val['wg_10min'] = $val['WG'];
-    $val['ri_10min'] = $val['PRI'];
-    unset($val['windspeedms']);
-    unset($val['winddirection']);
-    unset($val['WG']);
-    unset($val['PRI']);
-}
-
-foreach($roaddata as $key => $data) {
-	array_push($synopdata,$data);
-}
-
+$synopdata = $dataMiner->serializeData($synopdata);
 print json_encode($synopdata);
