@@ -1,0 +1,29 @@
+
+services:
+  tuulikartta:
+    container_name: tuulikartta
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./index.html:/var/www/html/index.html
+      - ./list.php:/var/www/html/list.php
+      - ./manifest.json:/var/www/html/manifest.json
+      - ./offline.html:/var/www/html/offline.html
+      - ./serviceWorker.js:/var/www/html/serviceWorker.js
+      - ./sitemap.fi.xml:/var/www/html/sitemap.fi.xml
+      - ./sitemap.xml:/var/www/html/sitemap.xml
+      - ./css:/var/www/html/css
+      - ./js:/var/www/html/js
+      - ./php:/var/www/html/php
+      - ./symbols:/var/www/html/symbols
+      - ./tietoa-sivustosta:/var/www/html/tietoa-sivustosta
+      - data:/var/www/html/data
+    environment:
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+
+volumes:
+  data:

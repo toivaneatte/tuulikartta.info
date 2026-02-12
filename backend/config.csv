@@ -1,0 +1,4 @@
+city, id, ttl, onOff
+Tampere, 1, 3600, on
+Helsinki, 2, 3600, off
+Oulu, 3, 3600, on

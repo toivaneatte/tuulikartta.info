@@ -13,6 +13,7 @@ var saa = saa || {};
   // ---------------------------------------------------------
 
   Tuulikartta.initEventHandlers = function() {
+    // nämä ilmeisesti jQuerylla kirjoitettu
 
     // Select weather parameter
     $('#select-wind-parameter').change(function () {
@@ -166,7 +167,7 @@ var saa = saa || {};
         window.selectedLanguage = 'fi'
         localStorage.setItem('language', 'fi')
       }
-      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+window.latitude+','+window.longtitude+'#zoom='+window.zoomlevel+'#parameter='+window.selectedParameter)
+      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+window.latitude+','+window.longitude+'#zoom='+window.zoomlevel+'#parameter='+window.selectedParameter)
       window.location.reload()
     })
 
@@ -225,5 +226,65 @@ var saa = saa || {};
       saa.lightning.init(saa.Tuulikartta.timeStamp)
     })
   }
+  // ja nämä on perus javascriptiä
+
+  // eventhandler for settings button
+  Tuulikartta.settingsHandler = function(container, sidebar) {
+    container.onclick = function(){
+      sidebar.toggle()
+    }
+  };
+
+  // eventhandler for radar button
+  Tuulikartta.radarHandler = function(container) {
+    container.onclick = function(){
+          saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
+          if(saa.Tuulikartta.map.hasLayer(saa.Tuulikartta.radarLayer)) {
+            saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.radarLayer)
+            $(this).removeClass('active')
+          } else {
+            saa.Tuulikartta.updateRadarData()
+            saa.Tuulikartta.map.addLayer(saa.Tuulikartta.radarLayer)
+            $(this).addClass('active')
+          }
+        }
+      };
+
+  // eventhandler for lightning button
+  Tuulikartta.lightningHandler = function(container) {
+    container.onclick = function(){
+          if(saa.Tuulikartta.map.hasLayer(saa.lightning.geoLayer)) {
+            saa.Tuulikartta.map.removeLayer(saa.lightning.geoLayer)
+            $(this).removeClass('active')
+            window.getLightningData = false
+            saa.lightning.geoLayer.clearLayers()
+          } else {
+            saa.lightning.init(saa.Tuulikartta.timeStamp)
+            saa.Tuulikartta.map.addLayer(saa.lightning.geoLayer)
+            $(this).addClass('active')
+            window.getLightningData = true
+          }
+          saa.Tuulikartta.updateRadarData()
+        }
+      };
+
+  // eventhandler for table button
+  Tuulikartta.tableHandler = function(container) {
+    container.onclick = function(){
+          modal.style.display = "block";
+        }
+      };
+
+  // eventhandler for info button
+  Tuulikartta.infoHandler = function(container) {
+    container.onclick = function(){
+          var x = document.getElementById("site-info");
+          if (x.style.display === "none") {
+            x.style.display = "block";
+          } else {
+            x.style.display = "none";
+          }
+        }
+      };
 
 }(saa.Tuulikartta = saa.Tuulikartta || {}))

@@ -30,10 +30,10 @@ var saa = saa || {};
 
   // Set parameters to localstorage to remember previous state
   window.latitude = localStorage.getItem('latitude') ? localStorage.getItem('latitude') : 65
-  window.longtitude = localStorage.getItem('longtitude') ? localStorage.getItem('longtitude') : 25
+  window.longitude = localStorage.getItem('longitude') ? localStorage.getItem('longitude') : 25
   window.zoomlevel = localStorage.getItem('zoomlevel') ? localStorage.getItem('zoomlevel') : 8
   window.observationSource = localStorage.getItem('observationSource') ? localStorage.getItem('observationSource') : 'Näytä vain synop-asemat'
-  window.selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('longtitude') : 'ws_10min'
+  window.selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('longitude') : 'ws_10min'
   window.startPosition = 0
   var toggleDataSelect = 'close'
   var minRoadZoomLevel = 8
@@ -51,8 +51,8 @@ var saa = saa || {};
 
   var radarLayerOpacity = localStorage.getItem('radarLayerOpacity') ? localStorage.getItem('radarLayerOpacity') : 80
 
-  // popup max width
-  var maxWidth = 650
+  // declare popup max width
+  var maxWidth
   var maxheight = 320
 
   Tuulikartta.debug = function (par) {
@@ -63,7 +63,7 @@ var saa = saa || {};
 
   Tuulikartta.handleUrlParams = function(lat, lon, zoom, initParam) {
     window.latitude = lat
-    window.longtitude = lon
+    window.longitude = lon
     window.zoomlevel = zoom
     window.selectedParameter = initParam
   }
@@ -106,7 +106,7 @@ var saa = saa || {};
   Tuulikartta.initMap = function () {
 
     var lat = parseFloat(latitude)
-    var lon = parseFloat(longtitude)
+    var lon = parseFloat(longitude)
     var zoom = parseInt(zoomlevel)
 
     var map = L.map('map', {
@@ -156,7 +156,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       autoPan: false
     })
     map.addControl(sidebar);
-    sidebar.setContent(populateSidebar())
+    sidebar.setContent(Tuulikartta.populateSidebar(radarLayerOpacity)) //tämä on omassa tiedostossa
 
     /* settings control */
     var customControl = L.Control.extend({
@@ -167,9 +167,10 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-source'
         )
-        container.onclick = function(){
-          sidebar.toggle()
-        }
+
+        // moved eventhandler setting to event-handlers.js
+        Tuulikartta.settingsHandler(container, sidebar);
+        
         container.title = translations[window.selectedLanguage]['settings']
         return container
       }
@@ -185,17 +186,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-radar'
         )
-        container.onclick = function(){
-          saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
-          if(saa.Tuulikartta.map.hasLayer(saa.Tuulikartta.radarLayer)) {
-            saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.radarLayer)
-            $(this).removeClass('active')
-          } else {
-            saa.Tuulikartta.updateRadarData()
-            saa.Tuulikartta.map.addLayer(saa.Tuulikartta.radarLayer)
-            $(this).addClass('active')
-          }
-        }
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.radarHandler(container);
+
         container.title = translations[window.selectedLanguage]['radarTitle']
         return container
       }
@@ -211,27 +204,16 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-flash'
         )
-        container.onclick = function(){
-          if(saa.Tuulikartta.map.hasLayer(saa.lightning.geoLayer)) {
-            saa.Tuulikartta.map.removeLayer(saa.lightning.geoLayer)
-            $(this).removeClass('active')
-            window.getLightningData = false
-            saa.lightning.geoLayer.clearLayers()
-          } else {
-            saa.lightning.init(saa.Tuulikartta.timeStamp)
-            saa.Tuulikartta.map.addLayer(saa.lightning.geoLayer)
-            $(this).addClass('active')
-            window.getLightningData = true
-          }
-          saa.Tuulikartta.updateRadarData()
-        }
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.lightningHandler(container);
+        
         container.title = translations[window.selectedLanguage]['lightningTitle']
         return container
       }
     })
     map.addControl(new lightningControl());
 
-    /* radar control */
+    /* table control */ // tässä aiempi kommentti oli radar control ?
     var tableDataControl = L.Control.extend({
       options: {
         position: 'topright'
@@ -241,9 +223,8 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-table'
         )
         
-        container.onclick = function(){
-          modal.style.display = "block";
-        }
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.tableHandler(container);
 
         container.title = translations[window.selectedLanguage]['tableTitle']
         return container
@@ -290,15 +271,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         var container = L.DomUtil.create(
           'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-toggle-info'
         )
+        // eventhandler is set in event-handlers.js
+        Tuulikartta.infoHandler(container);
 
-        container.onclick = function(){
-          var x = document.getElementById("site-info");
-          if (x.style.display === "none") {
-            x.style.display = "block";
-          } else {
-            x.style.display = "none";
-          }
-        }
         container.title = translations[window.selectedLanguage]['info']
         return container
       }
@@ -306,55 +281,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     map.addControl(new infoControl());
   }
 
-  function populateSidebar() {
-    var html = ""
-    html += '<div class="sidebar-container">'
-    html += '<h1>'+translations[window.selectedLanguage]['settings']+'</h1>'
-    html += '<input id="show-observations" type="checkbox" checked> '+translations[window.selectedLanguage]['showObservations'] 
-    html += '<br/>'
-    html += '<input id="road-observations" type="checkbox" disabled> '+translations[window.selectedLanguage]['roadObs']
-    html += '<br/>'
-    html += '<br/>'
-    html += '<span><b>'+translations[window.selectedLanguage]['layerOpacity']+'</b></span>'
-    html += '<table>'
-    html +=   '<tr>'
-    html +=     '<td>'+translations[window.selectedLanguage]['radarLayer']+':</td><td><input type="range" id="radar-opacity" name="opacity" min="0" max="100" value="'+radarLayerOpacity+'"></td>'
-    html +=   '</tr>'
-    html += '</table>'
-    html += '<br/>'
-    html += '<span><b>'+translations[window.selectedLanguage]['lightningObs']+'</b></span>'
-    html += '<table>'
-    html +=   '<tr>'
-    html +=     '<td>'+translations[window.selectedLanguage]['lightningShow']+':</td>'
-    html +=     '<td>'
-    html +=       '<select id="lightning-source">'
-    if(saa.Tuulikartta.showCloudStrikes == true || saa.Tuulikartta.showCloudStrikes == 'true') {
-      html +=         '<option value="1" selected>'+translations[window.selectedLanguage]['allObs']+'</option>'
-      html +=         '<option value="0">'+translations[window.selectedLanguage]['groundOnly']+'</option>'
-    } else {
-      html +=         '<option value="1">'+translations[window.selectedLanguage]['allObs']+'</option>'
-      html +=         '<option value="0" selected>'+translations[window.selectedLanguage]['groundOnly']+'</option>'
-    }
-    html +=       '</select>'
-    html +=     '</td>'
-    html +=   '</tr>'
-    html +=   '<tr>'
-    html +=     '<td>'+translations[window.selectedLanguage]['timeWindow']+':</td>'
-    html +=     '<td>'
-    html +=       '<select id="lightning-interval">'
-    html +=         '<option value="5">5 '+translations[window.selectedLanguage]['minutes']+'</option>'
-    html +=         '<option value="15">15 '+translations[window.selectedLanguage]['minutes']+'</option>'
-    html +=         '<option value="30">30 '+translations[window.selectedLanguage]['minutes']+'</option>'
-    html +=       '</select>'
-    html +=     '</td>'
-    html +=   '</tr>'
-    html += '</table>'
-    html += '<br/>'
-    html += '<br/>'
-    html += '</div>'
-
-    return html
-  }
+  // tässä oli populate sidebar
 
   Tuulikartta.initWMS = function () {
     var dataWMS = 'https://data.fmi.fi/fmi-apikey/f01a92b7-c23a-47b0-95d7-cbcb4a60898b/wms'
@@ -406,8 +333,11 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
     saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
 
+    // Choose correct max width
     if (L.Browser.mobile) {
       maxWidth = 250
+    } else {
+      maxWidth = 650
     }
 
     for (var i = 0; i < sizeofdata; i++) {
@@ -989,20 +919,6 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       }
     }
   }
-  
-  // ---------------------------------------------------------
-  // populate infowindow with observations
-  // ---------------------------------------------------------
-
-  Tuulikartta.populateInfoWindow = function (data,fmisid) {
-    var location = { lat: parseFloat(data['lat']), lng: parseFloat(data['lon']) }
-    var time = Tuulikartta.timeTotime(data['epochtime'])
-    var latlon = data['lat'] + ',' + data['lon']
-
-    if (L.Browser.mobile) {
-      maxWidth = 250
-      // maxHeight = 320
-    }
 
     if (data['type'] === 'synop') {
       var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['synop']+'</span> <br>'

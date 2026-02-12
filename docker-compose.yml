@@ -1,0 +1,9 @@
+
+services:
+  tuulikartta:
+    container_name: tuulikartta
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
