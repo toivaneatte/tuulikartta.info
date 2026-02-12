@@ -920,6 +920,21 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     }
   }
 
+  // ---------------------------------------------------------
+  // populate infowindow with observations
+  // ---------------------------------------------------------
+
+  Tuulikartta.populateInfoWindow = function (data,fmisid) {
+    var location = { lat: parseFloat(data['lat']), lng: parseFloat(data['lon']) }
+    var time = Tuulikartta.timeTotime(data['epochtime'])
+    var latlon = data['lat'] + ',' + data['lon']
+
+    if (L.Browser.mobile) {
+      maxWidth = 250
+    } else {
+      maxWidth = 650
+    }
+
     if (data['type'] === 'synop') {
       var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['synop']+'</span> <br>'
     } else {
