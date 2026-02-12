@@ -373,7 +373,7 @@ var saa = saa || {};
       const marker = L.marker([coords[1], coords[0]], { icon: icon });
       
       // Store latest time for popup
-      //feature.latestUpdate = latestTime ? latestTime.toISOString() : null;
+      feature.latestUpdate = latestTime ? latestTime.toISOString() : null;
       
       // Bind popup with initial content
       /*
@@ -381,8 +381,8 @@ var saa = saa || {};
         maxWidth: maxWidth
       });
 */
-      marker.on('click', function() {
-        window.open(html/camera.html);
+      marker.on('click', function () {
+        window.open('html/camera.html', '_blank');
       });
 /*
       // Handle popup open: load detailed data and init carousel
