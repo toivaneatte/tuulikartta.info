@@ -416,7 +416,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       var latlon = saa.Tuulikartta.data[i]['lat'] + ',' + saa.Tuulikartta.data[i]['lon']
 
       if (param == 'ws_10min' || param === 'wg_10min') {
-        if (saa.Tuulikartta.data[i]['ws_10min'] !== null && saa.Tuulikartta.data[i]['wd_10min'] !== null &&
+        // Only show wind data for synop and road stations that have wind data
+        if (saa.Tuulikartta.data[i]['type'] !== 'radiation' &&
+            saa.Tuulikartta.data[i]['ws_10min'] !== null && saa.Tuulikartta.data[i]['wd_10min'] !== null &&
                         saa.Tuulikartta.data[i]['wg_10min'] !== null) {
 
           if (saa.Tuulikartta.data[i][param] < 10) { var iconAnchor = [30, 28] }
@@ -466,7 +468,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       }
 
       if (param === 'ws_1d' || param === 'wg_1d') {
-        if (saa.Tuulikartta.data[i]['ws_1d'] !== null && saa.Tuulikartta.data[i]['ws_max_dir'] !== null && saa.Tuulikartta.data[i]['wg_max_dir'] !== null &&  saa.Tuulikartta.data[i]['wg_1d'] !== null) {
+        // Only show daily wind data for synop and road stations that have wind data
+        if (saa.Tuulikartta.data[i]['type'] !== 'radiation' &&
+            saa.Tuulikartta.data[i]['ws_1d'] !== null && saa.Tuulikartta.data[i]['ws_max_dir'] !== null && saa.Tuulikartta.data[i]['wg_max_dir'] !== null &&  saa.Tuulikartta.data[i]['wg_1d'] !== null) {
 
           if (saa.Tuulikartta.data[i][param] < 10) { var iconAnchor = [30, 28] }
           if (saa.Tuulikartta.data[i][param] >= 10) { var iconAnchor = [25, 28] }
@@ -572,7 +576,35 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         }
       }
 
-      if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax' || param === 'dose_rate' || param === 'air_activity') {
+      if (param === 'dose_rate') {
+        // Handle external radiation dose rate - only for radiation stations
+        if (saa.Tuulikartta.data[i]['type'] === 'radiation') {
+          var paramValue = saa.Tuulikartta.data[i]['DR_PT10M_avg']
+          if (paramValue !== null && paramValue !== undefined) {
+            var marker = L.marker(new L.LatLng(saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']),
+              {
+                interactive: true,
+                keyboard: false,
+                icon: Tuulikartta.createLabelIcon('textLabelclass', parseFloat(paramValue).toFixed(2))
+              })
+
+            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+            saa.Tuulikartta.data[i]['fmisid']),{
+              maxWidth: maxWidth
+            })
+            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+            marker.type = saa.Tuulikartta.data[i]['type']
+          }
+        }
+      }
+
+      if (param === 'air_activity') {
+        // Handle air radionuclide activity - TEMPORARILY DISABLED
+        // TODO: Implement proper display for radionuclide data
+      }
+
+      if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
 
         var fillColor = Tuulikartta.resolveTemperature(saa.Tuulikartta.data[i][param])
         var hex = fillColor.substr(1)
@@ -996,6 +1028,8 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     output += `<div id="weather-chart-${fmisid}"></div>`
     output += `<div id="weather-chart-${fmisid}_alt"></div>`
     output += `<div id="weather-chart-${fmisid}_alt2"></div>`
+    output += `<div id="weather-chart-${fmisid}_radiation"></div>`
+    output += `<div id="weather-chart-${fmisid}_air_radio"></div>`
     output += '</div>'
     output += `</div>`
 
@@ -1005,11 +1039,15 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
   window.resolveGraphStartposition = function(value) {
     if(value === 'ws_10min' || value === 'wg_10min' || value === 'ws_1d' || value === 'wg_1d')
     return 1
-    else if(value === 'ri_10min' || value === 'ri_10min' || value === 'rr_1h' || value === 'rr_1d' || value === 't2m' || value === 'dewpoint' || value === 'tmax' || value === 'tmin' || value === 'dose_rate' || value === 'air_activity' || value === 'wawa')
+    else if(value === 'ri_10min' || value === 'ri_10min' || value === 'rr_1h' || value === 'rr_1d' || value === 't2m' || value === 'dewpoint' || value === 'tmax' || value === 'tmin' || value === 'wawa')
     return 2
     else if(value === 'vis' || value === 'n_man')
     return 3
-    else 
+    else if(value === 'dose_rate')
+    return 4
+    else if(value === 'air_activity')
+    return 5
+    else
     return 1
   }
 

@@ -21,7 +21,7 @@ var saa = saa || {};
     html = html + '<option value="ri_10min">'+translations[window.selectedLanguage]["ri_10min"]+'</option>'
     html = html + '<option value="rr_1h">'+translations[window.selectedLanguage]["rr_1h"]+'</option>'
     html = html + '<option value="t2m">'+translations[window.selectedLanguage]["t2m"]+'</option>'
-    html = html + '<option value="radiation">'+translations[window.selectedLanguage]["radiation"]+'</option>'
+    html = html + '<option value="dose_rate">'+translations[window.selectedLanguage]["dose_rate"]+'</option>'
     html = html + '<option value="t2mdewpoint">'+translations[window.selectedLanguage]["t2mdewpoint"]+'</option>'
     html = html + '<option value="dewpoint">'+translations[window.selectedLanguage]["dewpoint"]+'</option>'
     html = html + '<option value="vis">'+translations[window.selectedLanguage]["vis"]+'</option>'
@@ -185,19 +185,11 @@ var saa = saa || {};
             return null
           }
         }},
-        {title: translations[window.selectedLanguage]['radiation'], field: 'radiation', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
-          if(cell.getValue() !== null) {
-            cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveTemperature(cell.getValue()),0.4);
-            return cell.getValue()
-          } else {
-            cell.getElement().style.backgroundColor = 'rgba(1,1,1,0)'
-            return null
-          }
-        }},
         {title: translations[window.selectedLanguage]['t2mdewpoint'], field: 't2mdewpoint', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
-          if(cell.getValue() !== null) {
-            cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveDewpointDiff(cell.getValue()),0.4);
-            return (cell.getValue()).toFixed(1)
+          var value = cell.getValue();
+          if(value !== null && value !== undefined) {
+            cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveDewpointDiff(value),0.4);
+            return value.toFixed(1)
           } else {
             cell.getElement().style.backgroundColor = 'rgba(1,1,1,0)'
             return null
@@ -267,7 +259,11 @@ var saa = saa || {};
         }},
       ],
     });
-    table.setData(saa.Tuulikartta.data)
+    // Filter to show only synop stations
+    var synopData = saa.Tuulikartta.data.filter(function(station) {
+      return station.type === 'synop';
+    });
+    table.setData(synopData)
   }
 
 }(saa.Tuulikartta = saa.Tuulikartta || {}))
