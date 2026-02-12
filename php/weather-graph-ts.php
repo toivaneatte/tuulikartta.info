@@ -2,70 +2,99 @@
 require_once("dataMiner.php");
 header('Content-Type: application/json');
 
-$latlon      = filter_input(INPUT_GET, 'latlon', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$fmisid      = filter_input(INPUT_GET, 'fmisid', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$type        = filter_input(INPUT_GET, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$timestamp   = filter_input(INPUT_GET, 'timestamp', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+try {
+    $latlon      = filter_input(INPUT_GET, 'latlon', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $fmisid      = filter_input(INPUT_GET, 'fmisid', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $type        = filter_input(INPUT_GET, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $timestamp   = filter_input(INPUT_GET, 'timestamp', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-$dataMiner = new DataMiner();
-$data = [];
-if ($type == 'road') {
-    $settings = array();
-    $settings["stationtype"]    = "road";
-    $settings["parameters"]     = "ws,wg,wd,vis,prst1,ta,pri";
-    $settings["storedquery_id"] = "livi::observations::road::default::multipointcoverage";
-    $settings["fmisid"]         = $fmisid;
+    $dataMiner = new DataMiner();
+    $data = [];
+    if ($type == 'road') {
+        $settings = array();
+        $settings["stationtype"]    = "road";
+        $settings["parameters"]     = "ws,wg,wd,vis,prst1,ta,pri";
+        $settings["storedquery_id"] = "livi::observations::road::default::multipointcoverage";
+        $settings["fmisid"]         = $fmisid;
 
 
-    $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
-    $observationData = [];
-    foreach ( $obs as $key => $observation ) {
+        $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+        $observationData = [];
+        foreach ( $obs as $key => $observation ) {
 
-        $tmp = $observation;
-        $tmp["datatype"] = "observation";
-        $tmp["station"] = "synop";
-        $tmp["ws_10min"] = $observation['ws'];
-        $tmp["wg_10min"] = $observation['wg'];
-        $tmp["wd_10min"] = $observation['wd'];
-        $tmp["t2m"] = $observation['ta'];
-        unset($tmp["ws"]);
-        unset($tmp["wg"]);
-        unset($tmp["wd"]);
-        unset($tmp["ta"]);
-        array_push($observationData,$tmp);
+            $tmp = $observation;
+            $tmp["datatype"] = "observation";
+            $tmp["station"] = "synop";
+            $tmp["ws_10min"] = $observation['ws'];
+            $tmp["wg_10min"] = $observation['wg'];
+            $tmp["wd_10min"] = $observation['wd'];
+            $tmp["t2m"] = $observation['ta'];
+            unset($tmp["ws"]);
+            unset($tmp["wg"]);
+            unset($tmp["wd"]);
+            unset($tmp["ta"]);
+            array_push($observationData,$tmp);
+        }
+
+        $obs = $observationData;
+
+    }
+    if ($type == 'synop') {
+
+        $settings = array();
+        $settings["stationtype"]    = "synop";
+        $settings["parameters"]     = "ws_10min,wg_10min,wd_10min,t2m,n_man,r_1h,vis";
+        $settings["storedquery_id"] = "fmi::observations::weather::multipointcoverage";
+        $settings["timestep"]       = "10";
+        $settings["fmisid"]         = $fmisid;
+
+        $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
     }
 
-    $obs = $observationData;
+    if ($type == 'radiation') {
 
+        $settings = array();
+        $settings["stationtype"]    = "radiation";
+        $settings["parameters"]     = "DR_PT10M_avg";
+        $settings["storedquery_id"] = "stuk::observations::external-radiation::multipointcoverage";
+        $settings["fmisid"]         = $fmisid;
+        $settings["timestep"]       = "10";
+
+        $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+    }
+
+    if ($type == 'air_radio') {
+
+        $settings = array();
+        $settings["stationtype"]    = "air_radio";
+        $settings["parameters"]     = "AC_P7D_avg";
+        $settings["storedquery_id"] = "stuk::observations::air::radionuclide-activity-concentration::latest::multipointcoverage";
+        $settings["fmisid"]         = $fmisid;
+
+        $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+    }
+
+    $combinedData = [];
+    $combinedData["obs"] = $obs;
+    $combinedData["for"] = [];
+
+    $combinedData = calcCumulativeSum($combinedData);
+    // Only calculate wind directions if we have wind data
+    $hasWindData = false;
+    if(!empty($combinedData["obs"])) {
+        $hasWindData = isset($combinedData["obs"][0]['ws_10min']) || isset($combinedData["obs"][0]['wd_10min']);
+    }
+    $winddirections = $hasWindData ? resolveWindDirection($combinedData) : [];
+    print json_encode(formatHighChart($combinedData, $winddirections));
+} catch (Exception $e) {
+    print json_encode(array('error' => $e->getMessage()));
 }
-if ($type == 'synop') {
-
-    $settings = array();
-    $settings["stationtype"]    = "synop";
-    $settings["parameters"]     = "ws_10min,wg_10min,wd_10min,t2m,n_man,r_1h,vis";
-    $settings["storedquery_id"] = "fmi::observations::weather::multipointcoverage";
-    $settings["timestep"]       = "10";
-    $settings["fmisid"]         = $fmisid;
-
-    $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
-}
-
-$combinedData = [];
-$combinedData["obs"] = $obs;
-$combinedData["for"] = [];
-
-$combinedData = calcCumulativeSum($combinedData);
-$winddirections = resolveWindDirection($combinedData);
-print json_encode(formatHighChart($combinedData, $winddirections));
-
-
 
 /**
  *
  * Calculate cumulative precipitation
  * @param    data as php aarray
- * @return   data as javascript array string×
-
+ * @return   data as javascript array string
  *
  */
 
@@ -74,7 +103,7 @@ function calcCumulativeSum($data) {
     $tmpData = [];
     foreach($data["obs"] as $observation) {
         $tmp = $observation;
-        if(is_numeric($observation["r_1h"])) {
+        if(isset($observation["r_1h"]) && is_numeric($observation["r_1h"])) {
             $precSum = round($precSum + $observation["r_1h"],1);
         }
         $tmp["rr1h_calc"] = $precSum;
@@ -180,6 +209,10 @@ function formatHighChart($data, $winddirections) {
       $formattedData[$key]["n_man"] = [];
       $formattedData[$key]["temp"] = [];
       $formattedData[$key]["rr1h_calc"] = [];
+      $formattedData[$key]["radiation"] = [];
+      $formattedData[$key]["pb210"] = [];
+      $formattedData[$key]["be7"] = [];
+      $formattedData[$key]["cs137"] = [];
     }
 
     foreach($data as $key => $dataArray) {
@@ -278,6 +311,58 @@ function formatHighChart($data, $winddirections) {
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, null);
           array_push($formattedData['obs']['rr1h_calc'], $tmp);
+        }
+
+        // radiation (DR_PT10M_avg)
+        if(!empty($array['DR_PT10M_avg'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['DR_PT10M_avg']);
+          array_push($formattedData['obs']['radiation'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['radiation'], $tmp);
+        }
+
+        // Pb-210
+        if(!empty($array['Pb-210'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['Pb-210']);
+          array_push($formattedData['obs']['pb210'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['pb210'], $tmp);
+        }
+
+        // Be-7
+        if(!empty($array['Be-7'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['Be-7']);
+          array_push($formattedData['obs']['be7'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['be7'], $tmp);
+        }
+
+        // Cs-137
+        if(!empty($array['Cs-137'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['Cs-137']);
+          array_push($formattedData['obs']['cs137'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['cs137'], $tmp);
         }
 
         $i++;

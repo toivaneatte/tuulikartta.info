@@ -47,9 +47,9 @@ var saa = saa || {};
     weatherGraph.expandGraph = function(fmisid, lat, lon, type) {
         //document.getElementById("weather-chart").innerHTML = '';
         document.getElementById("graph-container").className = "expanded";
-        weatherGraph.constructWeatherGraph("graph-container");
+        weatherGraph.constructWeatherGraph("graph-container", fmisid);
         var latlon = lat + ',' + lon;
-        weatherGraph.getObservationGraph(latlon, fmisid, type);
+        weatherGraph.getObservationGraph(fmisid, type, null);
     }
 
 
@@ -74,6 +74,7 @@ var saa = saa || {};
               },
               error: function () {
                   saa.Tuulikartta.debug('An error has occurred');
+                  $('#graph-box-loader').html('<span style="color:red;">Error loading graph data</span>');
               },
               success: function (data) {
                   saa.Tuulikartta.debug('Draw graph')
@@ -91,19 +92,21 @@ var saa = saa || {};
     // Construct weather graph frame
     // ---------------------------------------------------------
 
-    weatherGraph.constructWeatherGraph = function(container) {
+    weatherGraph.constructWeatherGraph = function(container, fmisid) {
 
         // remove old content
         document.getElementById("graph-box").innerHTML = "";
 
         var html = "";
-        html = html + '<div id="graph-box">';
-        html = html + '<div id="weather-chart">';
-        html = html + '<div class="ajax-loader"></div>';
-        html = html + '</div>';
+        html += '<div id="graph-box">';
+        html += '<div id="weather-chart-' + fmisid + '_windrose" style="width:100%; height:400px;"></div>';
+        html += '<div id="weather-chart-' + fmisid + '" style="width:100%; height:400px;"></div>';
+        html += '<div id="weather-chart-' + fmisid + '_alt" style="width:100%; height:400px;"></div>';
+        html += '<div id="weather-chart-' + fmisid + '_alt2" style="width:100%; height:400px;"></div>';
+        html += '<div id="weather-chart-' + fmisid + '_radiation" style="width:100%; height:400px;"></div>';
+        html += '</div>';
 
         $('#graph-box').html(html);
-        document.getElementById("weather-chart").innerHTML = '<div class="ajax-loader"></div>';
 
     }
 
@@ -118,10 +121,11 @@ var saa = saa || {};
     }
 
     weatherGraph.resolveWeekDay = function(value) {
-        if(selectedLanguage === 'en')
-        var weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thorsday", "Friday", "Saturday"];
-        else
-        var weekday = ["Sunnuntai", "Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai", "Lauantai"];
+        if(selectedLanguage === 'en') {
+            var weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thorsday", "Friday", "Saturday"];
+        } else {
+            var weekday = ["Sunnuntai", "Maanantai", "Tiistai", "Keskiviikko", "Torstai", "Perjantai", "Lauantai"];
+        }
 
         var n = weekday[value];
         return n;
@@ -670,9 +674,10 @@ var saa = saa || {};
 
           });
           // saa.Tuulikartta.graphIds = {chart1,chart2}
-        }
-    }
 
+
+
+          // External radiation dose rate chart
 var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
     chart: {
         spacingTop: 0,
@@ -692,7 +697,7 @@ var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
         selected: 1
     },
     subtitle: {
-        text: translations[window.selectedLanguage]['radiation'],
+        text: translations[window.selectedLanguage]['radiationDoseTitle'],
         style: {
             color: 'black',
             font: '12px Roboto, sans-serif'
@@ -726,19 +731,19 @@ var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
         title: {
             align: 'high',
             offset: 0,
-            text: 'W/m²',
+            text: 'nSv/h',
             rotation: 0,
             y: -14,
             x: -10
         },
-        min: 0,
+        startOnTick: true,
+        endOnTick: true,
         labels: {
             style: {
                 color: 'black',
                 font: '12px Roboto, sans-serif'
             }
         },
-        tickInterval: 100, 
         minorTickInterval: 'auto',
         minorTickColor: '#f2f2f2'
     },
@@ -764,11 +769,11 @@ var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
     },
     series: [{
         type: 'areaspline',
-        name: translations[window.selectedLanguage]['radiation'],
+        name: translations[window.selectedLanguage]['dose_rate'],
         color: '#FFD700',
         data: data.obs.radiation,
         tooltip: {
-            valueSuffix: ' W/m²'
+            valueSuffix: ' nSv/h'
         },
     }],
     responsive: {
@@ -790,7 +795,138 @@ var chart4 = Highcharts.chart(`weather-chart-${fmisid}_radiation`, {
     }
 });
 
+          // Air radionuclide activity chart
+var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
+    chart: {
+        spacingTop: 0,
+        spacingBottom: 0,
+        spacingLeft: 0,
+        marginLeft: 40,
+        marginBottom: 30,
+        height: '300px'
+    },
+    title: {
+        text: null
+    },
+    time: {
+        timezoneOffset: weatherGraph.getTimeZoneDirrerence()
+    },
+    rangeSelector: {
+        selected: 1
+    },
+    subtitle: {
+        text: translations[window.selectedLanguage]['radiationAirTitle'],
+        style: {
+            color: 'black',
+            font: '12px Roboto, sans-serif'
+        }
+    },
+    xAxis: {
+        type: 'datetime',
+        labels: {
+            formatter: function () {
+                var date    = new Date(this.value),
+                    hours   = weatherGraph.formatTimeLabel(date.getHours()),
+                    minutes = weatherGraph.formatTimeLabel(date.getMinutes()),
+                    day     = weatherGraph.resolveWeekDay(date.getDay());
 
+                if( hours !== "00" ) {
+                    return hours + ":" + minutes;
+                }
+                else {
+                    return day;
+                }
+            }
+        },
+        style: {
+            color: 'black',
+            font: '12px Roboto, sans-serif'
+        },
+        minorTickInterval: 'auto',
+        minorTickColor: '#f2f2f2'
+    },
+    yAxis: {
+        title: {
+            align: 'high',
+            offset: 0,
+            text: 'µBq/m³',
+            rotation: 0,
+            y: -14,
+            x: -10
+        },
+        min: 0,
+        labels: {
+            style: {
+                color: 'black',
+                font: '12px Roboto, sans-serif'
+            }
+        },
+        tickInterval: 100,
+        minorTickInterval: 'auto',
+        minorTickColor: '#f2f2f2'
+    },
+    tooltip: {
+        crosshairs: true,
+        shared: true,
+        labels: {
+            style: {
+                color: 'black',
+                font: '12px Roboto, sans-serif'
+            }
+        }
+    },
+    exporting: {
+        enabled: false
+    },
 
+    legend: {
+        enabled: true
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        type: 'line',
+        name: translations[window.selectedLanguage]['pb210'],
+        color: '#FF6B6B',
+        data: data.obs.pb210,
+        tooltip: {
+            valueSuffix: ' µBq/m³'
+        },
+    },
+    {
+        type: 'line',
+        name: translations[window.selectedLanguage]['be7'],
+        color: '#4ECDC4',
+        data: data.obs.be7,
+        tooltip: {
+            valueSuffix: ' µBq/m³'
+        },
+    },
+    {
+        type: 'line',
+        name: translations[window.selectedLanguage]['cs137'],
+        color: '#95E1D3',
+        data: data.obs.cs137,
+        tooltip: {
+            valueSuffix: ' µBq/m³'
+        },
+    }],
+    responsive: {
+        rules: [{
+            condition: {
+                maxHeight: 150
+            },
+            chartOptions: {
+                legend: {
+                    enabled: true
+                }
+            }
+        }]
+    }
+});
 
-}(saa.weatherGraph = saa.weatherGraph || {}));
+        }
+    }
+
+})(saa.weatherGraph = saa.weatherGraph || {});
