@@ -867,7 +867,49 @@
   background-color: rgba(5,48,97,0.7);
   border: 1px solid black;
   color: black;
-  padding-left: 5px; 
-  padding-right: 5px; 
+  padding-left: 5px;
+  padding-right: 5px;
+  font-size: 15px;
+}
+
+/* external radiation dose rate */
+
+.hexccffcc {
+  font-weight: bold;
+  background-color: rgba(204,255,204,0.7);
+  border: 1px solid black;
+  color: black;
+  padding-left: 5px;
+  padding-right: 5px;
+  font-size: 15px;
+}
+
+.hexffff99 {
+  font-weight: bold;
+  background-color: rgba(255,255,153,0.7);
+  border: 1px solid black;
+  color: black;
+  padding-left: 5px;
+  padding-right: 5px;
+  font-size: 15px;
+}
+
+.hexffcc00 {
+  font-weight: bold;
+  background-color: rgba(255,204,0,0.7);
+  border: 1px solid black;
+  color: black;
+  padding-left: 5px;
+  padding-right: 5px;
+  font-size: 15px;
+}
+
+.hexff3300 {
+  font-weight: bold;
+  background-color: rgba(255,51,0,0.7);
+  border: 1px solid black;
+  color: black;
+  padding-left: 5px;
+  padding-right: 5px;
   font-size: 15px;
 }
