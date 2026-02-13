@@ -154,40 +154,6 @@ var saa = saa || {};
     return CAMERA_STATUS.OLD.icon;
   };
 
-  // Initialize Owl Carousel for popup
-  camera.initPopupCarousel = function(popup) {
-    if (!popup || !popup._contentNode) return;
-    
-    const $carousels = $(popup._contentNode).find('.owl-carousel');
-    if (!$carousels.length) return;
-    
-    $carousels.each(function() {
-      const $el = $(this);
-      if ($el.hasClass('owl-loaded')) return;
-      
-      $el.owlCarousel({
-        navigation: true,
-        slideSpeed: 300,
-        paginationSpeed: 400,
-        items: 1,
-        pagination: false,
-        startPosition: 0
-      });
-    });
-  };
-
-  // Destroy carousel to prevent memory leaks
-  camera.destroyPopupCarousel = function(popup) {
-    if (!popup || !popup._contentNode) return;
-    
-    const $carousels = $(popup._contentNode).find('.owl-carousel');
-    $carousels.each(function() {
-      const $el = $(this);
-      if ($el.hasClass('owl-loaded')) {
-        $el.owlCarousel('destroy');
-      }
-    });
-  };
 
   // Load detailed station data from API
   camera.loadStationDetails = function(stationId, callback) {
@@ -410,10 +376,15 @@ var saa = saa || {};
       feature.latestUpdate = latestTime ? latestTime.toISOString() : null;
       
       // Bind popup with initial content
+      /*
       marker.bindPopup(camera.populateInfoWindow(feature), {
         maxWidth: maxWidth
       });
-
+*/
+      marker.on('click', function () {
+        window.open('html/camera.html', '_blank');
+      });
+/*
       // Handle popup open: load detailed data and init carousel
       marker.on('popupopen', (function(stationFeature) {
         return function(e) {
@@ -421,8 +392,6 @@ var saa = saa || {};
           const requestId = Date.now();
           popup._requestId = requestId;
           
-          // Initialize carousel with existing data
-          camera.initPopupCarousel(popup);
           
           // Load fresh station details if not already loaded
           const stationId = stationFeature.properties && stationFeature.properties.id;
@@ -464,11 +433,7 @@ var saa = saa || {};
           });
         };
       })(feature));
-      
-      // Clean up carousel on popup close
-      marker.on('popupclose', function(e) {
-        camera.destroyPopupCarousel(e.popup);
-      });
+      */
       
       saa.camera.markers.addLayer(marker);
       cameraCount++;
@@ -478,6 +443,7 @@ var saa = saa || {};
     saa.Tuulikartta.map.addLayer(saa.camera.markers);
   };
 
+  /*
   // Generate popup content HTML
   camera.populateInfoWindow = function(data) {
     const station = camera.normalizeStation(data);
@@ -533,6 +499,7 @@ var saa = saa || {};
 
     return output;
   };
+*/
 
   // Expose cache clear for manual maintenance
   camera.clearCache = function() {

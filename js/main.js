@@ -346,7 +346,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       var latlon = saa.Tuulikartta.data[i]['lat'] + ',' + saa.Tuulikartta.data[i]['lon']
 
       if (param == 'ws_10min' || param === 'wg_10min') {
-        if (saa.Tuulikartta.data[i]['ws_10min'] !== null && saa.Tuulikartta.data[i]['wd_10min'] !== null &&
+        // Only show wind data for synop and road stations that have wind data
+        if (saa.Tuulikartta.data[i]['type'] !== 'radiation' &&
+            saa.Tuulikartta.data[i]['ws_10min'] !== null && saa.Tuulikartta.data[i]['wd_10min'] !== null &&
                         saa.Tuulikartta.data[i]['wg_10min'] !== null) {
 
           if (saa.Tuulikartta.data[i][param] < 10) { var iconAnchor = [30, 28] }
@@ -396,7 +398,9 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
       }
 
       if (param === 'ws_1d' || param === 'wg_1d') {
-        if (saa.Tuulikartta.data[i]['ws_1d'] !== null && saa.Tuulikartta.data[i]['ws_max_dir'] !== null && saa.Tuulikartta.data[i]['wg_max_dir'] !== null &&  saa.Tuulikartta.data[i]['wg_1d'] !== null) {
+        // Only show daily wind data for synop and road stations that have wind data
+        if (saa.Tuulikartta.data[i]['type'] !== 'radiation' &&
+            saa.Tuulikartta.data[i]['ws_1d'] !== null && saa.Tuulikartta.data[i]['ws_max_dir'] !== null && saa.Tuulikartta.data[i]['wg_max_dir'] !== null &&  saa.Tuulikartta.data[i]['wg_1d'] !== null) {
 
           if (saa.Tuulikartta.data[i][param] < 10) { var iconAnchor = [30, 28] }
           if (saa.Tuulikartta.data[i][param] >= 10) { var iconAnchor = [25, 28] }
@@ -502,7 +506,39 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         }
       }
 
-      if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax' || param === 'radiation') {
+      if (param === 'dose_rate') {
+        // Handle external radiation dose rate - only for radiation stations
+        if (saa.Tuulikartta.data[i]['type'] === 'radiation') {
+          var paramValue = saa.Tuulikartta.data[i]['DR_PT10M_avg']
+          if (paramValue !== null && paramValue !== undefined) {
+            var fillColor = Tuulikartta.resolveDoseRate(paramValue)
+            var hex = fillColor.substr(1)
+            hex = 'hex' + hex
+
+            var marker = L.marker(new L.LatLng(saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']),
+              {
+                interactive: true,
+                keyboard: false,
+                icon: Tuulikartta.createLabelIcon(hex, parseFloat(paramValue).toFixed(2))
+              })
+
+            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+            saa.Tuulikartta.data[i]['fmisid']),{
+              maxWidth: maxWidth
+            })
+            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+            marker.type = saa.Tuulikartta.data[i]['type']
+          }
+        }
+      }
+
+      if (param === 'air_activity') {
+        // Handle air radionuclide activity - TEMPORARILY DISABLED
+        // TODO: Implement proper display for radionuclide data
+      }
+
+      if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
 
         var fillColor = Tuulikartta.resolveTemperature(saa.Tuulikartta.data[i][param])
         var hex = fillColor.substr(1)
@@ -876,7 +912,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     }
 
     if (saa.Tuulikartta.timeValue === 'now') {
-      for (var i = 0; i < 100; i++) {
+      for (var i = 0; i < saa.Tuulikartta.data.length && i < 100; i++) {
         if (saa.Tuulikartta.data[i]['type'] === 'synop') {
 	        var time = moment(saa.Tuulikartta.data[i]['time'], ['YYYY-MM-DDTHH:mm:ssZ'])
 	        var timestring = time.format('DD.MM.YYYY HH:mm')
@@ -888,16 +924,65 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     }
   }
 
-  // oli ennen populateInfoWindow
+  // ---------------------------------------------------------
+  // populate infowindow with observations
+  // ---------------------------------------------------------
+
+  Tuulikartta.populateInfoWindow = function (data,fmisid) {
+    var location = { lat: parseFloat(data['lat']), lng: parseFloat(data['lon']) }
+    var time = Tuulikartta.timeTotime(data['epochtime'])
+    var latlon = data['lat'] + ',' + data['lon']
+
+    if (L.Browser.mobile) {
+      maxWidth = 250
+    } else {
+      maxWidth = 650
+    }
+
+    if (data['type'] === 'synop') {
+      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['synop']+'</span> <br>'
+    } else {
+      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['road']+'</span> <br>'
+    }
+
+    var output = '<div style="text-align:center;">'
+    output += '<b>'+translations[window.selectedLanguage]['observationStation']+': </b>' + data['station'] + '<br>'
+    output += stationType
+
+    if (saa.Tuulikartta.timeValue === 'now') {
+      output += '<b>'+translations[window.selectedLanguage]['latestObservation']+': </b>' + time + '<br>'
+    } else {
+      output += '<b>'+translations[window.selectedLanguage]['observationTime']+': </b>' + time + '<br>'
+    }
+    output += '</div>'
+
+    output += `<div id="graph-box-loader" style="text-align: center;"></div>`;
+    output += `<div id="graph-box" style="width:${maxWidth}px;">`
+    output += `<div id="owl-carousel-chart-${fmisid}" class="owl-carousel owl-theme">`
+    output += `<div id="weather-chart-${fmisid}_windrose"></div>`
+    output += `<div id="weather-chart-${fmisid}"></div>`
+    output += `<div id="weather-chart-${fmisid}_alt"></div>`
+    output += `<div id="weather-chart-${fmisid}_alt2"></div>`
+    output += `<div id="weather-chart-${fmisid}_radiation"></div>`
+    output += `<div id="weather-chart-${fmisid}_air_radio"></div>`
+    output += '</div>'
+    output += `</div>`
+
+    return output
+  }
 
   window.resolveGraphStartposition = function(value) {
     if(value === 'ws_10min' || value === 'wg_10min' || value === 'ws_1d' || value === 'wg_1d')
     return 1
-    else if(value === 'ri_10min' || value === 'ri_10min' || value === 'rr_1h' || value === 'rr_1d' || value === 't2m' || value === 'dewpoint' || value === 'tmax' || value === 'tmin' || value === 'radiation' || value === 'wawa')
+    else if(value === 'ri_10min' || value === 'ri_10min' || value === 'rr_1h' || value === 'rr_1d' || value === 't2m' || value === 'dewpoint' || value === 'tmax' || value === 'tmin' || value === 'wawa')
     return 2
     else if(value === 'vis' || value === 'n_man')
     return 3
-    else 
+    else if(value === 'dose_rate')
+    return 4
+    else if(value === 'air_activity')
+    return 5
+    else
     return 1
   }
 
