@@ -511,11 +511,15 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
         if (saa.Tuulikartta.data[i]['type'] === 'radiation') {
           var paramValue = saa.Tuulikartta.data[i]['DR_PT10M_avg']
           if (paramValue !== null && paramValue !== undefined) {
+            var fillColor = Tuulikartta.resolveDoseRate(paramValue)
+            var hex = fillColor.substr(1)
+            hex = 'hex' + hex
+
             var marker = L.marker(new L.LatLng(saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']),
               {
                 interactive: true,
                 keyboard: false,
-                icon: Tuulikartta.createLabelIcon('textLabelclass', parseFloat(paramValue).toFixed(2))
+                icon: Tuulikartta.createLabelIcon(hex, parseFloat(paramValue).toFixed(2))
               })
 
             marker.addTo(saa.Tuulikartta.markerGroupSynop)
@@ -908,7 +912,7 @@ saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/raste
     }
 
     if (saa.Tuulikartta.timeValue === 'now') {
-      for (var i = 0; i < 100; i++) {
+      for (var i = 0; i < saa.Tuulikartta.data.length && i < 100; i++) {
         if (saa.Tuulikartta.data[i]['type'] === 'synop') {
 	        var time = moment(saa.Tuulikartta.data[i]['time'], ['YYYY-MM-DDTHH:mm:ssZ'])
 	        var timestring = time.format('DD.MM.YYYY HH:mm')

@@ -163,6 +163,20 @@ var saa = saa || {};
   }
 
   // ---------------------------------------------------------
+  // Resolve external radiation dose rate to color (STUK)
+  // ---------------------------------------------------------
+
+  Tuulikartta.resolveDoseRate = function (dose) {
+    dose = parseFloat(dose)
+    if (dose < 0.10) return '#d4ffff'
+    if (dose >= 0.10 && dose < 0.20) return '#ccffcc'
+    if (dose >= 0.20 && dose < 0.30) return '#ffff99'
+    if (dose >= 0.30 && dose < 0.40) return '#ffcc00'
+    if (dose >= 0.40) return '#ff3300'
+    return '#ccffcc'
+  }
+
+  // ---------------------------------------------------------
   // Resolve WaWa weather code to text and color
   // ---------------------------------------------------------
 
