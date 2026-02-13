@@ -19,7 +19,9 @@ $synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
 
 $synopdata = $dataMiner->serializeData($synopdata);
 
+print json_encode($synopdata);
 // STUK observations
+/*
 $radiationSettings = array();
 $radiationSettings["stationtype"]    = "radiation";
 $radiationSettings["parameters"]     = "DR_PT10M_avg";
@@ -33,4 +35,5 @@ $airRadioData = [];
 // Combine all data
 $combinedData = array_merge($synopdata, $radiationData);
 
-print json_encode($combinedData);
+
+*/
