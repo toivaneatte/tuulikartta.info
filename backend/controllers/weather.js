@@ -9,11 +9,11 @@ const redisClient = require('../utils/redisClient');
 const config = csvReader.readConfig();
 const xmlParser = new xml2js.Parser();
 
-/* URL for fetching weather data from FMI Open Data API in Tuulikartta.info:
+/* URL for fetching weather data from FMI Open Data API in Tuulikartta.info:*/
 
-http://opendata.fmi.fi/wfs?request=getFeature&stationtype=synop&parameters=ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint&storedquery_id=fmi::observations::weather::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326&timestep=10&starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z
+const FMIWeatherURL = "http://opendata.fmi.fi/wfs?request=getFeature&stationtype=synop&parameters=ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint&storedquery_id=fmi::observations::weather::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326&timestep=10&starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z";
 
-*/
+
 
 /* The new URL for fetching weather data from FMI Open Data API:
 
@@ -96,10 +96,24 @@ const fetchNewFMIData = async (url) => {
   return final;
 }
 
+const redisMemoryInfo = async () => {
+  try {
+    const info = await redisClient.info('memory');
+
+    const used = info.match(/used_memory_human:(.*)/)[1].trim();
+    const max = info.match(/maxmemory_human:(.*)/)[1].trim();
+
+    console.log('Used:', used);
+    console.log('Max:', max);
+  } catch (err) {
+    logger.error(`Error fetching Redis memory info: ${err.message}`);
+  }
+}
+
 // ---------------------------------------------------------
-// GET /api/weather endpoint for fetching weather station data from FMI API
+// GET /api/weather endpoint for fetching weather station data from FMI API and returning it as JSON
 // ---------------------------------------------------------
-weatherRouter.get('/', async (req, res) => {
+weatherRouter.get('/json', async (req, res) => {
   const cached = await redisClient.get('weather:stations'); // Check Redis cache first
 
   if (cached) {
@@ -112,15 +126,66 @@ weatherRouter.get('/', async (req, res) => {
   // get data from FMI API
   const stations = await fetchNewFMIData(url);
 
-  // cache the data in Redis for 1 hour
+  // cache the data in Redis for 30 minutes
   await redisClient.set(
     'weather:stations',
     JSON.stringify(stations),
-    { EX: 3600 }
+    { EX: 1800 }
   );
-  logger.info('Cached weather station data in Redis for 1 hour');
+  logger.info('Cached weather station data in Redis for 30 minutes');
   // return that data
   res.send(stations);
+})
+
+// ---------------------------------------------------------
+// GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
+// ---------------------------------------------------------
+weatherRouter.get('/xml', async (req, res) => {
+  try {
+    // check cache first 
+    const cached = await redisClient.get('weather:xml');
+
+    if (cached) {
+      logger.info('Returning cached weather station data');
+      redisMemoryInfo(); // get info about Redis memory usage
+      return res.send(cached);
+    }
+
+    // continue fetching if not in cache
+    logger.info('No cached data found, fetching from FMI API');
+    const xmlData = await fetch(FMIWeatherURL)
+      .then(r => r.text())
+      .catch(err => {
+        logger.error(`Error fetching weather data from FMI API: ${err.message}`);
+        throw new Error('Failed to fetch weather data from FMI API');
+      });
+
+    // cache the data in Redis for 30 minutes
+    await redisClient.set(
+      'weather:xml',
+      xmlData,
+      { EX: 1800 }
+    );
+    logger.info('Cached weather XML data in Redis for 30 minutes');
+    redisMemoryInfo(); // get info about Redis memory usage
+
+    // return xml data as response
+    res.set('Content-Type', 'application/xml');
+    res.send(xmlData);
+
+  } catch (err) {
+    logger.error(`Error in /api/weather/xml: ${err.message}`);
+    res.status(500).send({ error: 'Internal server error' });
+  }
+
+  
+})
+
+// ---------------------------------------------------------
+// Other endpoints return 404 Not Found
+// ---------------------------------------------------------
+weatherRouter.get('/', (req, res) => {
+  return res.status(404).send({ error: 'Not found' });
 })
 
 module.exports = weatherRouter
