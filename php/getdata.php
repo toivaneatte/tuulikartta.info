@@ -30,6 +30,16 @@ $radiationData = $dataMiner->multipointcoverage($timestamp, $radiationSettings, 
 // TODO: Implement proper parsing for radionuclide data
 $airRadioData = [];
 
+$nuclideSettings = array();
+$nuclideSettings["storedquery_id"] = "stuk::observations::air::radionuclide-activity-concentration::latest::multipointcoverage";
+$nuclideSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+$nuclideSettings["timestep"]       = "10";
+$nuclideData = $dataMiner->nuclideMultipointcoverage($timestamp, $nuclideSettings, false);
+
+// Combine all data
+$combinedData = array_merge($synopdata, $radiationData, $nuclideData);
+$synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
+
 // Combine all data
 $combinedData = array_merge($synopdata, $radiationData);
 

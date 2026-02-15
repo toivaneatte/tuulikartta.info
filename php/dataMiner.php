@@ -228,6 +228,144 @@ class DataMiner{
     }
 
     /**
+     * Parse observation data from multipointcoverage for radionuclide data
+     * @param    timestamp timestamp or now if latest observations
+     * @param    settings array that contains required query parameters
+     * @return   graph true if graph dat request
+     */
+    public function nuclideMultipointcoverage($timestamp,$settings,$graph) {
+        date_default_timezone_set("UTC");
+
+        $url = "";
+        $url .= "http://opendata.fmi.fi/wfs?request=getFeature";
+
+        foreach($settings as $key => $value) {
+          $url .= "&{$key}={$value}";
+        }
+
+        $url = $url . $this->setTime($timestamp, $graph);
+        $ctx = stream_context_create(array('http'=>
+            array(
+                'timeout' => 240,  //1200 Seconds is 20 Minutes
+            )
+        ));
+        $xmlData = file_get_contents($url, false, $ctx);
+        if($xmlData == false) {
+            return [];
+        }
+        if($xmlData == "") {
+            return [];
+        }
+
+        $resultString = simplexml_load_string($xmlData);
+
+        $result = array();
+        $tmp = array();
+        $final = [];
+
+        $data = $resultString->children("wfs", true);
+        $params = explode(",", $settings["parameters"]);
+
+        $result1 = [];
+        $result2 = [];
+        foreach ($data->member as $key => $locations) {
+
+        $members = $locations
+                    -> children("omso", true)->PointObservation;
+
+        // station names, fmisid's and times
+        foreach ($members as $member) {
+                $tmp = [];
+                $name = $member -> children ("om", true)->featureOfInterest
+                                -> children ("sams", true)->SF_SpatialSamplingFeature
+                                -> children ("sam", true)->sampledFeature
+                                -> children ("target", true)->Location
+                                -> children ("gml", true)->name;
+
+                $fmisid = $member -> children ("om", true)->featureOfInterest
+                                -> children ("sams", true)->SF_SpatialSamplingFeature
+                                -> children ("sam", true)->sampledFeature
+                                -> children ("target", true)->Location
+                                -> children ("gml", true)->identifier;
+
+                $time = $member -> children("om", true)->resultTime
+                                -> children("gml", true)->TimeInstant
+                                -> children("gml", true)->timePosition;
+
+                $tmp["station"] = (string)$name;
+                $tmp["fmisid"] = (int)$fmisid;
+                $tmp["time"] = (string)$time;
+                array_push($result1,$tmp);
+            }
+/*
+            // station names and fmisid's
+            $stations = $observations
+                    -> children("om", true)->featureOfInterest
+                    -> children("sams", true)->SF_SpatialSamplingFeature
+                    -> children("sam", true)->sampledFeature
+                    -> children("target", true)->Location;
+
+                    foreach ($stations as $station) {
+                $tmp = [];
+                $name = $station -> children ("gml", true)->name;
+                $fmisid = $station -> children ("gml", true)->identifier;
+
+                $tmp["station"] = (string)$name;
+                $tmp["fmisid"] = (int)$fmisid;
+                array_push($result1,$tmp);
+            }*/
+
+        // station names and coordinates
+            $stations = $locations
+                    -> children("omso", true)->PointObservation
+                    -> children("om", true)->featureOfInterest
+                    -> children("sams", true)->SF_SpatialSamplingFeature
+                    -> children("sams", true)->shape
+                    -> children("gml", true)->Point;
+
+            foreach ($stations as $station) {
+                $tmp = [];
+                $name = $station > children ("gml", true)->name;
+                $pos = $station  -> children ("gml", true)->pos;
+
+                $tmp["station"] = (string)$name;
+                $tmp["pos"] = (string)$pos;
+                array_push($result2,$tmp);
+            }
+
+            // merge station arrays
+            $stations = [];
+            foreach($result1 as $key => $station) {
+                $stations[$key] = array_merge($result1[$key],$result2[$key]);
+            }
+/*
+            // tässä kohtaa lisättäisiin myös datetime (toimiiko tää :D)
+            $resultTimes = $locations
+                    -> children("omso", true)->PointObservation
+                    -> children("om", true)->resultTime
+                    -> children("gml", true)->TimeInstant
+                    -> children("gml", true)->timePosition;
+
+            $timestamps = [];
+            foreach ($resultTimes as $resultTime) {
+                $tmp = [];
+                $time = (string)$resultTime; // emt onko tämä UTC vai paikallinen
+                $tmp["time"] = $time;
+                array_push($timestamps,$tmp);
+            }*/
+
+            $observations = $locations
+                    -> children("omso", true)->PointObservation
+                    -> children("om", true)->result
+                    -> children("gmlcov", true)->MultiPointCoverage
+                    -> children("gml", true)->rangeSet
+                    -> children("gml", true)->DataBlock
+                    -> children("gml", true)->rangeParameters
+                    -> children("gml", true)->doubleOrNilReasonTupleList;
+
+                    // borde nu få observationerna in i stationstabellen
+        }
+    /**
     *
     * Get observation data from timeseries
     * @param    timestamp timestamp or now if latest observations
