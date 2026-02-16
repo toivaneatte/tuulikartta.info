@@ -117,12 +117,12 @@ var saa = saa || {};
       center: [lat, lon],
       attribution: 'Tuulikartta.info'
     })
-saa.Tuulikartta.baselayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
-      attribution: '<a href="https://www.tuulikartta.info">Tuulikartta.info</a>'
+
+    
+    saa.Tuulikartta.baselayer = L.tileLayer('http://localhost:8080/tile/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map)
 
-    saa.Tuulikartta.namelayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
-    }).addTo(map)
 
     saa.Tuulikartta.map = map
     Tuulikartta.initWMS()
