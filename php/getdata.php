@@ -16,6 +16,7 @@ $settings["storedquery_id"] = "fmi::observations::weather::multipointcoverage";
 $settings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
 $settings["timestep"]       = "10";
 $synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
+error_log("synop data handled");
 
 $synopdata = $dataMiner->serializeData($synopdata);
 
@@ -25,6 +26,7 @@ $radiationSettings["stationtype"]    = "radiation";
 $radiationSettings["parameters"]     = "DR_PT10M_avg";
 $radiationSettings["storedquery_id"] = "stuk::observations::external-radiation::latest::multipointcoverage";
 $radiationData = $dataMiner->multipointcoverage($timestamp, $radiationSettings, false);
+error_log("radiation data handled");
 
 // Se harvemmin päivittyvä radionuklididata vaatii erillisen käsittelyn, joten jätetään se toistaiseksi pois.
 // TODO: Implement proper parsing for radionuclide data
@@ -35,12 +37,11 @@ $nuclideSettings["storedquery_id"] = "stuk::observations::air::radionuclide-acti
 $nuclideSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
 $nuclideSettings["timestep"]       = "10";
 $nuclideData = $dataMiner->nuclideMultipointcoverage($timestamp, $nuclideSettings, false);
-
-// Combine all data
-$combinedData = array_merge($synopdata, $radiationData, $nuclideData);
-$synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
+error_log("nuclide data handled");
 
 // Combine all data
 $combinedData = array_merge($synopdata, $radiationData);
+error_log("data combined");
 
-print json_encode($combinedData);
+print json_encode($nuclideData);
+//print json_encode($combinedData);
