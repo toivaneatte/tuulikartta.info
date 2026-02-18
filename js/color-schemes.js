@@ -9,6 +9,17 @@ var saa = saa || {};
   'use strict'
 
   // ---------------------------------------------------------
+  // Load color thresholds from external JSON config
+  // ---------------------------------------------------------
+
+  var colorConfig = null;
+
+  fetch('config/color-thresholds.json')
+    .then(function (response) { return response.json() })
+    .then(function (data) { colorConfig = data })
+    .catch(function (err) { console.warn('Could not load color-thresholds.json, using defaults:', err) })
+
+  // ---------------------------------------------------------
   // Resolve wind speed to color code object
   // ---------------------------------------------------------
 
@@ -168,6 +179,16 @@ var saa = saa || {};
 
   Tuulikartta.resolveDoseRate = function (dose) {
     dose = parseFloat(dose)
+    if (colorConfig && colorConfig.doseRate) {
+      for (var i = 0; i < colorConfig.doseRate.length; i++) {
+        var t = colorConfig.doseRate[i]
+        var aboveMin = (t.min === null || dose >= t.min)
+        var belowMax = (t.max === null || dose < t.max)
+        if (aboveMin && belowMax) return t.hex
+      }
+      return colorConfig.doseRateDefault || '#ccffcc'
+    }
+    // Fallback if JSON not yet loaded
     if (dose < 0.10) return '#d4ffff'
     if (dose >= 0.10 && dose < 0.20) return '#ccffcc'
     if (dose >= 0.20 && dose < 0.30) return '#ffff99'
