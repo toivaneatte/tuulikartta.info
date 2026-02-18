@@ -11,5 +11,10 @@
         <title>Kelikamera</title>
     </head>
     <body>
-        <h1>Kelikamera</h1>
+        <div id="Station" style="font-size: 32px;"></div>
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            const stationName = urlParams.get('station');
+            document.getElementById('Station').textContent = 'Asema: ' + stationName;
+        </script>
     </body>

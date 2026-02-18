@@ -375,15 +375,12 @@ var saa = saa || {};
       // Store latest time for popup
       feature.latestUpdate = latestTime ? latestTime.toISOString() : null;
       
-      // Bind popup with initial content
-      /*
-      marker.bindPopup(camera.populateInfoWindow(feature), {
-        maxWidth: maxWidth
+      marker.on('click', function() {
+        let stationName = feature.properties.name;
+        // Open new tab showing pictures
+        window.open('/html/camera.html?station=' + stationName, '_blank'); 
       });
-*/
-      marker.on('click', function () {
-        window.open('html/camera.html', '_blank');
-      });
+      
 /*
       // Handle popup open: load detailed data and init carousel
       marker.on('popupopen', (function(stationFeature) {
