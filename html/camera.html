@@ -9,12 +9,38 @@
         <link rel="apple-touch-icon" href="favicon/android-chrome-192x192.png">
         <meta name="theme-color" content="#397CAC">
         <title>Kelikamera</title>
+        <style>
+        </style>
     </head>
     <body>
+        <header>
+            <h1>Kelikamerat</h1>
+        </header>
+        <main>
+            <h2 id="stationName"></h2>
+            <div id="mainPic">
+                <!--pääkuva tähän-->
+            </div>
+            <div id="buttons">
+                <!--buttons eri kuvasuunnille tai jotain-->
+            </div>
+            <div id="miniPics">
+                <!--pienet kuvat jos ne halutaan-->
+            </div>
+            <div id="stationInfo">
+                <!--sääasematietoja + aseman nimi configure tiedostoo varten-->
+            </div>
+        </main>
+        <footer>
+
+        </footer>
+
+        <!--
         <div id="Station" style="font-size: 32px;"></div>
         <script>
             const urlParams = new URLSearchParams(window.location.search);
             const stationName = urlParams.get('station');
             document.getElementById('Station').textContent = 'Asema: ' + stationName;
         </script>
+        -->
     </body>

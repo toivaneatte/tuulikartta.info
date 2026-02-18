@@ -378,9 +378,16 @@ var saa = saa || {};
       marker.on('click', function() {
         let stationName = feature.properties.name;
         // Open new tab showing pictures
-        window.open('/html/camera.html?station=' + stationName, '_blank'); 
+        let w = window.open('/html/camera.html?station=' + stationName, '_blank'); 
+        // kutsu api funktioo
+        camera.apiCall(w, feature);
       });
-      
+
+      camera.apiCall = function(w, feature) {
+        // api funktio muuokkaa asemanimiä ja laittaa selaimeen
+        w.document.getElementById("stationName").textContent = "Kelikamerat - " + feature.properties.name;
+      };
+
 /*
       // Handle popup open: load detailed data and init carousel
       marker.on('popupopen', (function(stationFeature) {
