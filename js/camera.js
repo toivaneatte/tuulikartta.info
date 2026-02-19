@@ -391,7 +391,51 @@ var saa = saa || {};
           `Asema - ${cleanName}`;
 
           // hakee kuvat
+          const stationId = feature.properties && feature.properties.id;
+          camera.loadStationDetails(stationId, function(details, error) {
+            const station = camera.normalizeStation(details, feature);
+            
+            if (!station.latestUpdate && feature.latestUpdate) {
+              station.latestUpdate = feature.latestUpdate;
+            }
+            
+            const now = moment();
+            const latestTime = camera.resolveLatestTime(station);
+            const ageMinutes = latestTime ? Math.round(moment.duration(now.diff(latestTime)).asMinutes()) : null;
+            
+            /*if (ageMinutes !== null) {
+              output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: ${ageMinutes} ${getTranslation('minutesAgo')}</span>`;
+            } else {
+              output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: -</span>`;
+            }
+            output += '</div>';*/
 
+            // Collect presets with images
+            const presets = station.properties.presets || [];
+            const imagePresets = [];
+            
+            for (let i = 0; i < presets.length; i++) {
+              const presetUrl = camera.resolvePresetImageUrl(presets[i]);
+              if (presetUrl) {
+                imagePresets.push({ preset: presets[i], url: presetUrl });
+
+              }
+            } 
+
+            for (let i = 0; i < imagePresets.length; i++) {
+              const preset = imagePresets[i].preset;
+              const presetTitle = camera.resolvePresetTitle(preset);
+              // Build the HTML for the image
+              let output = ` <img src="${imagePresets[i].url}" style="width:${imageWidth}px;" alt="${presetTitle}"> `;
+              // Insert it into the popup window 
+              if (i == 0) {
+                w.document.getElementById("mainPic").innerHTML = output;
+              }
+              else {
+                w.document.getElementById("miniPics").innerHTML += output;
+              }
+            }
+          });
           // hakee asematiedot
 
         }
