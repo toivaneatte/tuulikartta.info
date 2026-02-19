@@ -386,8 +386,9 @@ var saa = saa || {};
       camera.apiCall = function(w, feature) {
         // api funktio muuokkaa asemanimiä ja laittaa selaimeen
         w.onload = function () {
+          let cleanName = feature.properties.name.substring(feature.properties.name.indexOf("_") + 1).replace("_", " ");
           w.document.getElementById("stationName").textContent =
-          "Kelikamera - " + feature.properties.name;
+          "Kelikamera - " + cleanName;
         }
       };
 
