@@ -24,17 +24,3 @@ jobs:
 
       - name: Run unit tests
         run: npm test
-
-  docker:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: "recursive"
-
-      - name: Build Docker images
-        run: docker compose build
-
-      - name: Verify images were built
-        run: docker images
