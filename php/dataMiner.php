@@ -52,6 +52,29 @@ class DataMiner{
       return $url;
     }
 
+        private function setTimeRange($timestamp, $graph, $rangeDays) {
+            if (!$graph) {
+                return "";
+            }
+
+            $days = is_numeric($rangeDays) ? intval($rangeDays) : 1;
+            if ($days < 1) {
+                $days = 1;
+            }
+
+            if ($timestamp === "now") {
+                $endtime = new DateTime();
+            } else {
+                $endtime = new DateTime($timestamp, new DateTimeZone('UTC'));
+            }
+
+            $end = $endtime->format('Y-m-d\TH:i:s\Z');
+            $start = $endtime->sub(new DateInterval('P'.$days.'D'));
+            $start = $start->format('Y-m-d\TH:i:s\Z');
+
+            return "&starttime={$start}&endtime={$end}";
+        }
+
     /**
     *
     * Parse observation data from WFS multipointcoverage
@@ -233,7 +256,7 @@ class DataMiner{
      * @param    settings array that contains required query parameters
      * @return   graph true if graph dat request
      */
-    public function nuclideMultipointcoverage($timestamp,$settings,$graph) {
+    public function nuclideMultipointcoverage($timestamp,$settings,$graph,$rangeDays = 150) {
         date_default_timezone_set("UTC");
 
         $url = "";
@@ -243,8 +266,7 @@ class DataMiner{
           $url .= "&{$key}={$value}";
         }
 
-        //$url = $url . $this->setTime($timestamp, $graph);
-        error_log($url);
+        $url = $url . $this->setTimeRange($timestamp, $graph, $rangeDays);
         $ctx = stream_context_create(array('http'=>
             array(
                 'timeout' => 240,  //1200 Seconds is 20 Minutes
@@ -260,212 +282,96 @@ class DataMiner{
 
         $resultString = simplexml_load_string($xmlData);
 
-        $result = array();
-        $tmp = array();
         $final = [];
-
         $data = $resultString->children("wfs", true);
 
-        $result1 = [];
-        $result2 = [];
-        foreach ($data->member as $key => $member) {
-            error_log("member found");
-        // allt rullas igenom för varje member = dataset!!
+        foreach ($data->member as $member) {
+            $tmp = [];
 
-        // station names, fmisid's, times, coordinates
-        $tmp = [];
-        $name = $member -> children("omso", true)->PointObservation
-                        -> children ("om", true)->featureOfInterest
-                        -> children ("sams", true)->SF_SpatialSamplingFeature
-                        -> children ("sam", true)->sampledFeature
-                        -> children ("target", true)->Location
-                        -> children ("gml", true)->name;
+            $name = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sam", true)->sampledFeature
+                            ->children("target", true)->Location
+                            ->children("gml", true)->name;
 
-        error_log($name);
+            $fmisid = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sam", true)->sampledFeature
+                            ->children("target", true)->Location
+                            ->children("gml", true)->identifier;
 
-        $fmisid = $member -> children("omso", true)->PointObservation
-                        -> children ("om", true)->featureOfInterest
-                        -> children ("sams", true)->SF_SpatialSamplingFeature
-                        -> children ("sam", true)->sampledFeature
-                        -> children ("target", true)->Location
-                        -> children ("gml", true)->identifier;
+            $time = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->resultTime
+                            ->children("gml", true)->TimeInstant
+                            ->children("gml", true)->timePosition;
 
-        $time = $member -> children("omso", true)->PointObservation
-                        -> children("om", true)->resultTime
-                        -> children("gml", true)->TimeInstant
-                        -> children("gml", true)->timePosition;
+            $pos = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sams", true)->shape
+                            ->children("gml", true)->Point
+                            ->children("gml", true)->pos;
 
-        $pos = $member -> children("omso", true)->PointObservation
-                        -> children("om", true)->featureOfInterest
-                        -> children("sams", true)->SF_SpatialSamplingFeature
-                        -> children("sams", true)->shape
-                        -> children("gml", true)->Point
-                        -> children ("gml", true)->pos;
+            $parameters = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->result
+                            ->children("gmlcov", true)->MultiPointCoverage
+                            ->children("gmlcov", true)->rangeType
+                            ->children("swe", true)->DataRecord
+                            ->children("swe", true)->field;
 
-        $parameters = $member -> children("omso", true)->PointObservation
-                        -> children("om", true)->result
-                        -> children("gmlcov", true)->MultiPointCoverage
-                        -> children("gmlcov", true)->rangeType
-                        -> children("swe", true)->DataRecord
-                        -> children("swe", true)->field;
-        
-        //$parameters = explode(" ",(string)$parameters);
+            $observations = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->result
+                            ->children("gmlcov", true)->MultiPointCoverage
+                            ->children("gml", true)->rangeSet
+                            ->children("gml", true)->DataBlock
+                            ->children("gml", true)->doubleOrNilReasonTupleList;
 
-        $observations = $member -> children("omso", true)->PointObservation
-                    -> children("om", true)->result
-                    -> children("gmlcov", true)->MultiPointCoverage
-                    -> children("gml", true)->rangeSet
-                    -> children("gml", true)->DataBlock
-                    -> children("gml", true)->doubleOrNilReasonTupleList;
-
-                    error_log($observations);
-      /* $observations = explode(" ",(string)$observations);
-
-        $dataResults = [];
-        $i = 0;
-        foreach($parameters as $parameter) {
-            $paramName = (string)$parameter->children("swe", true)->Quantity
-                                        -> children("swe", true)->label;
-            $paramValue = $observations[$i];
-            $dataResults[$paramName] = $paramValue;
-            $i++;*/
-
-            //AI
             $observationsText = trim((string)$observations);
-        if ($observationsText === "") {
-            $observationsArr = [];
-        } else {
-            $observationsArr = preg_split('/\s+/', $observationsText);
+            $observationsArr = $observationsText === "" ? [] : preg_split('/\s+/', $observationsText);
+
+            $dataResults = [];
+            $i = 0;
+            foreach ($parameters as $parameter) {
+                $paramName = (string)$parameter['name'];
+                $paramValue = isset($observationsArr[$i]) ? $observationsArr[$i] : null;
+                if ($paramValue === "" || strtolower((string)$paramValue) === "nan") {
+                    $paramValue = null;
+                } elseif (is_numeric($paramValue)) {
+                    $paramValue = floatval($paramValue);
+                }
+                $dataResults[$paramName] = $paramValue;
+                $i++;
+            }
+
+            $posText = trim((string)$pos);
+            $posParts = $posText === "" ? [] : preg_split('/\s+/', $posText);
+            $lat = null;
+            $lon = null;
+            if (count($posParts) >= 2) {
+                $lon = (float)$posParts[0];
+                $lat = (float)$posParts[1];
+                if ($lat < 40 && $lon > 40) {
+                    $swap = $lat; $lat = $lon; $lon = $swap;
+                }
+            }
+
+            $timeValue = (string)$time;
+            $epochtime = $timeValue !== "" ? strtotime($timeValue) : null;
+
+            $tmp["station"]   = (string)$name;
+            $tmp["fmisid"]    = (int)$fmisid;
+            $tmp["time"]      = $timeValue;
+            $tmp["epochtime"] = $epochtime;
+            $tmp["lat"]       = $lat;
+            $tmp["lon"]       = $lon;
+            $tmp["type"]      = "air_radio";
+            foreach ($dataResults as $k => $v) {
+                $tmp[$k] = $v;
+            }
+            array_push($final, $tmp);
         }
-
-        $dataResults = [];
-        $i = 0;
-        foreach($parameters as $parameter) {
-            $paramName = (string)$parameter->children("swe", true)->Quantity
-                                -> children("swe", true)->label;
-            $paramValue = isset($observationsArr[$i]) ? $observationsArr[$i] : null;
-            if ($paramValue === "" || strtolower((string)$paramValue) === "nan") {
-                $paramValue = null;
-            } elseif (is_numeric($paramValue)) {
-                $paramValue = floatval($paramValue);
-            }
-            $dataResults[$paramName] = $paramValue;
-            $i++;
-        }
-
-        $tmp["station"] = (string)$name;
-        $tmp["fmisid"] = (int)$fmisid;
-        $tmp["time"] = (string)$time;
-        $tmp["pos"] = (string)$pos;
-        $tmp["data"] = $dataResults;
-        array_push($final,$tmp);
-        ///
-        /*foreach ($members as $member) {
-                $tmp = [];
-                $name = $member -> children("omso", true)->PointObservation
-                                -> children ("om", true)->featureOfInterest
-                                -> children ("sams", true)->SF_SpatialSamplingFeature
-                                -> children ("sam", true)->sampledFeature
-                                -> children ("target", true)->Location
-                                -> children ("gml", true)->name;
-
-                $fmisid = $member -> children("omso", true)->PointObservation
-                                -> children ("om", true)->featureOfInterest
-                                -> children ("sams", true)->SF_SpatialSamplingFeature
-                                -> children ("sam", true)->sampledFeature
-                                -> children ("target", true)->Location
-                                -> children ("gml", true)->identifier;
-
-                $time = $member -> children("omso", true)->PointObservation
-                                -> children("om", true)->resultTime
-                                -> children("gml", true)->TimeInstant
-                                -> children("gml", true)->timePosition;
-
-                $tmp["station"] = (string)$name;
-                $tmp["fmisid"] = (int)$fmisid;
-                $tmp["time"] = (string)$time;
-                array_push($result1,$tmp);
-            }
-/*
-            // station names and fmisid's
-            $stations = $observations
-                    -> children("om", true)->featureOfInterest
-                    -> children("sams", true)->SF_SpatialSamplingFeature
-                    -> children("sam", true)->sampledFeature
-                    -> children("target", true)->Location;
-
-                    foreach ($stations as $station) {
-                $tmp = [];
-                $name = $station -> children ("gml", true)->name;
-                $fmisid = $station -> children ("gml", true)->identifier;
-
-                $tmp["station"] = (string)$name;
-                $tmp["fmisid"] = (int)$fmisid;
-                array_push($result1,$tmp);
-            }
-
-        // station names and coordinates
-            $stations = $members
-                    -> children("om", true)->featureOfInterest
-                    -> children("sams", true)->SF_SpatialSamplingFeature
-                    -> children("sams", true)->shape
-                    -> children("gml", true)->Point;
-
-            foreach ($stations as $station) {
-                $tmp = [];
-                $name = $station > children ("gml", true)->name;
-                $pos = $station  -> children ("gml", true)->pos;
-
-                $tmp["station"] = (string)$name;
-                $tmp["pos"] = (string)$pos;
-                array_push($result2,$tmp);
-            }
-
-            // merge station arrays
-            $stations = [];
-            foreach($result1 as $key => $station) {
-                $stations[$key] = array_merge($result1[$key],$result2[$key]);
-            }
-/*
-            // tässä kohtaa lisättäisiin myös datetime (toimiiko tää :D)
-            $resultTimes = $locations
-                    -> children("omso", true)->PointObservation
-                    -> children("om", true)->resultTime
-                    -> children("gml", true)->TimeInstant
-                    -> children("gml", true)->timePosition;
-
-            $timestamps = [];
-            foreach ($resultTimes as $resultTime) {
-                $tmp = [];
-                $time = (string)$resultTime; // emt onko tämä UTC vai paikallinen
-                $tmp["time"] = $time;
-                array_push($timestamps,$tmp);
-            }
-
-            $parameters = $members
-                    -> children("om", true)->result
-                    -> children("gmlcov", true)->MultiPointCoverage
-                    -> children("gmlcov", true)->rangeType
-                    -> children("swe", true)->DataRecord
-                    -> children("swe", true)->field
-                    -> children("swe", true)->Quantity
-                    -> children("swe", true)->label;
-            $parameters = explode(" ",(string)$parameters);
-
-            $observations = $members
-                    -> children("om", true)->result
-                    -> children("gmlcov", true)->MultiPointCoverage
-                    -> children("gml", true)->rangeSet
-                    -> children("gml", true)->DataBlock
-                    -> children("gml", true)->rangeParameters
-                    -> children("gml", true)->doubleOrNilReasonTupleList;
-
-                    // borde nu få observationerna in i stationstabellen
-
-            $tmp = [];*/
-
-        }
-        error_log("nuclide data handled: dataminer");
         return $final;
     }
     /**

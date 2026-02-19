@@ -28,10 +28,6 @@ $radiationSettings["storedquery_id"] = "stuk::observations::external-radiation::
 $radiationData = $dataMiner->multipointcoverage($timestamp, $radiationSettings, false);
 error_log("radiation data handled");
 
-// Se harvemmin päivittyvä radionuklididata vaatii erillisen käsittelyn, joten jätetään se toistaiseksi pois.
-// TODO: Implement proper parsing for radionuclide data
-$airRadioData = [];
-
 $nuclideSettings = array();
 $nuclideSettings["storedquery_id"] = "stuk::observations::air::radionuclide-activity-concentration::latest::multipointcoverage";
 $nuclideSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
@@ -39,9 +35,48 @@ $nuclideSettings["timestep"]       = "10";
 $nuclideData = $dataMiner->nuclideMultipointcoverage($timestamp, $nuclideSettings, false);
 error_log("nuclide data handled");
 
+$airRadioData = [];
+foreach ($nuclideData as $entry) {
+	$lat = isset($entry["lat"]) ? $entry["lat"] : null;
+	$lon = isset($entry["lon"]) ? $entry["lon"] : null;
+
+	if (($lat === null || $lon === null) && isset($entry["pos"])) {
+		$posParts = preg_split('/\s+/', trim($entry["pos"]));
+		if (count($posParts) >= 2) {
+			$lat = floatval($posParts[0]);
+			$lon = floatval($posParts[1]);
+		}
+	}
+
+	if ($lat === null || $lon === null) {
+		continue;
+	}
+
+	$timeString = isset($entry["time"]) ? $entry["time"] : null;
+	$epochTime = isset($entry["epochtime"]) ? $entry["epochtime"] : null;
+	if ($epochTime === null && $timeString) {
+		$epochTime = strtotime($timeString);
+		if ($epochTime === false) {
+			$epochTime = null;
+		}
+	}
+
+	$airRadioData[] = [
+		"station" => isset($entry["station"]) ? $entry["station"] : "",
+		"fmisid" => isset($entry["fmisid"]) ? $entry["fmisid"] : null,
+		"lat" => floatval($lat),
+		"lon" => floatval($lon),
+		"time" => $timeString,
+		"epochtime" => $epochTime,
+		"type" => "air_radio",
+		"Pb-210" => isset($entry["Pb-210"]) ? $entry["Pb-210"] : null,
+		"Be-7" => isset($entry["Be-7"]) ? $entry["Be-7"] : null,
+		"Cs-137" => isset($entry["Cs-137"]) ? $entry["Cs-137"] : null
+	];
+}
+
 // Combine all data
-$combinedData = array_merge($synopdata, $radiationData);
+$combinedData = array_merge($synopdata, $radiationData, $airRadioData);
 error_log("data combined");
 
-print json_encode($nuclideData);
-//print json_encode($combinedData);
+print json_encode($combinedData);

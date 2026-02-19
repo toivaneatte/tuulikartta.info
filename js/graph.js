@@ -104,6 +104,7 @@ var saa = saa || {};
         html += '<div id="weather-chart-' + fmisid + '_alt" style="width:100%; height:400px;"></div>';
         html += '<div id="weather-chart-' + fmisid + '_alt2" style="width:100%; height:400px;"></div>';
         html += '<div id="weather-chart-' + fmisid + '_radiation" style="width:100%; height:400px;"></div>';
+        html += '<div id="weather-chart-' + fmisid + '_air_radio" style="width:100%; height:400px;"></div>';
         html += '</div>';
 
         $('#graph-box').html(html);
@@ -861,7 +862,6 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
                 font: '12px Roboto, sans-serif'
             }
         },
-        tickInterval: 100,
         minorTickInterval: 'auto',
         minorTickColor: '#f2f2f2'
     },
@@ -923,6 +923,14 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
                 }
             }
         }]
+    },
+    plotOptions: {
+        line: {
+            marker: {
+                enabled: true,
+                radius: 2
+            }
+        }
     }
 });
 

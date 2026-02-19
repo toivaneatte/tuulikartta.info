@@ -345,6 +345,8 @@ var saa = saa || {};
       var time = Tuulikartta.timeTotime(saa.Tuulikartta.data[i]['epochtime'])
       var latlon = saa.Tuulikartta.data[i]['lat'] + ',' + saa.Tuulikartta.data[i]['lon']
 
+      if (saa.Tuulikartta.data[i]['type'] === 'air_radio' && param !== 'air_activity') continue
+
       if (param == 'ws_10min' || param === 'wg_10min') {
         // Only show wind data for synop and road stations that have wind data
         if (saa.Tuulikartta.data[i]['type'] !== 'radiation' &&
@@ -534,8 +536,29 @@ var saa = saa || {};
       }
 
       if (param === 'air_activity') {
-        // Handle air radionuclide activity - TEMPORARILY DISABLED
-        // TODO: Implement proper display for radionuclide data
+        if (saa.Tuulikartta.data[i]['type'] === 'air_radio') {
+          var icon = L.icon({
+            iconUrl: '../css/images/radiation_photo.png',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, 0]
+          })
+
+          var marker = L.marker([saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']],
+            {
+              icon: icon,
+              interactive: true,
+              keyboard: true
+            })
+
+          marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+          saa.Tuulikartta.data[i]['fmisid']),{
+            maxWidth: maxWidth
+          })
+          marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+          marker.type = 'air_radio'
+        }
       }
 
       if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
