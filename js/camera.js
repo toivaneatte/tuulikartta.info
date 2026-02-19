@@ -388,7 +388,12 @@ var saa = saa || {};
         w.onload = function () {
           let cleanName = feature.properties.name.substring(feature.properties.name.indexOf("_") + 1).replace("_", " ");
           w.document.getElementById("stationName").textContent =
-          "Kelikamera - " + cleanName;
+          `Asema - ${cleanName}`;
+
+          // hakee kuvat
+
+          // hakee asematiedot
+
         }
       };
 
