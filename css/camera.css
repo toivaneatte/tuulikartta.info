@@ -1,16 +1,46 @@
+body {
+    margin: 0;
+}
+main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+header {
+    background: linear-gradient(to bottom, #33ccff 13%, #3366ff 100%);
+    height: 4em;
+    align-content: center;
+}
+.container {
+    width: 70%;
+    margin: 0 auto;
+}
 h1 {
-    color: darkblue;
+    color: white;
+    margin: 0;
+    padding-left: 30px;
+}
+h2#stationName {
+    padding-left: 30px;
+}
+#mainPic {
+    margin: auto;
+    border-radius: 8px;
+    background-color: lightcyan;
+    align-content: center;
+    margin: auto;
+}
+#miniPics {
+    width: 20%;
 }
 #stationInfoView {
     display: flex;
     flex-direction: column;
     background-color: aliceblue;
-    margin: auto;
-    width: 70%;
     border-radius: 8px;
 }
 #viewHeader {
-    background-color: cornflowerblue;
+    background-color: dodgerblue;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
 }
