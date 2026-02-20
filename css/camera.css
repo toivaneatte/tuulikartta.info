@@ -1,0 +1,50 @@
+h1 {
+    color: darkblue;
+}
+#stationInfoView {
+    display: flex;
+    flex-direction: column;
+    background-color: aliceblue;
+    margin: auto;
+    width: 70%;
+    border-radius: 8px;
+}
+#viewHeader {
+    background-color: cornflowerblue;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+#viewContent {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.viewHeader {
+    margin: 0;
+    padding: 2px 6px;
+    color: white;
+}
+.groupHeader h4 {
+    margin: 0;
+    font-size: 1.5em;
+}
+.dataRow {
+    display: flex;
+    margin-bottom: 2px;
+}
+.title {
+    background-color: lavender;
+    width: 300px;
+    padding: 2px;
+}
+.value {
+    background-color: white;
+    width: 100px;
+    padding: auto;
+}
+.dataGroup {
+    list-style-type: none;
+    display: inline-block;
+    padding: 0px 20px;
+}
