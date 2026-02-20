@@ -11,6 +11,7 @@ var saa = saa || {};
 
   // Constants
   const API_BASE = 'https://tie.digitraffic.fi/api/weathercam/v1';
+  const WEATHER_API_BASE = 'https://tie.digitraffic.fi/api/weather/v1';
   const SYMBOL_PATH = '../symbols/';
   const MAX_CAMERA_AGE_MINUTES = 24 * 60;
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -248,6 +249,60 @@ var saa = saa || {};
     return metadata;
   };
 
+  camera.fetchWeatherData = function(stationId, callback) {
+
+    if (!stationId) {
+      callback(null, 'Missing station ID');
+      return;
+    }
+    
+    // Check cache first
+    const cached = stationCache.get(stationId);
+    if (cached) {
+      callback(cached, null);
+      return;
+    }
+
+    const metadataUrl = `${WEATHER_API_BASE}/stations/${encodeURIComponent(stationId)}`;
+    const dataUrl = `${WEATHER_API_BASE}/stations/${encodeURIComponent(stationId)}/data`;
+
+     $.when(
+      fetchWithTimeout(metadataUrl),
+      fetchWithTimeout(dataUrl)
+    ).done(function(metadataResponse, dataResponse) {
+      const metadata = metadataResponse[0];
+      const freshData = dataResponse[0];
+      
+      // Merge metadata with fresh data
+      if (metadata && metadata.properties && metadata.properties.sensors && 
+          freshData && freshData.sensorValues) {
+        
+        for (let i = 0; i < metadata.properties.sensors.length; i++) {
+          const metaSensor = metadata.properties.sensors[i];
+          
+          for (let j = 0; j < freshData.sensorValues.length; j++) {
+            if (freshData.sensorValues[j].id === metaSensor.id) {
+              metaSensor.measuredTime = freshData.sensorValues[j].measuredTime;
+              break;
+            }
+          }
+        }
+        
+        if (freshData.dataUpdatedTime) {
+          metadata.properties.dataUpdatedTime = freshData.dataUpdatedTime;
+        }
+      }
+      
+      stationCache.set(stationId, metadata);
+      callback(metadata, null);
+      
+    }).fail(function(xhr, status, error) {
+      const errorMsg = `API error: ${status} - ${error}`;
+      console.error('Failed to load station details:', errorMsg);
+      callback(null, errorMsg);
+    });
+  };
+
   // Initialize marker cluster
   saa.camera.markers = L.markerClusterGroup({
     spiderfyOnMaxZoom: false,
@@ -437,7 +492,13 @@ var saa = saa || {};
             }
           });
           // hakee asematiedot
+          let nearest = feature.properties.nearestWeatherStationId;
+          camera.fetchWeatherData(nearest, function(details, error) {
+            const station = camera.normalizeStation(details, feature);
 
+            let test = station.properties.sensorValues[0].shortName;
+            w.document.getElementById("temperature").textContent ='${test}';
+          });
         }
       };
 
