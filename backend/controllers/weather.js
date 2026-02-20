@@ -2,18 +2,13 @@ const weatherRouter = require('express').Router()
 const { request } = require('express')
 const xml2js = require('xml2js');
 
-const csvReader = require('../utils/csvReader');
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
+const config = require('../config');
 
-const config = csvReader.readConfig();
 const xmlParser = new xml2js.Parser();
 
 /* URL for fetching weather data from FMI Open Data API in Tuulikartta.info:*/
-
-const FMIWeatherURL = "http://opendata.fmi.fi/wfs?request=getFeature&stationtype=synop&parameters=ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint&storedquery_id=fmi::observations::weather::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326&timestep=10&starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z";
-
-
 
 /* The new URL for fetching weather data from FMI Open Data API:
 
@@ -96,6 +91,9 @@ const fetchNewFMIData = async (url) => {
   return final;
 }
 
+// ---------------------------------------------------------
+// Functions for showing Redis memory info
+// ---------------------------------------------------------
 const redisMemoryInfo = async () => {
   try {
     const info = await redisClient.info('memory');
@@ -153,7 +151,7 @@ weatherRouter.get('/xml', async (req, res) => {
 
     // continue fetching if not in cache
     logger.info('No cached data found, fetching from FMI API');
-    const xmlData = await fetch(FMIWeatherURL)
+    const xmlData = await fetch(config.FMIWeatherURL)
       .then(r => r.text())
       .catch(err => {
         logger.error(`Error fetching weather data from FMI API: ${err.message}`);
