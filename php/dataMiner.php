@@ -334,7 +334,7 @@ class DataMiner{
             $dataResults = [];
             $i = 0;
             foreach ($parameters as $parameter) {
-                $paramName = (string)$parameter['name'];
+                $paramName = (string)$parameter->attributes()['name'];
                 $paramValue = isset($observationsArr[$i]) ? $observationsArr[$i] : null;
                 if ($paramValue === "" || strtolower((string)$paramValue) === "nan") {
                     $paramValue = null;

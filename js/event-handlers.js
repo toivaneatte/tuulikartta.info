@@ -74,7 +74,7 @@ var saa = saa || {};
 
       Tuulikartta.clearMarkers()
       saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
-      saa.Tuulikartta.namelayer.bringToFront()
+      if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
       Tuulikartta.updateRadarData()
       getTrafficCamData = false
       $($("#map").find(".leaflet-control-select-cam")).removeClass('active');
@@ -90,7 +90,7 @@ var saa = saa || {};
       Tuulikartta.updateRadarData()
 
       saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
-      saa.Tuulikartta.namelayer.bringToFront()
+      if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
     })
 
     // Progress time (+1 hour)
@@ -122,7 +122,7 @@ var saa = saa || {};
       Tuulikartta.updateRadarData()
 
       saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
-      saa.Tuulikartta.namelayer.bringToFront()
+      if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
     })
 
     // Regress time (-1 hour)
@@ -153,7 +153,7 @@ var saa = saa || {};
       Tuulikartta.updateRadarData()
 
       saa.Tuulikartta.radarLayer.setParams({time: saa.Tuulikartta.timeStamp})
-      saa.Tuulikartta.namelayer.bringToFront()
+      if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
     })
 
     // Language selector

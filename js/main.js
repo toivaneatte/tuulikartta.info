@@ -147,7 +147,7 @@ var saa = saa || {};
     }).addTo(map);
 
     saa.Tuulikartta.map.on('overlayadd', function(e) {
-      saa.Tuulikartta.namelayer.bringToFront()
+      if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
     })
 
     /* settings sidebar */
@@ -1019,7 +1019,7 @@ var saa = saa || {};
       saa.Tuulikartta.map.eachLayer(function (layer) {
         if (layer instanceof L.TileLayer && 'wmsParams' in layer) {
           layer.setParams({})
-          saa.Tuulikartta.namelayer.bringToFront()
+          if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
         }
       })
     }

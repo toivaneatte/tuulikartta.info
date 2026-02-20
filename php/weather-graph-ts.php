@@ -111,7 +111,7 @@ function calcCumulativeSum($data) {
 }
 
   function normalizeDataKey($key) {
-    return strtolower(preg_replace('/[^a-z0-9]/', '', $key));
+    return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $key));
   }
 
   function getNormalizedValue($array, $normalized, $aliases) {
