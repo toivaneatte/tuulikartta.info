@@ -11,12 +11,8 @@ const FMIWeatherURL = "http://opendata.fmi.fi/wfs?request=getFeature&stationtype
 
 // Favourite weather stations for the application
 const favouriteStations = [
-  { name: 'Helsinki-Vantaa', fmisid: 100971, onOff: 1 },
-  { name: 'Helsinki-Kumpula', fmisid: 101044, onOff: 1 },
-  { name: 'Helsinki-Malmi', fmisid: 101045, onOff: 0 },
-  { name: 'Helsinki-Mäkelänkatu', fmisid: 101046, onOff: 1 },
-  { name: 'Helsinki-Pasila', fmisid: 101047, onOff: 0 },
-  { name: 'Helsinki-Vallila', fmisid: 101048, onOff: 1 },
+  { name: 'Pirkkala', fmisid: 101118, onOff: 1 },
+  { name: 'Tampere', fmisid: 101311, onOff: 1 },
 ];
 
 module.exports = {

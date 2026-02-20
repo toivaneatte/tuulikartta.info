@@ -1,3 +1,8 @@
+/*
+Author: Kasper Kivistö
+Description: This file contains the controller for handling weather-related API endpoints. It includes functions for fetching weather station data from the FMI Open Data API, caching it in Redis, and returning it as JSON or XML responses. The controller also includes a function for showing Redis memory usage information.
+*/
+
 const weatherRouter = require('express').Router()
 const { request } = require('express')
 const xml2js = require('xml2js');
@@ -8,18 +13,12 @@ const config = require('../config');
 
 const xmlParser = new xml2js.Parser();
 
-/* URL for fetching weather data from FMI Open Data API in Tuulikartta.info:*/
-
 /* The new URL for fetching weather data from FMI Open Data API:
-
 http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::forecast::harmonie::surface::point::multipointcoverage&place=helsinki&
-
 */
 
 /* Test URL 
-
 http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=helsinki&
-
 */
 
 // ---------------------------------------------------------
@@ -112,25 +111,94 @@ const redisMemoryInfo = async () => {
 // GET /api/weather endpoint for fetching weather station data from FMI API and returning it as JSON
 // ---------------------------------------------------------
 weatherRouter.get('/json', async (req, res) => {
-  const cached = await redisClient.get('weather:stations'); // Check Redis cache first
+  let cached = null; 
+
+  if (redisClient.isOpen) {
+    try {
+      cached = await redisClient.get('weather:json');
+    }
+    catch (err) {
+      logger.error(`Error accessing Redis cache: ${err.message}`);
+    }
+  } else {
+    logger.error('Redis client is not connected, skipping cache');
+  }
 
   if (cached) {
     logger.info('Returning cached weather station data');
     return res.send(JSON.parse(cached));
   }
 
-  const url = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=tampere&place=helsinki&'
-  
   // get data from FMI API
-  const stations = await fetchNewFMIData(url);
+  const stations = await fetchNewFMIData(config.FMIWeatherURL);
 
   // cache the data in Redis for 30 minutes
-  await redisClient.set(
-    'weather:stations',
-    JSON.stringify(stations),
-    { EX: 1800 }
-  );
-  logger.info('Cached weather station data in Redis for 30 minutes');
+  if (!redisClient.isOpen) {
+    logger.error('Redis client is not connected, skipping cache');
+  } else {
+    try {
+      await redisClient.set(
+        'weather:json',
+        JSON.stringify(stations),
+        { EX: 1800 }
+      );
+      logger.info('Cached weather station data in Redis for 30 minutes');
+    } catch (err) {
+      logger.error(`Error caching data in Redis: ${err.message}`);
+    }
+  }
+  // return that data
+  res.send(stations);
+})
+
+// ---------------------------------------------------------
+// GET /api/favourites endpoint for fetching weather station data from FMI API and returning it as JSON (same as /json but with only favourite stations) - this is the main endpoint for the frontend to use
+// ---------------------------------------------------------
+weatherRouter.get('/favourites', async (req, res) => {
+  let cached = null; 
+
+  if (redisClient.isOpen) {
+    try {
+      cached = await redisClient.get('weather:json');
+    }
+    catch (err) {
+      logger.error(`Error accessing Redis cache: ${err.message}`);
+    }
+  } else {
+    logger.error('Redis client is not connected, skipping cache');
+  }
+
+  if (cached) {
+    logger.info('Returning cached weather station data');
+    return res.send(JSON.parse(cached));
+  }
+
+  // start creating the URL
+  var baseURL = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&';
+  for ( const station of config.favouriteStations) {
+    if (station.onOff === 1) {
+      baseURL += `place=${station.name.toLowerCase()}&`
+    }
+  }
+  
+  // get data from FMI API
+  const stations = await fetchNewFMIData(baseURL);
+
+  // cache the data in Redis for 30 minutes
+  if (!redisClient.isOpen) {
+    logger.error('Redis client is not connected, skipping cache');
+  } else {
+    try {
+      await redisClient.set(
+        'weather:json',
+        JSON.stringify(stations),
+        { EX: 1800 }
+      );
+      logger.info('Cached weather station data in Redis for 30 minutes');
+    } catch (err) {
+      logger.error(`Error caching data in Redis: ${err.message}`);
+    }
+  }
   // return that data
   res.send(stations);
 })
@@ -139,6 +207,7 @@ weatherRouter.get('/json', async (req, res) => {
 // GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
 // ---------------------------------------------------------
 weatherRouter.get('/xml', async (req, res) => {
+  // TODO: add working code for if redis is disconnected
   try {
     // check cache first 
     const cached = await redisClient.get('weather:xml');
