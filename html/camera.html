@@ -9,11 +9,47 @@
         <meta name="theme-color" content="#397CAC">
         <title>Kelikamera</title>
         <style>
-            .container {
+            #stationInfoView {
                 display: flex;
+                flex-direction: column;
+                background-color: aliceblue;
+                margin: auto;
+                width: 70%;
+                border-radius: 8px;
+            }
+            #viewHeader {
+                background-color: cornflowerblue;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+            }
+            #viewContent {
+                display: flex;
+                flex-wrap: wrap;
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            .viewHeader {
+                margin: 0;
+                padding: 5px;
+                color: white;
             }
             .dataRow {
                 display: flex;
+                padding: 8px;
+                margin-bottom: 2px;
+            }
+            .title {
+                background-color: lavender;
+                width: 300px;
+            }
+            .value {
+                background-color: white;
+                width: 100px;
+            }
+            ul {
+                list-style-type: none;
+                display: inline-block;
+                padding: auto;
             }
         </style>
         <script src="../js/camera.js">
@@ -37,7 +73,7 @@
             <div id="stationInfoView" class="container">
                 <!--sääasematietoja (+ aseman nimi configure tiedostoo varten)-->
                 <div id="viewHeader">
-                    
+                    <p class="viewHeader">Lähimmän sääaseman tiedot: <span class="viewHeader" id="date"></span></p>
                 </div>
                 <div id="viewContent" class="container">
                     <ul class="dataGroup">
