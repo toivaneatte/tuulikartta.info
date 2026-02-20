@@ -303,9 +303,9 @@ class DataMiner{
                             ->children("gml", true)->identifier;
 
             $time = $member->children("omso", true)->PointObservation
-                            ->children("om", true)->resultTime
-                            ->children("gml", true)->TimeInstant
-                            ->children("gml", true)->timePosition;
+                            ->children("om", true)->phenomenonTime
+                            ->children("gml", true)->TimePeriod
+                            ->children("gml", true)->endPosition;
 
             $pos = $member->children("omso", true)->PointObservation
                             ->children("om", true)->featureOfInterest

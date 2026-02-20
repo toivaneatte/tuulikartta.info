@@ -346,6 +346,7 @@ var saa = saa || {};
       var latlon = saa.Tuulikartta.data[i]['lat'] + ',' + saa.Tuulikartta.data[i]['lon']
 
       if (saa.Tuulikartta.data[i]['type'] === 'air_radio' && param !== 'air_activity') continue
+      if (saa.Tuulikartta.data[i]['type'] === 'radiation' && param !== 'dose_rate') continue
 
       if (param == 'ws_10min' || param === 'wg_10min') {
         // Only show wind data for synop and road stations that have wind data
