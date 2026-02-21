@@ -152,58 +152,6 @@ weatherRouter.get('/json', async (req, res) => {
 })
 
 // ---------------------------------------------------------
-// GET /api/favourites endpoint for fetching weather station data from FMI API and returning it as JSON (same as /json but with only favourite stations) - this is the main endpoint for the frontend to use
-// ---------------------------------------------------------
-weatherRouter.get('/favourites', async (req, res) => {
-  let cached = null; 
-
-  if (redisClient.isOpen) {
-    try {
-      cached = await redisClient.get('weather:json');
-    }
-    catch (err) {
-      logger.error(`Error accessing Redis cache: ${err.message}`);
-    }
-  } else {
-    logger.error('Redis client is not connected, skipping cache');
-  }
-
-  if (cached) {
-    logger.info('Returning cached weather station data');
-    return res.send(JSON.parse(cached));
-  }
-
-  // start creating the URL
-  var baseURL = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&';
-  for ( const station of config.favouriteStations) {
-    if (station.onOff === 1) {
-      baseURL += `place=${station.name.toLowerCase()}&`
-    }
-  }
-  
-  // get data from FMI API
-  const stations = await fetchNewFMIData(baseURL);
-
-  // cache the data in Redis for 30 minutes
-  if (!redisClient.isOpen) {
-    logger.error('Redis client is not connected, skipping cache');
-  } else {
-    try {
-      await redisClient.set(
-        'weather:json',
-        JSON.stringify(stations),
-        { EX: 1800 }
-      );
-      logger.info('Cached weather station data in Redis for 30 minutes');
-    } catch (err) {
-      logger.error(`Error caching data in Redis: ${err.message}`);
-    }
-  }
-  // return that data
-  res.send(stations);
-})
-
-// ---------------------------------------------------------
 // GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
 // ---------------------------------------------------------
 weatherRouter.get('/xml', async (req, res) => {
