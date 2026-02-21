@@ -490,7 +490,21 @@ class DataMiner{
         $r_1d = 0;
         $tmin = 999;
         $tmax = -999;
+        $lastValidInstant = [];
+        $instantParams = ['ws_10min', 'wd_10min', 'wg_10min', 't2m', 'dewpoint', 'vis', 'rh', 'pressure', 'n_man', 'wawa', 'snow_aws', 'ri_10min'];
         for ($i = 0; $i <= count($data)-2; $i++) {
+            # track last valid instantaneous values for fallback
+            $hasAnyInstant = false;
+            foreach ($instantParams as $p) {
+                if (isset($data[$i][$p]) && $data[$i][$p] !== null && $data[$i][$p] !== "nan") {
+                    $lastValidInstant[$p] = $data[$i][$p];
+                    $hasAnyInstant = true;
+                }
+            }
+            if ($hasAnyInstant) {
+                $lastValidInstant['time'] = $data[$i]['time'];
+                $lastValidInstant['epochtime'] = $data[$i]['epochtime'];
+            }
             # check if fmisid value is the same as the next one (ie its the same station)
             if($data[$i]["fmisid"] === $data[$i+1]["fmisid"]) {
                 # check if observations are valid
@@ -526,6 +540,18 @@ class DataMiner{
                 if($wg_1d === -0.1){ $wg_1d = null; }
                 if($ws_max_dir === ""){ $ws_max_dir = null; }
                 if($wg_max_dir === ""){ $wg_max_dir = null; }
+                # fall back to last valid instantaneous values if latest entry has nulls
+                foreach ($instantParams as $p) {
+                    if (($data[$i][$p] === null || $data[$i][$p] === "nan") && isset($lastValidInstant[$p])) {
+                        $data[$i][$p] = $lastValidInstant[$p];
+                    }
+                }
+                if (isset($lastValidInstant['time']) &&
+                    ($data[$i]['ws_10min'] === null || $data[$i]['ws_10min'] === "nan") === false &&
+                    $data[$i]['time'] !== $lastValidInstant['time']) {
+                    $data[$i]['time'] = $lastValidInstant['time'];
+                    $data[$i]['epochtime'] = $lastValidInstant['epochtime'];
+                }
                 $data[$i]["ws_1d"] = $ws_1d;
                 $data[$i]["wg_1d"] = $wg_1d;
                 $data[$i]["wg_max_dir"] = $wg_max_dir;
@@ -543,6 +569,7 @@ class DataMiner{
                 $tmax = -999;
                 $wg_max_dir = "";
                 $ws_max_dir = "";
+                $lastValidInstant = [];
             }
 
         }
