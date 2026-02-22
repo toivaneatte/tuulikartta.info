@@ -55,9 +55,25 @@ describe("Color schemes", () => {
       expect(global.saa.Tuulikartta.resolveWindSpeed(24.9).code).to.equal("storm");
     });
 
+    it("returns severestorm for range 25-28 m/s", () => {
+      expect(global.saa.Tuulikartta.resolveWindSpeed(25).code).to.equal("severestorm");
+      expect(global.saa.Tuulikartta.resolveWindSpeed(26).code).to.equal("severestorm");
+      expect(global.saa.Tuulikartta.resolveWindSpeed(27.9).code).to.equal("severestorm");
+    });
+
+    it("returns extremestorm for range 28-32 m/s", () => {
+      expect(global.saa.Tuulikartta.resolveWindSpeed(28).code).to.equal("extremestorm");
+      expect(global.saa.Tuulikartta.resolveWindSpeed(30).code).to.equal("extremestorm");
+      expect(global.saa.Tuulikartta.resolveWindSpeed(31.9).code).to.equal("extremestorm");
+    });
+
     it("returns hurricane at 32 m/s", () => {
       const result = global.saa.Tuulikartta.resolveWindSpeed(32);
       expect(result).to.deep.equal({ code: "hurricane", hex: "#6600cc" });
+    });
+
+    it("parses string input correctly", () => {
+      expect(global.saa.Tuulikartta.resolveWindSpeed("15").code).to.equal("hard");
     });
   });
 
@@ -203,4 +219,50 @@ describe("Color schemes", () => {
       expect(global.saa.Tuulikartta.resolvePrecipitationAmount(35)).to.equal("#d73027");
     });
   });
+
+  describe("snowDepthColors()", () => {
+    it("maps light snow 1-10 cm", () => {
+      expect(global.saa.Tuulikartta.resolveSnowDepth(5)).to.equal("#bfe6ff");
+      expect(global.saa.Tuulikartta.resolveSnowDepth(10)).to.equal("#bfe6ff");
+    });
+
+    it("maps medium snow 20-40 cm", () => {
+      expect(global.saa.Tuulikartta.resolveSnowDepth(30)).to.equal("#3c9dde");
+    });
+
+    it("maps deep snow over 200 cm", () => {
+      expect(global.saa.Tuulikartta.resolveSnowDepth(201)).to.equal("#ebdaf0");
+    });
+  });
+
+  describe("windDirection()", () => {
+    it("rotates 0° to 180°", () => {
+      expect(global.saa.Tuulikartta.resolveWindDirection(0)).to.equal(180);
+    });
+
+    it("rotates 180° to 0°", () => {
+      expect(global.saa.Tuulikartta.resolveWindDirection(180)).to.equal(0);
+    });
+
+    it("rotates 270° to 90°", () => {
+      expect(global.saa.Tuulikartta.resolveWindDirection(270)).to.equal(90);
+    });
+  });
+
+  
+
+  describe("doseRateColors()", () => {
+    it("maps low dose rate below 0.10", () => {
+      expect(global.saa.Tuulikartta.resolveDoseRate(0.05)).to.equal("#d4ffff");
+    });
+
+    it("maps elevated dose rate 0.30-0.40", () => {
+      expect(global.saa.Tuulikartta.resolveDoseRate(0.35)).to.equal("#ffcc00");
+    });
+
+    it("maps high dose rate above 0.40", () => {
+      expect(global.saa.Tuulikartta.resolveDoseRate(0.5)).to.equal("#ff3300");
+    });
+  });
+
 });
