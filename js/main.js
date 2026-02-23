@@ -315,6 +315,13 @@ var saa = saa || {};
     })
   }
 
+  Tuulikartta.formatNuclide = function (v) {
+    var f = parseFloat(v)
+    if (f >= 100) return f.toFixed(0)
+    if (f >= 1)   return f.toFixed(1)
+    return f.toFixed(3)
+  }
+
   Tuulikartta.clearMarkers = function () {
     // remove all old markers
     saa.Tuulikartta.markerGroupSynop.clearLayers()
@@ -538,26 +545,39 @@ var saa = saa || {};
 
       if (param === 'air_activity') {
         if (saa.Tuulikartta.data[i]['type'] === 'air_radio') {
-          var icon = L.icon({
-            iconUrl: '../css/images/radiation_photo.png',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
-            popupAnchor: [0, 0]
+          var stationData = saa.Tuulikartta.data[i]
+          var labelHtml = ''
+
+          if (stationData['Pb-210'] !== null && stationData['Pb-210'] !== undefined) {
+            labelHtml += '<div>Pb-210: ' + Tuulikartta.formatNuclide(stationData['Pb-210']) + '</div>'
+          }
+          if (stationData['Be-7'] !== null && stationData['Be-7'] !== undefined) {
+            labelHtml += '<div>Be-7: ' + Tuulikartta.formatNuclide(stationData['Be-7']) + '</div>'
+          }
+          if (stationData['Cs-137'] !== null && stationData['Cs-137'] !== undefined) {
+            labelHtml += '<div>Cs-137: ' + Tuulikartta.formatNuclide(stationData['Cs-137']) + '</div>'
+          }
+
+          if (labelHtml === '') continue
+
+          var icon = L.divIcon({
+            iconSize: null,
+            className: 'air-radio-label',
+            iconAnchor: [10, 22],
+            html: labelHtml
           })
 
-          var marker = L.marker([saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']],
-            {
-              icon: icon,
-              interactive: true,
-              keyboard: true
-            })
+          var marker = L.marker(
+            [stationData['lat'], stationData['lon']],
+            { icon: icon, interactive: true, keyboard: true }
+          )
 
           marker.addTo(saa.Tuulikartta.markerGroupSynop)
-          marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
-          saa.Tuulikartta.data[i]['fmisid']),{
-            maxWidth: maxWidth
-          })
-          marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+          marker.bindPopup(
+            saa.Tuulikartta.populateInfoWindow(stationData, stationData['fmisid']),
+            { maxWidth: maxWidth }
+          )
+          marker.fmisid = stationData['fmisid']
           marker.type = 'air_radio'
         }
       }
