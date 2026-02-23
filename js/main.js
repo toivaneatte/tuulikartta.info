@@ -147,7 +147,7 @@ var saa = saa || {};
     }).addTo(map);
 
     saa.Tuulikartta.map.on('overlayadd', function(e) {
-      saa.Tuulikartta.namelayer.bringToFront()
+      if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
     })
 
     /* settings sidebar */
@@ -315,6 +315,13 @@ var saa = saa || {};
     })
   }
 
+  Tuulikartta.formatNuclide = function (v) {
+    var f = parseFloat(v)
+    if (f >= 100) return f.toFixed(0)
+    if (f >= 1)   return f.toFixed(1)
+    return f.toFixed(3)
+  }
+
   Tuulikartta.clearMarkers = function () {
     // remove all old markers
     saa.Tuulikartta.markerGroupSynop.clearLayers()
@@ -344,6 +351,9 @@ var saa = saa || {};
       var location = { lat: parseFloat(saa.Tuulikartta.data[i]['lat']), lng: parseFloat(saa.Tuulikartta.data[i]['lon']) }
       var time = Tuulikartta.timeTotime(saa.Tuulikartta.data[i]['epochtime'])
       var latlon = saa.Tuulikartta.data[i]['lat'] + ',' + saa.Tuulikartta.data[i]['lon']
+
+      if (saa.Tuulikartta.data[i]['type'] === 'air_radio' && param !== 'air_activity') continue
+      if (saa.Tuulikartta.data[i]['type'] === 'radiation' && param !== 'dose_rate') continue
 
       if (param == 'ws_10min' || param === 'wg_10min') {
         // Only show wind data for synop and road stations that have wind data
@@ -534,8 +544,42 @@ var saa = saa || {};
       }
 
       if (param === 'air_activity') {
-        // Handle air radionuclide activity - TEMPORARILY DISABLED
-        // TODO: Implement proper display for radionuclide data
+        if (saa.Tuulikartta.data[i]['type'] === 'air_radio') {
+          var stationData = saa.Tuulikartta.data[i]
+          var labelHtml = ''
+
+          if (stationData['Pb-210'] !== null && stationData['Pb-210'] !== undefined) {
+            labelHtml += '<div>Pb-210: ' + Tuulikartta.formatNuclide(stationData['Pb-210']) + '</div>'
+          }
+          if (stationData['Be-7'] !== null && stationData['Be-7'] !== undefined) {
+            labelHtml += '<div>Be-7: ' + Tuulikartta.formatNuclide(stationData['Be-7']) + '</div>'
+          }
+          if (stationData['Cs-137'] !== null && stationData['Cs-137'] !== undefined) {
+            labelHtml += '<div>Cs-137: ' + Tuulikartta.formatNuclide(stationData['Cs-137']) + '</div>'
+          }
+
+          if (labelHtml === '') continue
+
+          var icon = L.divIcon({
+            iconSize: null,
+            className: 'air-radio-label',
+            iconAnchor: [10, 22],
+            html: labelHtml
+          })
+
+          var marker = L.marker(
+            [stationData['lat'], stationData['lon']],
+            { icon: icon, interactive: true, keyboard: true }
+          )
+
+          marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          marker.bindPopup(
+            saa.Tuulikartta.populateInfoWindow(stationData, stationData['fmisid']),
+            { maxWidth: maxWidth }
+          )
+          marker.fmisid = stationData['fmisid']
+          marker.type = 'air_radio'
+        }
       }
 
       if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
@@ -996,7 +1040,7 @@ var saa = saa || {};
       saa.Tuulikartta.map.eachLayer(function (layer) {
         if (layer instanceof L.TileLayer && 'wmsParams' in layer) {
           layer.setParams({})
-          saa.Tuulikartta.namelayer.bringToFront()
+          if (saa.Tuulikartta.namelayer) saa.Tuulikartta.namelayer.bringToFront()
         }
       })
     }

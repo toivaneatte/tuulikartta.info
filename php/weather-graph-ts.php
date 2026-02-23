@@ -64,14 +64,11 @@ try {
     }
 
     if ($type == 'air_radio') {
-
         $settings = array();
-        $settings["stationtype"]    = "air_radio";
-        $settings["parameters"]     = "AC_P7D_avg";
-        $settings["storedquery_id"] = "stuk::observations::air::radionuclide-activity-concentration::latest::multipointcoverage";
-        $settings["fmisid"]         = $fmisid;
+        $settings["storedquery_id"] = "stuk::observations::air::radionuclide-activity-concentration::multipointcoverage";
+        $settings["fmisid"] = $fmisid;
 
-        $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+        $obs = $dataMiner->nuclideMultipointcoverage($timestamp, $settings, true);
     }
 
     $combinedData = [];
@@ -112,6 +109,30 @@ function calcCumulativeSum($data) {
     $data["obs"] = $tmpData;
     return $data;
 }
+
+  function normalizeDataKey($key) {
+    return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $key));
+  }
+
+  function getNormalizedValue($array, $normalized, $aliases) {
+    foreach ($aliases as $alias) {
+      if (array_key_exists($alias, $normalized)) {
+        return $normalized[$alias];
+      }
+      if (array_key_exists($alias, $array)) {
+        return $array[$alias];
+      }
+    }
+
+    $primary = $aliases[0];
+    foreach ($normalized as $key => $value) {
+      if (strpos($key, $primary) !== false) {
+        return $value;
+      }
+    }
+
+    return null;
+  }
 
 
 function resolveWindDirection($data) {
@@ -218,6 +239,29 @@ function formatHighChart($data, $winddirections) {
     foreach($data as $key => $dataArray) {
       $i = 0;
       foreach($dataArray as $array) {
+        $normalized = [];
+        foreach ($array as $k => $v) {
+          $normalized[normalizeDataKey($k)] = $v;
+        }
+
+        $pb210Value = getNormalizedValue($array, $normalized, [
+          'pb210',
+          'pb210activityconcentration',
+          'pb210activityconc',
+          'pb210activity'
+        ]);
+        $be7Value = getNormalizedValue($array, $normalized, [
+          'be7',
+          'be7activityconcentration',
+          'be7activityconc',
+          'be7activity'
+        ]);
+        $cs137Value = getNormalizedValue($array, $normalized, [
+          'cs137',
+          'cs137activityconcentration',
+          'cs137activityconc',
+          'cs137activity'
+        ]);
         // wind
         if(!empty($array['ws_10min'])) {
           $tmp = [];
@@ -327,10 +371,10 @@ function formatHighChart($data, $winddirections) {
         }
 
         // Pb-210
-        if(!empty($array['Pb-210'])) {
+        if($pb210Value !== null) {
           $tmp = [];
           array_push($tmp, $array['epochtime']*1000);
-          array_push($tmp, $array['Pb-210']);
+          array_push($tmp, $pb210Value);
           array_push($formattedData['obs']['pb210'], $tmp);
         } else {
           $tmp = [];
@@ -340,10 +384,10 @@ function formatHighChart($data, $winddirections) {
         }
 
         // Be-7
-        if(!empty($array['Be-7'])) {
+        if($be7Value !== null) {
           $tmp = [];
           array_push($tmp, $array['epochtime']*1000);
-          array_push($tmp, $array['Be-7']);
+          array_push($tmp, $be7Value);
           array_push($formattedData['obs']['be7'], $tmp);
         } else {
           $tmp = [];
@@ -353,10 +397,10 @@ function formatHighChart($data, $winddirections) {
         }
 
         // Cs-137
-        if(!empty($array['Cs-137'])) {
+        if($cs137Value !== null) {
           $tmp = [];
           array_push($tmp, $array['epochtime']*1000);
-          array_push($tmp, $array['Cs-137']);
+          array_push($tmp, $cs137Value);
           array_push($formattedData['obs']['cs137'], $tmp);
         } else {
           $tmp = [];
