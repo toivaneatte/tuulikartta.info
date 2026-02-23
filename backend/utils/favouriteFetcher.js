@@ -8,21 +8,11 @@ const logger = require('./logger');
 const config = require('../config');
 const redisClient = require('../utils/redisClient');
 
-// fetch data for favourite stations every 5 seconds: */5 * * * * *. 
-// For prod use every 30mins: */30 * * * *. 
-/*
-* * * * * *
-│ │ │ │ │ │
-│ │ │ │ │ └── day of week
-│ │ │ │ └──── month
-│ │ │ └────── day of month
-│ │ └──────── hour
-│ └────────── minute
-└──────────── second
-*/
-nodeCron.schedule('*/5 * * * * *', async () => {
-  logger.info('Starting favourite stations weather data fetcher...');
 
+
+logger.info('Starting favourite stations weather data fetcher...');
+nodeCron.schedule(config.fetchFavouritePeriod, async () => {
+  logger.info('Favourite stations data fetcher triggered')
   // start creating the URL
   var baseURL = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&';
   for ( const station of config.favouriteStations) {
@@ -30,7 +20,7 @@ nodeCron.schedule('*/5 * * * * *', async () => {
       baseURL += `place=${station.name.toLowerCase()}&`
     }
   }
-  logger.info(`Constructed URL for fetching favourite stations: ${baseURL}`);
+  //logger.info(`Constructed URL for fetching favourite stations: ${baseURL}`);
 
   // get data from FMI API
 /*
@@ -42,5 +32,5 @@ nodeCron.schedule('*/5 * * * * *', async () => {
     });
 */
 
-  logger.info(`Fetched data for favourite stations. Caching data in Redis...`);
+  //logger.info(`Fetched data for favourite stations. Caching data in Redis...`);
 });

@@ -107,6 +107,27 @@ const redisMemoryInfo = async () => {
   }
 }
 
+
+// ---------------------------------------------------------
+// Function for URL time construction
+// ---------------------------------------------------------
+const constructURL = () => {
+  // this is the format: 
+  // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
+
+  const now = new Date();
+  const startTime = new Date(now.getTime()); 
+  startTime.setHours(0, 0, 0, 0); // set to the start of the day (00:00:00)
+  const endTime = new Date(now.getTime()); // now
+
+  const startISO = startTime.toISOString();
+  const endISO = endTime.toISOString();
+
+  const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&endtime=${endISO}&`; 
+  return fullURL;
+}
+
+
 // ---------------------------------------------------------
 // GET /api/weather endpoint for fetching weather station data from FMI API and returning it as JSON
 // ---------------------------------------------------------
@@ -114,12 +135,8 @@ weatherRouter.get('/json', async (req, res) => {
   let cached = null; 
 
   if (redisClient.isOpen) {
-    try {
-      cached = await redisClient.get('weather:json');
-    }
-    catch (err) {
-      logger.error(`Error accessing Redis cache: ${err.message}`);
-    }
+    try { cached = await redisClient.get('weather:json');}
+    catch (err) { logger.error(`Error accessing Redis cache: ${err.message}`);}
   } else {
     logger.error('Redis client is not connected, skipping cache');
   }
@@ -155,26 +172,37 @@ weatherRouter.get('/json', async (req, res) => {
 // GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
 // ---------------------------------------------------------
 weatherRouter.get('/xml', async (req, res) => {
-  // TODO: add working code for if redis is disconnected
-  try {
+  let cached = null;
+
+  if (redisClient.isOpen) {
     // check cache first 
-    const cached = await redisClient.get('weather:xml');
+    try { cached = await redisClient.get('weather:xml');} 
+    catch (err) { logger.error(`Error accessing Redis cache: ${err.message}`);}
+  } 
+  else {
+    logger.error('Redis client is not connected, skipping cache');
+  }
 
-    if (cached) {
-      logger.info('Returning cached weather station data');
-      redisMemoryInfo(); // get info about Redis memory usage
-      return res.send(cached);
-    }
+  if (cached) {
+    logger.info('Returning cached weather station data');
+    redisMemoryInfo(); // get info about Redis memory usage
+    return res.send(cached);
+  }
 
-    // continue fetching if not in cache
-    logger.info('No cached data found, fetching from FMI API');
-    const xmlData = await fetch(config.FMIWeatherURL)
-      .then(r => r.text())
-      .catch(err => {
-        logger.error(`Error fetching weather data from FMI API: ${err.message}`);
-        throw new Error('Failed to fetch weather data from FMI API');
-      });
+  // continue fetching if not in cache
+  logger.info('No cached data found, fetching from FMI API');
+  const url = constructURL();
+  logger.info(`Constructed URL for fetching weather data: ${url}`);
+  const xmlData = await fetch(url)
+    .then(r => r.text())
+    .catch(err => {
+      logger.error(`Error fetching weather data from FMI API: ${err.message}`);
+    });
 
+  if (!redisClient.isOpen) {
+    logger.error('Redis client is not connected, skipping cache');
+  } 
+  else {
     // cache the data in Redis for 30 minutes
     await redisClient.set(
       'weather:xml',
@@ -183,17 +211,10 @@ weatherRouter.get('/xml', async (req, res) => {
     );
     logger.info('Cached weather XML data in Redis for 30 minutes');
     redisMemoryInfo(); // get info about Redis memory usage
-
-    // return xml data as response
-    res.set('Content-Type', 'application/xml');
-    res.send(xmlData);
-
-  } catch (err) {
-    logger.error(`Error in /api/weather/xml: ${err.message}`);
-    res.status(500).send({ error: 'Internal server error' });
-  }
-
-  
+  } 
+  // return xml data as response
+  res.set('Content-Type', 'application/xml');
+  res.send(xmlData);
 })
 
 // ---------------------------------------------------------
