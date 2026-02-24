@@ -23,16 +23,6 @@ h1 {
 h2#stationName {
     padding-left: 30px;
 }
-#mainPic {
-    margin: auto;
-    border-radius: 8px;
-    background-color: lightcyan;
-    align-content: center;
-    margin: auto;
-}
-#miniPics {
-    width: 20%;
-}
 #stationInfoView {
     display: flex;
     flex-direction: column;
