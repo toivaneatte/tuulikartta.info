@@ -543,41 +543,25 @@ camera.normalizeWeatherStation = function(raw) {
             if (nearest != null) { 
               camera.fetchWeatherData(nearest, function(details, error) {
                 const station = camera.normalizeWeatherStation(details);
+
+                const weatherElementIds = ["temp", "wind", "visibKm", "humid", "snow", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
+                const sensorNames = ["ILMA", "KESKITUULI", "NÄKYVYYS_KM", "ILMAN_KOSTEUS", "LUMEN_MÄÄRÄ1", "TIE_1", "MAA_1", "TUULENSUUNTA", 
+                  "NÄKYVYYS_M", "SADE_INTENSITEETTI"];
+
                 // Set weather values
                 for (let i = 0; i < station.sensorValues.length; i++) {
                   let sensor = station.sensorValues[i];
-                  if (sensor.name === "ILMA") {
-                    w.document.getElementById("temp").textContent =`${sensor.value} ${sensor.unit}`;
+                  for (let j = 0; j < sensorNames.length; j++) {
+                    if (sensor.name === sensorNames[j]) {
+                      const el = w.document.getElementById(weatherElementIds[j]);
+                      if (el) {
+                        el.textContent = `${sensor.value} ${sensor.unit}`;
+                      }
+                      break;
+                    }
                   }
-                  else if (sensor.name === "KESKITUULI") {
-                    w.document.getElementById("wind").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }
-                  else if (sensor.name === "NÄKYVYYS_KM") {
-                    w.document.getElementById("visibKm").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }       
-                  else if (sensor.name === "ILMAN_KOSTEUS") {
-                    w.document.getElementById("humid").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }             
-                  else if (sensor.name === "LUMEN_MÄÄRÄ1") {
-                    w.document.getElementById("snow").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "TIE_1") {
-                    w.document.getElementById("roadTemp").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "MAA_1") {
-                    w.document.getElementById("groundTemp").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "TUULENSUUNTA") {
-                    w.document.getElementById("windDir").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }
-                  else if (sensor.name === "NÄKYVYYS_M") {
-                    w.document.getElementById("visibM").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "SADE_INTENSITEETTI") {
-                    w.document.getElementById("rain").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }      
                 }
-                const weatherElementIds = ["temp", "wind", "visibKm", "humid", "snow", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
+                // Hide rows with empty values
                 for (let i = 0; i < weatherElementIds.length; i++) {
                   const el = w.document.getElementById(weatherElementIds[i]);
                   if (el && el.textContent.trim() === "") { 
@@ -587,6 +571,7 @@ camera.normalizeWeatherStation = function(raw) {
                 }
               });
             }
+            // If no nearest station, show message and hide info view
             else {
                w.document.getElementById("noNearestStation").textContent = "Lähintä sääasemaa ei löytynyt";
                w.document.getElementById("stationInfoView").style.display = "none";
