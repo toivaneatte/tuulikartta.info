@@ -506,21 +506,11 @@ camera.normalizeWeatherStation = function(raw) {
             station.latestUpdate = feature.latestUpdate;
           }
           
-          const now = moment();
+          // Format time and correct timezone, display in popup
           const latestTime = camera.resolveLatestTime(station);
-          // Use latest image timestamp instead of metadata timestamp 
-          const raw = latestTime.toISOString();
-          
-          // Split date and time 
-          const [datePart, timePart] = raw.split("T"); 
-          // Date → dd-mm-yyyy 
-          const [year, month, day] = datePart.split("-"); 
-          const formattedDate = `${day}.${month}.${year}`; 
-          // Time → hh:mm
-          const [hour, minute] = timePart.replace("Z", "").split(":"); 
-          const formattedTime = `${hour}:${minute}`;
-          const formatted = `${formattedDate} ${formattedTime}`;
-          w.document.getElementById("updateTime").textContent = `${formatted}`;
+          const local = moment.utc(latestTime).local();
+          const formatted = local.format("DD.MM.YYYY HH:mm");
+          w.document.getElementById("updateTime").textContent = formatted;
 
           // Collect presets with images
           const presets = station.properties.presets || [];
@@ -559,18 +549,10 @@ camera.normalizeWeatherStation = function(raw) {
             camera.fetchWeatherData(nearest, function(details, error) {
               const station = camera.normalizeWeatherStation(details);
               
-              // Get the last update time
-              const raw = station.dataUpdatedTime; 
-              // Split date and time 
-              const [datePart, timePart] = raw.split("T"); 
-              // Date → dd-mm-yyyy 
-              const [year, month, day] = datePart.split("-"); 
-              const formattedDate = `${day}.${month}.${year}`; 
-              // Time → hh:mm
-              const [hour, minute] = timePart.replace("Z", "").split(":"); 
-              const formattedTime = `${hour}:${minute}`;
-              const formatted = `${formattedDate} ${formattedTime}`;
-              w.document.getElementById("date").textContent = `${formatted}`;
+              // Format time and correct timezone, display in popup
+              const local = moment.utc(station.dataUpdatedTime).local();
+              const formatted = local.format("DD.MM.YYYY HH:mm");
+              w.document.getElementById("date").textContent = formatted;
 
               const weatherElementIds = ["temp", "wind", "visibKm", "humid", "snow", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
               const sensorNames = ["ILMA", "KESKITUULI", "NÄKYVYYS_KM", "ILMAN_KOSTEUS", "LUMEN_MÄÄRÄ1", "TIE_1", "MAA_1", "TUULENSUUNTA", 
