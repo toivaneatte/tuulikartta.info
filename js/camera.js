@@ -520,35 +520,49 @@ camera.normalizeWeatherStation = function(raw) {
               }
             } 
 
+            // Go trough image presets
             for (let i = 0; i < imagePresets.length; i++) {
               const preset = imagePresets[i].preset;
               const presetTitle = camera.resolvePresetTitle(preset);
-              // Insert it into the popup window 
+              // Make the HTML image output and insert it into the popup window 
               if (i == 0) {
-                // Build the HTML for the image and insert it into the main picture container
+                // First into the main picture container
                 let mainOutput = `<img src="${imagePresets[i].url}"
                                   style="width:${imageWidth}px;"
                                   alt="${presetTitle}">`;
                 w.document.getElementById("mainPic").innerHTML = mainOutput;
               } else {
-                // Build the HTML for the image and insert it into the thumbnail container
+                // Others into the thumbnail containers
                 let output = `<img src="${imagePresets[i].url}"
                               style="width:${imageWidth}px;"
                               alt="${presetTitle}">`;
                 w.document.getElementById("miniPics").innerHTML += output;
               }
             }
-            // hakee asematiedot
+            // Collect weather data from nearest station, if available
             let nearest = station.properties.nearestWeatherStationId;
             if (nearest != null) { 
               camera.fetchWeatherData(nearest, function(details, error) {
                 const station = camera.normalizeWeatherStation(details);
+                
+                 // Get the last update time
+                const raw = station.dataUpdatedTime; 
+                // Split date and time 
+                const [datePart, timePart] = raw.split("T"); 
+                // Date → dd-mm-yyyy 
+                const [year, month, day] = datePart.split("-"); 
+                const formattedDate = `${day}.${month}.${year}`; 
+                // Time → hh:mm (remove seconds + Z) 
+                const [hour, minute] = timePart.replace("Z", "").split(":"); 
+                const formattedTime = `${hour}:${minute}`;
+                const formatted = `${formattedDate} ${formattedTime}`;
+                w.document.getElementById("date").textContent = `${formatted}`;
 
                 const weatherElementIds = ["temp", "wind", "visibKm", "humid", "snow", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
                 const sensorNames = ["ILMA", "KESKITUULI", "NÄKYVYYS_KM", "ILMAN_KOSTEUS", "LUMEN_MÄÄRÄ1", "TIE_1", "MAA_1", "TUULENSUUNTA", 
                   "NÄKYVYYS_M", "SADE_INTENSITEETTI"];
 
-                // Set weather values
+                // Collect weather values and insert into the info view
                 for (let i = 0; i < station.sensorValues.length; i++) {
                   let sensor = station.sensorValues[i];
                   for (let j = 0; j < sensorNames.length; j++) {
@@ -579,57 +593,6 @@ camera.normalizeWeatherStation = function(raw) {
           });
         }
       };
-
-/*
-      // Handle popup open: load detailed data and init carousel
-      marker.on('popupopen', (function(stationFeature) {
-        return function(e) {
-          const popup = e.popup;
-          const requestId = Date.now();
-          popup._requestId = requestId;
-          
-          
-          // Load fresh station details if not already loaded
-          const stationId = stationFeature.properties && stationFeature.properties.id;
-          if (!stationId || stationFeature._detailsLoaded) return;
-          
-          camera.loadStationDetails(stationId, function(details, error) {
-            // Check if popup is still open and request is current
-            if (popup._requestId !== requestId || !popup._map) return;
-            
-            if (error) {
-              popup.setContent(`
-                <div style="padding: 20px; text-align: center;">
-                  <p>Virhe ladattaessa kameran tietoja</p>
-                  <p style="font-size: 12px; color: #666;">${error}</p>
-                </div>
-              `);
-              return;
-            }
-            
-            if (!details) {
-              popup.setContent(`
-                <div style="padding: 20px; text-align: center;">
-                  <p>Aseman tietoja ei löytynyt</p>
-                </div>
-              `);
-              return;
-            }
-            
-            // Mark as loaded and update popup
-            stationFeature._detailsLoaded = true;
-            const normalized = camera.normalizeStation(details, stationFeature);
-            
-            if (!normalized.latestUpdate && stationFeature.latestUpdate) {
-              normalized.latestUpdate = stationFeature.latestUpdate;
-            }
-            
-            popup.setContent(camera.populateInfoWindow(normalized));
-            camera.initPopupCarousel(popup);
-          });
-        };
-      })(feature));
-      */
       
       saa.camera.markers.addLayer(marker);
       cameraCount++;
@@ -638,64 +601,6 @@ camera.normalizeWeatherStation = function(raw) {
     console.log(`Loaded ${cameraCount} camera stations`);
     saa.Tuulikartta.map.addLayer(saa.camera.markers);
   };
-
-  /*
-  // Generate popup content HTML
-  camera.populateInfoWindow = function(data) {
-    const station = camera.normalizeStation(data);
-    if (!station) {
-      return '<div style="padding: 20px;">Invalid station data</div>';
-    }
-    
-    const now = moment();
-    const latestTime = camera.resolveLatestTime(station);
-    const ageMinutes = latestTime ? Math.round(moment.duration(now.diff(latestTime)).asMinutes()) : null;
-    
-    const stationName = station.properties.name || station.properties.id;
-
-    let output = `<div style="text-align:center; width:${imageWidth}px;">`;
-    output += '<div>';
-    output += `<span id="station-update-cam-name"><b>${getTranslation('cameraStationName')}:</b> ${stationName}</span><br/>`;
-    
-    if (ageMinutes !== null) {
-      output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: ${ageMinutes} ${getTranslation('minutesAgo')}</span>`;
-    } else {
-      output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: -</span>`;
-    }
-    output += '</div>';
-
-    // Collect presets with images
-    const presets = station.properties.presets || [];
-    const imagePresets = [];
-    
-    for (let i = 0; i < presets.length; i++) {
-      const presetUrl = camera.resolvePresetImageUrl(presets[i]);
-      if (presetUrl) {
-        imagePresets.push({ preset: presets[i], url: presetUrl });
-      }
-    }
-
-    if (imagePresets.length === 0) {
-      output += '<div style="padding: 20px;">Ladataan kuvia...</div>';
-      return output + '</div>';
-    }
-
-    // Create carousel with all camera images
-    output += '<div class="owl-carousel owl-theme">';
-    for (let i = 0; i < imagePresets.length; i++) {
-      const preset = imagePresets[i].preset;
-      const presetTitle = camera.resolvePresetTitle(preset);
-      
-      output += '<div>';
-      output += `<span><b>${getTranslation('cameraName')}: </b>${presetTitle}</span><br/>`;
-      output += `<img src="${imagePresets[i].url}" style="width:${imageWidth}px;" alt="${presetTitle}">`;
-      output += '</div>';
-    }
-    output += '</div>';
-
-    return output;
-  };
-*/
 
   // Expose cache clear for manual maintenance
   camera.clearCache = function() {
