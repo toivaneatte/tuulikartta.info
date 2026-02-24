@@ -583,6 +583,7 @@ camera.normalizeWeatherStation = function(raw) {
           // Collect weather data from nearest station, if available
           let nearest = station.properties.nearestWeatherStationId;
           if (nearest != null) { 
+            w.document.getElementById("noNearestStation").style.display = "none";
             camera.fetchWeatherData(nearest, function(details, error) {
               const station = camera.normalizeWeatherStation(details);
               

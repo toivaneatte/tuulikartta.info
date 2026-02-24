@@ -61,6 +61,7 @@ h3 {
     flex-direction: column;
     background-color: aliceblue;
     border-radius: 8px;
+    margin-bottom: 10px;
 }
 #viewHeader {
     background-color: dodgerblue;
