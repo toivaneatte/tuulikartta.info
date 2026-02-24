@@ -508,14 +508,19 @@ camera.normalizeWeatherStation = function(raw) {
           
           const now = moment();
           const latestTime = camera.resolveLatestTime(station);
-          const ageMinutes = latestTime ? Math.round(moment.duration(now.diff(latestTime)).asMinutes()) : null;
+          // Use latest image timestamp instead of metadata timestamp 
+          const raw = latestTime.toISOString();
           
-          /*if (ageMinutes !== null) {
-            output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: ${ageMinutes} ${getTranslation('minutesAgo')}</span>`;
-          } else {
-            output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: -</span>`;
-          }
-          output += '</div>';*/
+          // Split date and time 
+          const [datePart, timePart] = raw.split("T"); 
+          // Date → dd-mm-yyyy 
+          const [year, month, day] = datePart.split("-"); 
+          const formattedDate = `${day}.${month}.${year}`; 
+          // Time → hh:mm
+          const [hour, minute] = timePart.replace("Z", "").split(":"); 
+          const formattedTime = `${hour}:${minute}`;
+          const formatted = `${formattedDate} ${formattedTime}`;
+          w.document.getElementById("updateTime").textContent = `${formatted}`;
 
           // Collect presets with images
           const presets = station.properties.presets || [];
