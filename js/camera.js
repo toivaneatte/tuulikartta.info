@@ -102,7 +102,7 @@ var saa = saa || {};
     return langTranslations[key] || key;
   }
 
-  // Normalize station data from various API formats
+  // Normalize camera station data from various API formats
   camera.normalizeStation = function(raw, fallback) {
     if (raw && raw.properties) {
       return raw;
@@ -129,7 +129,7 @@ var saa = saa || {};
     };
   };
 
- // Normalize station data from various API formats
+ // Normalize weather station data from various API formats
 camera.normalizeWeatherStation = function(raw) {
     if (!raw || !raw.properties) return null;
 
@@ -475,206 +475,11 @@ camera.normalizeWeatherStation = function(raw) {
       
       marker.on('click', function() {
         let stationName = feature.properties.name;
-        // Open new tab showing pictures
+        // Open new tab showing pictures, put station name to URL
         let w = window.open('/html/camera.html?station=' + stationName, '_blank'); 
-        // kutsu api funktioo
+        // Call API function
         camera.apiCall(w, feature);
       });
-
-      camera.apiCall = function(w, feature) {
-        // api funktio muuokkaa asemanimiä ja laittaa selaimeen
-        w.onload = function () {
-          let cleanName = feature.properties.name.substring(feature.properties.name.indexOf("_") + 1).replaceAll("_", " ");
-          w.document.getElementById("stationName").textContent =
-          `Asema - ${cleanName}`;
-
-          // hakee kuvat
-          const stationId = feature.properties && feature.properties.id;
-          camera.loadStationDetails(stationId, function(details, error) {
-            const station = camera.normalizeStation(details, feature);
-            
-            if (!station.latestUpdate && feature.latestUpdate) {
-              station.latestUpdate = feature.latestUpdate;
-            }
-            
-            const now = moment();
-            const latestTime = camera.resolveLatestTime(station);
-            const ageMinutes = latestTime ? Math.round(moment.duration(now.diff(latestTime)).asMinutes()) : null;
-            
-            /*if (ageMinutes !== null) {
-              output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: ${ageMinutes} ${getTranslation('minutesAgo')}</span>`;
-            } else {
-              output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: -</span>`;
-            }
-            output += '</div>';*/
-
-            // Collect presets with images
-            const presets = station.properties.presets || [];
-            const imagePresets = [];
-            
-            for (let i = 0; i < presets.length; i++) {
-              const presetUrl = camera.resolvePresetImageUrl(presets[i]);
-              if (presetUrl) {
-                imagePresets.push({ preset: presets[i], url: presetUrl });
-
-              }
-            } 
-
-            for (let i = 0; i < imagePresets.length; i++) {
-              const preset = imagePresets[i].preset;
-              const presetTitle = camera.resolvePresetTitle(preset);
-              // Insert it into the popup window 
-              if (i == 0) {
-                // Build the HTML for the image and insert it into the main picture container
-                let mainOutput = `<img src="${imagePresets[i].url}"
-                                  style="width:97%;
-                                  margin: 10px auto;"
-                                  alt="${presetTitle}">
-                                  <p style="text-align:center; color: black;
-                                  font-size: 1.5em; margin: 1px;"><b>${presetTitle}</b></p>`;
-                w.document.getElementById("mainPic").innerHTML = mainOutput;
-              } else {
-                // Build the HTML for the image and insert it into the thumbnail container
-                let output = `<button type="button"
-                              onclick="(function(mini){
-                                var doc=(mini&&mini.ownerDocument)?mini.ownerDocument:document;
-                                var main=doc.getElementById('mainPic');
-                                var miniImg=mini.querySelector('img');
-                                var mainTxt=main.querySelector('p');
-                                var miniTxt=mini.querySelector('b');
-                                if(!main) return;
-                                var mainImg=main.querySelector('img');
-                                if(!mainImg||!miniImg) return;
-                                var tmpSrc=mainImg.src;
-                                var tmpTxt=mainTxt?mainTxt.textContent:'';
-                                mainImg.src=miniImg.src;
-                                miniImg.src=tmpSrc;
-                                if(mainTxt&&miniTxt){
-                                  mainTxt.textContent=miniTxt.textContent;
-                                  miniTxt.textContent=tmpTxt;
-                                }
-                                var tmpAlt=mainImg.alt;
-                                mainImg.alt=miniImg.alt||'';
-                                miniImg.alt=tmpAlt||'';})(this)"
-                              style="background-color: #cce6ff;
-                              border-radius: 5px;
-                              border: none;
-                              padding: 0;
-                              display: flex;
-                              flex-direction: column;
-                              align-items: center;
-                              justify-content: center;">
-                              <img src="${imagePresets[i].url}"
-                              style="width:200px;
-                              padding: 3px;
-                              margin-bottom: 3px;"
-                              alt="${presetTitle}">
-                              <span style="text-align:center; color: black; 
-                              padding: 2px;"><b>${presetTitle}</b></span>
-                              </button>`;
-                w.document.getElementById("miniPics").innerHTML += output;
-              }
-            }
-            // hakee asematiedot
-            let nearest = station.properties.nearestWeatherStationId;
-            if (nearest != null) { 
-              w.document.getElementById("noNearestStation").style.display = "none";
-              camera.fetchWeatherData(nearest, function(details, error) {
-                const station = camera.normalizeWeatherStation(details);
-                
-                for (let i = 0; i < station.sensorValues.length; i++) {
-                  let sensor = station.sensorValues[i];
-                  if (sensor.name === "ILMA") {
-                    w.document.getElementById("temp").textContent =`${sensor.value} ${sensor.unit}`;
-                  }
-                  else if (sensor.name === "KESKITUULI") {
-                    w.document.getElementById("wind").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }
-                  else if (sensor.name === "NÄKYVYYS_KM") {
-                    w.document.getElementById("visibKm").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }       
-                  else if (sensor.name === "ILMAN_KOSTEUS") {
-                    w.document.getElementById("humid").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }             
-                  else if (sensor.name === "LUMEN_MÄÄRÄ1") {
-                    w.document.getElementById("snow").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "TIE_1") {
-                    w.document.getElementById("roadTemp").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "MAA_1") {
-                    w.document.getElementById("groundTemp").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "TUULENSUUNTA") {
-                    w.document.getElementById("windDir").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }
-                  else if (sensor.name === "NÄKYVYYS_M") {
-                    w.document.getElementById("visibM").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }   
-                  else if (sensor.name === "SADE_INTENSITEETTI") {
-                    w.document.getElementById("rain").textContent =`${sensor.value} ${sensor.unit}`;  
-                  }      
-                }
-              });
-            }
-            else {
-               w.document.getElementById("noWeatherData").textContent = "Lähintä sääasemaa ei löytynyt";
-               w.document.getElementById("stationInfoView").style.display = "none";
-            }
-          });
-        }
-      };
-
-/*
-      // Handle popup open: load detailed data and init carousel
-      marker.on('popupopen', (function(stationFeature) {
-        return function(e) {
-          const popup = e.popup;
-          const requestId = Date.now();
-          popup._requestId = requestId;
-          
-          
-          // Load fresh station details if not already loaded
-          const stationId = stationFeature.properties && stationFeature.properties.id;
-          if (!stationId || stationFeature._detailsLoaded) return;
-          
-          camera.loadStationDetails(stationId, function(details, error) {
-            // Check if popup is still open and request is current
-            if (popup._requestId !== requestId || !popup._map) return;
-            
-            if (error) {
-              popup.setContent(`
-                <div style="padding: 20px; text-align: center;">
-                  <p>Virhe ladattaessa kameran tietoja</p>
-                  <p style="font-size: 12px; color: #666;">${error}</p>
-                </div>
-              `);
-              return;
-            }
-            
-            if (!details) {
-              popup.setContent(`
-                <div style="padding: 20px; text-align: center;">
-                  <p>Aseman tietoja ei löytynyt</p>
-                </div>
-              `);
-              return;
-            }
-            
-            // Mark as loaded and update popup
-            stationFeature._detailsLoaded = true;
-            const normalized = camera.normalizeStation(details, stationFeature);
-            
-            if (!normalized.latestUpdate && stationFeature.latestUpdate) {
-              normalized.latestUpdate = stationFeature.latestUpdate;
-            }
-            
-            popup.setContent(camera.populateInfoWindow(normalized));
-            camera.initPopupCarousel(popup);
-          });
-        };
-      })(feature));
-      */
       
       saa.camera.markers.addLayer(marker);
       cameraCount++;
@@ -684,63 +489,143 @@ camera.normalizeWeatherStation = function(raw) {
     saa.Tuulikartta.map.addLayer(saa.camera.markers);
   };
 
-  /*
-  // Generate popup content HTML
-  camera.populateInfoWindow = function(data) {
-    const station = camera.normalizeStation(data);
-    if (!station) {
-      return '<div style="padding: 20px;">Invalid station data</div>';
-    }
-    
-    const now = moment();
-    const latestTime = camera.resolveLatestTime(station);
-    const ageMinutes = latestTime ? Math.round(moment.duration(now.diff(latestTime)).asMinutes()) : null;
-    
-    const stationName = station.properties.name || station.properties.id;
+  // API call for popup window
+  camera.apiCall = function(w, feature) {
+      w.onload = function () {
+        // Clean station name for display and put it in the header
+        let cleanName = feature.properties.name.substring(feature.properties.name.indexOf("_") + 1).replaceAll("_", " ");
+        w.document.getElementById("stationName").textContent =
+        `Asema - ${cleanName}`;
 
-    let output = `<div style="text-align:center; width:${imageWidth}px;">`;
-    output += '<div>';
-    output += `<span id="station-update-cam-name"><b>${getTranslation('cameraStationName')}:</b> ${stationName}</span><br/>`;
-    
-    if (ageMinutes !== null) {
-      output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: ${ageMinutes} ${getTranslation('minutesAgo')}</span>`;
-    } else {
-      output += `<span id="station-update-cam-update"><b>${getTranslation('latestUpdate')}</b>: -</span>`;
-    }
-    output += '</div>';
+        // Collect station data
+        const stationId = feature.properties && feature.properties.id;
+        camera.loadStationDetails(stationId, function(details, error) {
+          const station = camera.normalizeStation(details, feature);
+          
+          if (!station.latestUpdate && feature.latestUpdate) {
+            station.latestUpdate = feature.latestUpdate;
+          }
+          
+          // Format time and correct timezone, display in popup
+          const latestTime = camera.resolveLatestTime(station);
+          const local = moment.utc(latestTime).local();
+          const formatted = local.format("DD.MM.YYYY HH:mm");
+          w.document.getElementById("updateTime").textContent = formatted;
 
-    // Collect presets with images
-    const presets = station.properties.presets || [];
-    const imagePresets = [];
-    
-    for (let i = 0; i < presets.length; i++) {
-      const presetUrl = camera.resolvePresetImageUrl(presets[i]);
-      if (presetUrl) {
-        imagePresets.push({ preset: presets[i], url: presetUrl });
+          // Collect presets with images
+          const presets = station.properties.presets || [];
+          const imagePresets = [];
+          
+          for (let i = 0; i < presets.length; i++) {
+            const presetUrl = camera.resolvePresetImageUrl(presets[i]);
+            if (presetUrl) {
+              imagePresets.push({ preset: presets[i], url: presetUrl });
+
+            }
+          } 
+
+          // Go trough image presets
+          for (let i = 0; i < imagePresets.length; i++) {
+            const preset = imagePresets[i].preset;
+            const presetTitle = camera.resolvePresetTitle(preset);
+            // Make the HTML image output and insert it into the popup window 
+            if (i == 0) {
+              // Build the HTML for the image and insert it into the main picture container
+              let mainOutput = `<img src="${imagePresets[i].url}"
+                                style="width:97%;
+                                margin: 10px auto;"
+                                alt="${presetTitle}">
+                                <p style="text-align:center; color: black;
+                                font-size: 1.5em; margin: 1px;"><b>${presetTitle}</b></p>`;
+              w.document.getElementById("mainPic").innerHTML = mainOutput;
+            } else {
+              // Build the HTML for the image and insert it into the thumbnail container
+              let output = `<button type="button"
+                            onclick="(function(mini){
+                              var doc=(mini&&mini.ownerDocument)?mini.ownerDocument:document;
+                              var main=doc.getElementById('mainPic');
+                              var miniImg=mini.querySelector('img');
+                              var mainTxt=main.querySelector('p');
+                              var miniTxt=mini.querySelector('b');
+                              if(!main) return;
+                              var mainImg=main.querySelector('img');
+                              if(!mainImg||!miniImg) return;
+                              var tmpSrc=mainImg.src;
+                              var tmpTxt=mainTxt?mainTxt.textContent:'';
+                              mainImg.src=miniImg.src;
+                              miniImg.src=tmpSrc;
+                              if(mainTxt&&miniTxt){
+                                mainTxt.textContent=miniTxt.textContent;
+                                miniTxt.textContent=tmpTxt;
+                              }
+                              var tmpAlt=mainImg.alt;
+                              mainImg.alt=miniImg.alt||'';
+                              miniImg.alt=tmpAlt||'';})(this)"
+                            style="background-color: #cce6ff;
+                            border-radius: 5px;
+                            border: none;
+                            padding: 0;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;">
+                            <img src="${imagePresets[i].url}"
+                            style="width:200px;
+                            padding: 3px;
+                            margin-bottom: 3px;"
+                            alt="${presetTitle}">
+                            <span style="text-align:center; color: black; 
+                            padding: 2px;"><b>${presetTitle}</b></span>
+                            </button>`;
+              w.document.getElementById("miniPics").innerHTML += output;
+            }
+          }
+          // Collect weather data from nearest station, if available
+          let nearest = station.properties.nearestWeatherStationId;
+          if (nearest != null) { 
+            camera.fetchWeatherData(nearest, function(details, error) {
+              const station = camera.normalizeWeatherStation(details);
+              
+              // Format time and correct timezone, display in popup
+              const local = moment.utc(station.dataUpdatedTime).local();
+              const formatted = local.format("DD.MM.YYYY HH:mm");
+              w.document.getElementById("date").textContent = formatted;
+
+              const weatherElementIds = ["temp", "wind", "visibKm", "humid", "snow", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
+              const sensorNames = ["ILMA", "KESKITUULI", "NÄKYVYYS_KM", "ILMAN_KOSTEUS", "LUMEN_MÄÄRÄ1", "TIE_1", "MAA_1", "TUULENSUUNTA", 
+                "NÄKYVYYS_M", "SADE_INTENSITEETTI"];
+
+              // Collect weather values and insert into the info view
+              for (let i = 0; i < station.sensorValues.length; i++) {
+                let sensor = station.sensorValues[i];
+                for (let j = 0; j < sensorNames.length; j++) {
+                  if (sensor.name === sensorNames[j]) {
+                    const el = w.document.getElementById(weatherElementIds[j]);
+                    if (el) {
+                      el.textContent = `${sensor.value} ${sensor.unit}`;
+                    }
+                    break;
+                  }
+                }
+              }
+              // Hide rows with empty values
+              for (let i = 0; i < weatherElementIds.length; i++) {
+                const el = w.document.getElementById(weatherElementIds[i]);
+                if (el && el.textContent.trim() === "") { 
+                  const row = el.closest(".dataRow"); 
+                  if (row) row.style.display = "none"; 
+                }
+              }
+            });
+          }
+          // If no nearest station, show message and hide info view
+          else {
+            w.document.getElementById("noNearestStation").textContent = "Lähintä sääasemaa ei löytynyt";
+            w.document.getElementById("stationInfoView").style.display = "none";
+          }
+        });
       }
-    }
-
-    if (imagePresets.length === 0) {
-      output += '<div style="padding: 20px;">Ladataan kuvia...</div>';
-      return output + '</div>';
-    }
-
-    // Create carousel with all camera images
-    output += '<div class="owl-carousel owl-theme">';
-    for (let i = 0; i < imagePresets.length; i++) {
-      const preset = imagePresets[i].preset;
-      const presetTitle = camera.resolvePresetTitle(preset);
-      
-      output += '<div>';
-      output += `<span><b>${getTranslation('cameraName')}: </b>${presetTitle}</span><br/>`;
-      output += `<img src="${imagePresets[i].url}" style="width:${imageWidth}px;" alt="${presetTitle}">`;
-      output += '</div>';
-    }
-    output += '</div>';
-
-    return output;
-  };
-*/
+    };
 
   // Expose cache clear for manual maintenance
   camera.clearCache = function() {
