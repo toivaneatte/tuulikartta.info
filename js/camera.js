@@ -581,7 +581,8 @@ camera.normalizeWeatherStation = function(raw) {
               });
             }
             else {
-              
+               w.document.getElementById("noNearestStation").textContent = "Lähintä sääasemaa ei löytynyt";
+               w.document.getElementById("stationInfoView").style.display = "none";
             }
           });
         }
