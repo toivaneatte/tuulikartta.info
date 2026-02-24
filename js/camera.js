@@ -60,6 +60,31 @@ var saa = saa || {};
     }
   };
 
+  const weatherCache = {
+    data: {},
+    timestamps: {},
+    
+    get(stationId) {
+      const cached = this.data[stationId];
+      const timestamp = this.timestamps[stationId];
+      
+      if (cached && timestamp && (Date.now() - timestamp < CACHE_TTL_MS)) {
+        return cached;
+      }
+      return null;
+    },
+    
+    set(stationId, data) {
+      this.data[stationId] = data;
+      this.timestamps[stationId] = Date.now();
+    },
+    
+    clear() {
+      this.data = {};
+      this.timestamps = {};
+    }
+  };
+
   // Utility: API request with timeout
   function fetchWithTimeout(url, timeout = API_TIMEOUT_MS) {
     return $.ajax({
@@ -97,11 +122,27 @@ var saa = saa || {};
         id: id,
         name: source.name || fallbackProps.name || id,
         dataUpdatedTime: source.dataUpdatedTime || fallbackProps.dataUpdatedTime,
-        presets: source.presets || fallbackProps.presets || []
+        presets: source.presets || fallbackProps.presets || [],
+        nearestWeatherStationId: source.nearestWeatherStationId || fallbackProps.nearestWeatherStationId || null
       },
       latestUpdate: source.latestUpdate || (fallback && fallback.latestUpdate)
     };
   };
+
+ // Normalize station data from various API formats
+camera.normalizeWeatherStation = function(raw) {
+    if (!raw || !raw.properties) return null;
+
+    const props = raw.properties;
+
+    return {
+        id: props.id,
+        name: props.name || props.id,
+        dataUpdatedTime: props.dataUpdatedTime || null,
+        sensors: props.sensors || [],
+        sensorValues: props.sensorValues || []
+    };
+};
 
   // Find the most recent timestamp from station presets
   camera.resolveLatestTime = function(station) {
@@ -257,7 +298,7 @@ var saa = saa || {};
     }
     
     // Check cache first
-    const cached = stationCache.get(stationId);
+    const cached = weatherCache.get(stationId);
     if (cached) {
       callback(cached, null);
       return;
@@ -291,9 +332,11 @@ var saa = saa || {};
         if (freshData.dataUpdatedTime) {
           metadata.properties.dataUpdatedTime = freshData.dataUpdatedTime;
         }
+
+        metadata.properties.sensorValues = freshData.sensorValues;
       }
       
-      stationCache.set(stationId, metadata);
+      weatherCache.set(stationId, metadata);
       callback(metadata, null);
       
     }).fail(function(xhr, status, error) {
@@ -490,14 +533,50 @@ var saa = saa || {};
                 w.document.getElementById("miniPics").innerHTML += output;
               }
             }
-          });
-          // hakee asematiedot
-          let nearest = feature.properties.nearestWeatherStationId;
+            // hakee asematiedot
+          let nearest = station.properties.nearestWeatherStationId;
+          console.log("NEAREST WEATHER STATION ID:", nearest);
+          
           camera.fetchWeatherData(nearest, function(details, error) {
-            const station = camera.normalizeStation(details, feature);
+            console.log("RAW WEATHER DETAILS:", details);
+            const station = camera.normalizeWeatherStation(details);
+            console.log("NORMALIZED:", station);
 
-            let test = station.properties.sensorValues[0].shortName;
-            w.document.getElementById("temperature").textContent ='${test}';
+            
+            for (let i = 0; i < station.sensorValues.length; i++) {
+              let sensor = station.sensorValues[i];
+              if (sensor.name === "ILMA") {
+                w.document.getElementById("temp").textContent =`${sensor.value} ${sensor.unit}`;
+              }
+              else if (sensor.name === "KESKITUULI") {
+                w.document.getElementById("wind").textContent =`${sensor.value} ${sensor.unit}`;  
+              }
+              else if (sensor.name === "NÄKYVYYS_KM") {
+                w.document.getElementById("visibKm").textContent =`${sensor.value} ${sensor.unit}`;  
+              }       
+              else if (sensor.name === "ILMAN_KOSTEUS") {
+                w.document.getElementById("humid").textContent =`${sensor.value} ${sensor.unit}`;  
+              }             
+              else if (sensor.name === "LUMEN_MÄÄRÄ1") {
+                w.document.getElementById("snow").textContent =`${sensor.value} ${sensor.unit}`;  
+              }   
+              else if (sensor.name === "TIE_1") {
+                w.document.getElementById("roadTemp").textContent =`${sensor.value} ${sensor.unit}`;  
+              }   
+              else if (sensor.name === "MAA_1") {
+                w.document.getElementById("groundTemp").textContent =`${sensor.value} ${sensor.unit}`;  
+              }   
+              else if (sensor.name === "TUULENSUUNTA") {
+                w.document.getElementById("windDir").textContent =`${sensor.value} ${sensor.unit}`;  
+              }
+              else if (sensor.name === "NÄKYVYYS_M") {
+                w.document.getElementById("visibM").textContent =`${sensor.value} ${sensor.unit}`;  
+              }   
+              else if (sensor.name === "SADE_INTENSITEETTI") {
+                w.document.getElementById("rain").textContent =`${sensor.value} ${sensor.unit}`;  
+              }      
+            }
+          });
           });
         }
       };
@@ -622,6 +701,7 @@ var saa = saa || {};
   // Expose cache clear for manual maintenance
   camera.clearCache = function() {
     stationCache.clear();
+    weatherCache.clear();
     console.log('Camera cache cleared');
   };
 
