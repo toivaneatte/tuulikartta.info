@@ -480,13 +480,19 @@ var saa = saa || {};
             for (let i = 0; i < imagePresets.length; i++) {
               const preset = imagePresets[i].preset;
               const presetTitle = camera.resolvePresetTitle(preset);
-              // Build the HTML for the image
-              let output = ` <img src="${imagePresets[i].url}" style="width:${imageWidth}px;" alt="${presetTitle}"> `;
               // Insert it into the popup window 
               if (i == 0) {
-                w.document.getElementById("mainPic").innerHTML = output;
+                // Build the HTML for the image and insert it into the main picture container
+                let mainOutput = `<img src="${imagePresets[i].url}"
+                            style="width:${imageWidth}px;"
+                            alt="${presetTitle}"> `;
+                w.document.getElementById("mainPic").innerHTML = mainOutput;
               }
               else {
+                // Build the HTML for the image and insert it into the thumbnail container
+                let output = `<img src="${imagePresets[i].url}"
+                            style="width:${imageWidth}px;"
+                            alt="${presetTitle}"> `;
                 w.document.getElementById("miniPics").innerHTML += output;
               }
             }
