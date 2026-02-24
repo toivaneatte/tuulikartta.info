@@ -539,7 +539,7 @@ camera.normalizeWeatherStation = function(raw) {
                                 margin: 10px auto;"
                                 alt="${presetTitle}">
                                 <p style="text-align:center; color: black;
-                                font-size: 1.5em; margin: 1px;"><b>${presetTitle}</b></p>`;
+                                font-size: 1.5em; margin: 1px;">${presetTitle}</p>`;
               w.document.getElementById("mainPic").innerHTML = mainOutput;
             } else {
               // Build the HTML for the image and insert it into the thumbnail container
@@ -549,7 +549,7 @@ camera.normalizeWeatherStation = function(raw) {
                               var main=doc.getElementById('mainPic');
                               var miniImg=mini.querySelector('img');
                               var mainTxt=main.querySelector('p');
-                              var miniTxt=mini.querySelector('b');
+                              var miniTxt=mini.querySelector('span');
                               if(!main) return;
                               var mainImg=main.querySelector('img');
                               if(!mainImg||!miniImg) return;
@@ -578,7 +578,7 @@ camera.normalizeWeatherStation = function(raw) {
                             margin-bottom: 3px;"
                             alt="${presetTitle}">
                             <span style="text-align:center; color: black; 
-                            padding: 2px;"><b>${presetTitle}</b></span>
+                            padding: 2px;">${presetTitle}</span>
                             </button>`;
               w.document.getElementById("miniPics").innerHTML += output;
             }
