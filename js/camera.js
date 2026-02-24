@@ -544,7 +544,7 @@ camera.normalizeWeatherStation = function(raw) {
             if (nearest != null) { 
               camera.fetchWeatherData(nearest, function(details, error) {
                 const station = camera.normalizeWeatherStation(details);
-                
+                // Set weather values
                 for (let i = 0; i < station.sensorValues.length; i++) {
                   let sensor = station.sensorValues[i];
                   if (sensor.name === "ILMA") {
@@ -577,6 +577,14 @@ camera.normalizeWeatherStation = function(raw) {
                   else if (sensor.name === "SADE_INTENSITEETTI") {
                     w.document.getElementById("rain").textContent =`${sensor.value} ${sensor.unit}`;  
                   }      
+                }
+                const weatherElementIds = ["temp", "wind", "visibKm", "humid", "snow", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
+                for (let i = 0; i < weatherElementIds.length; i++) {
+                  const el = w.document.getElementById(weatherElementIds[i]);
+                  if (el && el.textContent.trim() === "") { 
+                    const row = el.closest(".dataRow"); 
+                    if (row) row.style.display = "none"; 
+                  }
                 }
               });
             }
