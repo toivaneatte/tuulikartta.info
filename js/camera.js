@@ -591,9 +591,9 @@ camera.normalizeWeatherStation = function(raw) {
               const formatted = local.format("DD.MM.YYYY HH:mm");
               w.document.getElementById("date").textContent = formatted;
 
-              const weatherElementIds = ["temp", "wind", "visibKm", "humid", "snow", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
-              const sensorNames = ["ILMA", "KESKITUULI", "NÄKYVYYS_KM", "ILMAN_KOSTEUS", "LUMEN_MÄÄRÄ1", "TIE_1", "MAA_1", "TUULENSUUNTA", 
-                "NÄKYVYYS_M", "SADE_INTENSITEETTI"];
+              const weatherElementIds = ["temp", "wind", "visibKm", "humid", "water", "snow", "ice", "roadTemp", "groundTemp", "windDir", "visibM", "rain"];
+              const sensorNames = ["ILMA", "KESKITUULI", "NÄKYVYYS_KM", "ILMAN_KOSTEUS", "VEDEN_MÄÄRÄ1", "LUMEN_MÄÄRÄ1", "JÄÄN_MÄÄRÄ1",
+                "TIE_1", "MAA_1", "TUULENSUUNTA", "NÄKYVYYS_M", "SADE_INTENSITEETTI"];
 
               // Collect weather values and insert into the info view
               for (let i = 0; i < station.sensorValues.length; i++) {
