@@ -527,15 +527,14 @@ camera.normalizeWeatherStation = function(raw) {
               if (i == 0) {
                 // Build the HTML for the image and insert it into the main picture container
                 let mainOutput = `<img src="${imagePresets[i].url}"
-                            style="width:${imageWidth}px;"
-                            alt="${presetTitle}"> `;
+                                  style="width:${imageWidth}px;"
+                                  alt="${presetTitle}">`;
                 w.document.getElementById("mainPic").innerHTML = mainOutput;
-              }
-              else {
+              } else {
                 // Build the HTML for the image and insert it into the thumbnail container
                 let output = `<img src="${imagePresets[i].url}"
-                            style="width:${imageWidth}px;"
-                            alt="${presetTitle}"> `;
+                              style="width:${imageWidth}px;"
+                              alt="${presetTitle}">`;
                 w.document.getElementById("miniPics").innerHTML += output;
               }
             }
