@@ -517,6 +517,9 @@ camera.normalizeWeatherStation = function(raw) {
           const imagePresets = [];
           
           for (let i = 0; i < presets.length; i++) {
+            // Don't show presets not in collection
+            if (presets[i].inCollection === false) continue;
+
             const presetUrl = camera.resolvePresetImageUrl(presets[i]);
             if (presetUrl) {
               imagePresets.push({ preset: presets[i], url: presetUrl });
