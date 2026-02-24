@@ -546,7 +546,7 @@ camera.normalizeWeatherStation = function(raw) {
                               var main=doc.getElementById('mainPic');
                               var miniImg=mini.querySelector('img');
                               var mainTxt=main.querySelector('p');
-                              var miniTxt=mini.querySelector('b');
+                              var miniTxt=mini.querySelector('span');
                               if(!main) return;
                               var mainImg=main.querySelector('img');
                               if(!mainImg||!miniImg) return;
@@ -575,7 +575,7 @@ camera.normalizeWeatherStation = function(raw) {
                             margin-bottom: 3px;"
                             alt="${presetTitle}">
                             <span style="text-align:center; color: black; 
-                            padding: 2px;"><b>${presetTitle}</b></span>
+                            padding: 2px;">${presetTitle}</span>
                             </button>`;
               w.document.getElementById("miniPics").innerHTML += output;
             }
