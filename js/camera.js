@@ -527,20 +527,58 @@ camera.normalizeWeatherStation = function(raw) {
               if (i == 0) {
                 // Build the HTML for the image and insert it into the main picture container
                 let mainOutput = `<img src="${imagePresets[i].url}"
-                                  style="width:${imageWidth}px;"
-                                  alt="${presetTitle}">`;
+                                  style="width:97%;
+                                  margin: 10px auto;"
+                                  alt="${presetTitle}">
+                                  <p style="text-align:center; color: black;
+                                  font-size: 1.5em; margin: 1px;"><b>${presetTitle}</b></p>`;
                 w.document.getElementById("mainPic").innerHTML = mainOutput;
               } else {
                 // Build the HTML for the image and insert it into the thumbnail container
-                let output = `<img src="${imagePresets[i].url}"
-                              style="width:${imageWidth}px;"
-                              alt="${presetTitle}">`;
+                let output = `<button type="button"
+                              onclick="(function(mini){
+                                var doc=(mini&&mini.ownerDocument)?mini.ownerDocument:document;
+                                var main=doc.getElementById('mainPic');
+                                var miniImg=mini.querySelector('img');
+                                var mainTxt=main.querySelector('p');
+                                var miniTxt=mini.querySelector('b');
+                                if(!main) return;
+                                var mainImg=main.querySelector('img');
+                                if(!mainImg||!miniImg) return;
+                                var tmpSrc=mainImg.src;
+                                var tmpTxt=mainTxt?mainTxt.textContent:'';
+                                mainImg.src=miniImg.src;
+                                miniImg.src=tmpSrc;
+                                if(mainTxt&&miniTxt){
+                                  mainTxt.textContent=miniTxt.textContent;
+                                  miniTxt.textContent=tmpTxt;
+                                }
+                                var tmpAlt=mainImg.alt;
+                                mainImg.alt=miniImg.alt||'';
+                                miniImg.alt=tmpAlt||'';})(this)"
+                              style="background-color: #cce6ff;
+                              border-radius: 5px;
+                              border: none;
+                              padding: 0;
+                              display: flex;
+                              flex-direction: column;
+                              align-items: center;
+                              justify-content: center;">
+                              <img src="${imagePresets[i].url}"
+                              style="width:200px;
+                              padding: 3px;
+                              margin-bottom: 3px;"
+                              alt="${presetTitle}">
+                              <span style="text-align:center; color: black; 
+                              padding: 2px;"><b>${presetTitle}</b></span>
+                              </button>`;
                 w.document.getElementById("miniPics").innerHTML += output;
               }
             }
             // hakee asematiedot
             let nearest = station.properties.nearestWeatherStationId;
             if (nearest != null) { 
+              w.document.getElementById("noNearestStation").style.display = "none";
               camera.fetchWeatherData(nearest, function(details, error) {
                 const station = camera.normalizeWeatherStation(details);
                 
@@ -580,7 +618,7 @@ camera.normalizeWeatherStation = function(raw) {
               });
             }
             else {
-               w.document.getElementById("noNearestStation").textContent = "Lähintä sääasemaa ei löytynyt";
+               w.document.getElementById("noWeatherData").textContent = "Lähintä sääasemaa ei löytynyt";
                w.document.getElementById("stationInfoView").style.display = "none";
             }
           });
