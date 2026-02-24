@@ -332,6 +332,12 @@ var saa = saa || {};
   // Draw station observations
   // ---------------------------------------------------------
 
+  Tuulikartta.isDataStale = function (epochtime) {
+    if (saa.Tuulikartta.timeValue !== 'now') return false
+    var currentBlockStart = Math.floor(Date.now() / 1000 / 600) * 600
+    return epochtime < currentBlockStart
+  }
+
   Tuulikartta.drawData = function (param) {
 
     if(!showStationObservations) return false
@@ -346,6 +352,15 @@ var saa = saa || {};
     } else {
       maxWidth = 650
     }
+
+    var renderedStationIndices = new Set()
+
+    var warningIcon = L.icon({
+      iconUrl: '../css/images/exclamation_mark.png',
+      iconSize: [18, 18],
+      iconAnchor: [-4, 22],
+      interactive: false
+    })
 
     for (var i = 0; i < sizeofdata; i++) {
       var location = { lat: parseFloat(saa.Tuulikartta.data[i]['lat']), lng: parseFloat(saa.Tuulikartta.data[i]['lon']) }
@@ -404,6 +419,7 @@ var saa = saa || {};
           } else {
             marker.addTo(saa.Tuulikartta.markerGroupSynop)
           }
+          renderedStationIndices.add(i)
         }
       }
 
@@ -464,6 +480,7 @@ var saa = saa || {};
           } else {
             marker.addTo(saa.Tuulikartta.markerGroupSynop)
           }
+          renderedStationIndices.add(i)
         }
       }
 
@@ -491,6 +508,7 @@ var saa = saa || {};
             })
             marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            renderedStationIndices.add(i)
           }
         }
         // draw '–' if theres no precipitation
@@ -513,6 +531,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -644,6 +663,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -674,6 +694,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -703,6 +724,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -773,6 +795,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -802,6 +825,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -882,6 +906,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -905,6 +930,7 @@ var saa = saa || {};
             })
             marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            renderedStationIndices.add(i)
           }
         }
         if(parseFloat(saa.Tuulikartta.data[i][param]) == 0 && saa.Tuulikartta.data[i][param] !== 'NaN' ) {
@@ -921,6 +947,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -949,11 +976,27 @@ var saa = saa || {};
             })
             marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            renderedStationIndices.add(i)
           }
         }
 
       }
     }
+
+    renderedStationIndices.forEach(function(idx) {
+      var data = saa.Tuulikartta.data[idx]
+      if (Tuulikartta.isDataStale(data['epochtime'])) {
+        var warnMarker = L.marker(
+          [parseFloat(data['lat']), parseFloat(data['lon'])],
+          { icon: warningIcon, interactive: false, keyboard: false, zIndexOffset: 1000 }
+        )
+        if (data['type'] === 'road') {
+          warnMarker.addTo(saa.Tuulikartta.markerGroupRoad)
+        } else {
+          warnMarker.addTo(saa.Tuulikartta.markerGroupSynop)
+        }
+      }
+    })
 
     if (saa.Tuulikartta.timeValue === 'now') {
       for (var i = 0; i < saa.Tuulikartta.data.length && i < 100; i++) {
