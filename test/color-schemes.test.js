@@ -1,25 +1,14 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
-import vm from "vm";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-before(() => {
-  global.saa = { Tuulikartta: {} };
-  global.selectedLanguage = "en";
-  global.fetch = () => Promise.reject(new Error("skip config fetch in tests"));
-
-  const scriptPath = path.join(__dirname, "..", "js", "color-schemes.js");
-  const code = fs.readFileSync(scriptPath, "utf8");
-
-  vm.runInThisContext(code, { filename: scriptPath });
-});
 
 describe("Color schemes", () => {
+  let saa;
+
+  before(async () => {
+  await import("../js/color-schemes.js");
+  saa = globalThis.saa;
+  });
+
   describe("windSpeedColors()", () => {
     it("returns calm below 1 m/s", () => {
       const result = global.saa.Tuulikartta.resolveWindSpeed(0.5);

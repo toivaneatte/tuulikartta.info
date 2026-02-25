@@ -97,3 +97,30 @@ globalThis.translations = {
 globalThis.selectedLanguage = "fi";
 
 globalThis.localStorage = globalThis.window.localStorage;
+
+// Mock setInterval/setTimeout to prevent side effects in tests
+const originalSetInterval = globalThis.setInterval;
+const originalSetTimeout = globalThis.setTimeout;
+const intervals = [];
+const timeouts = [];
+
+// Override to track and prevent timers from running
+globalThis.setInterval = function(fn, delay) {
+  // Return a fake ID instead of actually setting an interval
+  const fakeId = { __test_interval: true };
+  intervals.push(fakeId);
+  return fakeId;
+};
+
+globalThis.setTimeout = function(fn, delay) {
+  // Return a fake ID instead of actually setting a timeout
+  const fakeId = { __test_timeout: true };
+  timeouts.push(fakeId);
+  return fakeId;
+};
+
+// Cleanup function (if needed for afterAll hooks)
+globalThis.__clearAllTestTimers = function() {
+  intervals.length = 0;
+  timeouts.length = 0;
+};
