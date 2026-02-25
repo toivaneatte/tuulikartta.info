@@ -227,6 +227,39 @@ class DataMiner{
         return $final;
     }
 
+    /** Parse observation data about R-values from RWC
+     * @return R-values as an array
+     */
+    public function getRValues() {
+        $url = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.json";
+        $data = file_get_contents($url);
+        $result = [];
+        $json = json_decode($data, true);
+        foreach($json["data"] as $item) {
+            $tmp = [];
+            $tmp["station"] = $item["Asema"];
+            $tmp["lat"] = $item["Leveyspiiri"];
+            $tmp["lon"] = $item["Pituuspiiri"];
+            $tmp["time"] = $item["Aika"];
+            $tmp["type"] = "magnetometer";
+            $tmp   ["rVal"] = $item["R-luku"];
+            $tmp["upperLim"] = $item["Ylempi raja-arvo"];
+            $tmp["lowerLim"] = $item["Alempi raja-arvo"];
+            if ($item["Revontulten todennäköisyys"] === "Revontulet epätodennäköisiä") {
+                $tmp["rProb"] = "low";
+            } else if ($item["Revontulten todennäköisyys"] === "Revontulet mahdollisia") {
+                $tmp["rProb"] = "medium";
+            } else if ($item["Revontulten todennäköisyys"] === "Revontulet todennäköisiä") {
+                $tmp["rProb"] = "high";
+            } else {
+                $tmp["rProb"] = null;
+            }
+            array_push($result,$tmp);
+        }
+
+        return $result;
+    }
+
     /**
     *
     * Get observation data from timeseries

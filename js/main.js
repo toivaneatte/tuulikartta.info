@@ -4,7 +4,6 @@
 * 
 * Main application coordinator - initializes namespace and delegates to modular components
 */
-
 var saa = saa || {};
 
 (function (Tuulikartta, undefined) {
@@ -536,6 +535,33 @@ var saa = saa || {};
       if (param === 'air_activity') {
         // Handle air radionuclide activity - TEMPORARILY DISABLED
         // TODO: Implement proper display for radionuclide data
+      }
+
+      if (param === 'rVal') {
+        // Handle R-values - only for magnetometer stations
+        if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
+          var paramValue = saa.Tuulikartta.data[i]['rVal']
+          if (paramValue !== null && paramValue !== undefined) {
+            var fillColor = '#f7f7f7' // change color according to rProb!!
+            var hex = fillColor.substr(1)
+            hex = 'hex' + hex
+
+            var marker = L.marker(new L.LatLng(saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']),
+              {
+                interactive: true,
+                keyboard: false,
+                icon: Tuulikartta.createLabelIcon(hex, parseFloat(paramValue).toFixed(2))
+              })
+
+            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+            saa.Tuulikartta.data[i]['fmisid']),{
+              maxWidth: maxWidth
+            })
+            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+            marker.type = saa.Tuulikartta.data[i]['type']
+          }
+        }
       }
 
       if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
