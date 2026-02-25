@@ -3,7 +3,8 @@
 * Maps observation values (wind speed, temperature, etc.) to color codes
 */
 
-var saa = saa || {};
+globalThis.saa = globalThis.saa || {};
+var saa = globalThis.saa;
 
 (function (Tuulikartta, undefined) {
   'use strict'
