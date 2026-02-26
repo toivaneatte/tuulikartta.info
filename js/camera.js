@@ -612,6 +612,7 @@ camera.normalizeWeatherStation = function(raw) {
                   }
                 }
               }
+
               // Hide rows with empty values
               for (let i = 0; i < weatherElementIds.length; i++) {
                 const el = w.document.getElementById(weatherElementIds[i]);
@@ -619,6 +620,18 @@ camera.normalizeWeatherStation = function(raw) {
                   const row = el.closest(".dataRow"); 
                   if (row) row.style.display = "none"; 
                 }
+              }
+
+              // Hide road data if not available
+              let roadDataAvailable = false;
+              for (const el of w.document.getElementById("roadGroup").querySelectorAll(".dataRow")) {
+                if (el.style.display !== "none") {
+                  roadDataAvailable = true;
+                  break;
+                }
+              }
+              if (!roadDataAvailable) {
+                w.document.getElementById("roadGroup").style.display = "none";
               }
             });
           }
