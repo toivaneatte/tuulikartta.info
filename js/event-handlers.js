@@ -174,25 +174,25 @@ var saa = saa || {};
     // Show/hide observation layers
     $('#show-observations').change(function() {
       if (this.checked == true) {
-        showStationObservations = true
+        Tuulikartta.showStationObservations = true
         saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupSynop)
-        if(showRoadObservations)
+        if(Tuulikartta.showRoadObservations)
         saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupRoad)
       } else {
-        showStationObservations = false
+        Tuulikartta.showStationObservations = false
         saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupSynop)
-        if(showRoadObservations)
+        if(Tuulikartta.showRoadObservations)
         saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupRoad)
       }
     })
 
     $('#road-observations').change(function() {
       if (this.checked == true) {
-        if(showStationObservations == true) saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
-        showRoadObservations = true
+        if(Tuulikartta.showStationObservations == true) saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
+        Tuulikartta.showRoadObservations = true
       } else {
         saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupRoad)
-        showRoadObservations = false
+        Tuulikartta.showRoadObservations = false
       }
     })
 
