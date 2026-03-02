@@ -74,7 +74,7 @@ class DataMiner{
         $url = $url . $this->setTime($timestamp, $graph);
 
         // send reguest to nodejs backend to handle FMI API request and response caching
-        $backendUrl = "http://backend:3000/api/weather/xml";
+        $backendUrl = "http://backend:3000/api/weather/xml?time=" . urlencode($timestamp);
 
         $xmlData = file_get_contents($backendUrl); // send request to backend and get response
         if($xmlData == false) {

@@ -34,6 +34,9 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
     environment:
       - REDIS_URL=redis://redis:6379
     networks:

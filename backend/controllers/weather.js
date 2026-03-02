@@ -111,14 +111,22 @@ const redisMemoryInfo = async () => {
 // ---------------------------------------------------------
 // Function for URL time construction
 // ---------------------------------------------------------
-const constructURL = () => {
+const constructURL = (timestamp = null) => {
   // this is the format: 
   // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
 
-  const now = new Date();
-  const startTime = new Date(now.getTime()); 
-  startTime.setHours(0, 0, 0, 0); // set to the start of the day (00:00:00)
-  const endTime = new Date(now.getTime()); // now
+  let startTime, endTime;
+
+  if (timestamp && timestamp !== 'now') {
+    endTime = new Date(timestamp);
+    startTime = new Date(endTime);
+    startTime.setUTCHours(0, 0, 0, 0); // set to the start of UTC day
+  } else {
+    const now = new Date();
+    endTime = new Date(now.getTime()); // now
+    startTime = new Date(now.getTime());
+    startTime.setHours(0, 0, 0, 0); // set to the start of today (local time)
+  }
 
   const startISO = startTime.toISOString();
   const endISO = endTime.toISOString();
@@ -169,50 +177,80 @@ weatherRouter.get('/json', async (req, res) => {
 })
 
 // ---------------------------------------------------------
+// Classify a timestamp as 'current' (≤30 min ago), 'historical' (>30 min ago),
+// or 'future'
+// ---------------------------------------------------------
+const CURRENT_WINDOW_MS = 30 * 60 * 1000;
+
+const classifyTime = (timestamp) => {
+  if (!timestamp || timestamp === 'now') return 'current';
+  const ts = new Date(timestamp);
+  if (isNaN(ts.getTime())) return 'current'; // unparseable, treat as current
+  const diffMs = Date.now() - ts.getTime();
+  logger.info(`Timestamp: ${timestamp}, age: ${(diffMs / 60000)} min`);
+  if (diffMs < 0) return 'future';
+  if (diffMs <= CURRENT_WINDOW_MS) return 'current';
+  return 'historical';
+};
+
+// ---------------------------------------------------------
 // GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
 // ---------------------------------------------------------
 weatherRouter.get('/xml', async (req, res) => {
-  let cached = null;
+  const timestamp = req.query.time || 'now';
+  const timeType = classifyTime(timestamp);
 
-  if (redisClient.isOpen) {
-    // check cache first 
-    try { cached = await redisClient.get('weather:xml');} 
-    catch (err) { logger.error(`Error accessing Redis cache: ${err.message}`);}
-  } 
-  else {
+  // Reject future timestamps, no data exists yet
+  if (timeType === 'future') {
+    logger.info(`Rejected future timestamp: ${timestamp}`);
+    return res.status(400).send({ error: 'No data available for future timestamps' });
+  }
+
+  const current = timeType === 'current';
+
+  // Only cache current (last 30 min) requests
+  if (current && redisClient.isOpen) {
+    try {
+      const cached = await redisClient.get('weather:xml');
+      if (cached) {
+        logger.info('Cache found, returning cached current weather XML');
+        res.set('Content-Type', 'application/xml');
+        return res.send(cached);
+      }
+    } catch (err) {
+      logger.error(`Error accessing Redis cache: ${err.message}`);
+    }
+  } else if (!redisClient.isOpen) {
     logger.error('Redis client is not connected, skipping cache');
   }
 
-  if (cached) {
-    logger.info('Returning cached weather station data');
-    redisMemoryInfo(); // get info about Redis memory usage
-    return res.send(cached);
-  }
+  // Fetch from FMI API
+  logger.info(`No cached data found, fetching from FMI API (timestamp: ${timestamp})`);
+  const url = constructURL(current ? null : timestamp);
+  logger.info(`Constructed URL: ${url}`);
 
-  // continue fetching if not in cache
-  logger.info('No cached data found, fetching from FMI API');
-  const url = constructURL();
-  logger.info(`Constructed URL for fetching weather data: ${url}`);
   const xmlData = await fetch(url)
     .then(r => r.text())
     .catch(err => {
       logger.error(`Error fetching weather data from FMI API: ${err.message}`);
+      return null;
     });
 
-  if (!redisClient.isOpen) {
-    logger.error('Redis client is not connected, skipping cache');
-  } 
-  else {
-    // cache the data in Redis for 30 minutes
-    await redisClient.set(
-      'weather:xml',
-      xmlData,
-      { EX: 1800 }
-    );
-    logger.info('Cached weather XML data in Redis for 30 minutes');
-    redisMemoryInfo(); // get info about Redis memory usage
-  } 
-  // return xml data as response
+  if (!xmlData) {
+    return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
+  }
+
+  // Cache  data for 30 minutes
+  if (current && redisClient.isOpen) {
+    try {
+      await redisClient.set('weather:xml', xmlData, { EX: 1800 });
+      logger.info('Cached current weather XML in Redis for 30 minutes');
+      redisMemoryInfo();
+    } catch (err) {
+      logger.error(`Error caching data in Redis: ${err.message}`);
+    }
+  }
+
   res.set('Content-Type', 'application/xml');
   res.send(xmlData);
 })
