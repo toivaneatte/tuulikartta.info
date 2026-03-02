@@ -174,25 +174,29 @@ var saa = saa || {};
     // Show/hide observation layers
     $('#show-observations').change(function() {
       if (this.checked == true) {
-        Tuulikartta.showStationObservations = true
+        saa.Tuulikartta.showStationObservations = true
         saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupSynop)
-        if(Tuulikartta.showRoadObservations)
-        saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupRoad)
+        if (saa.Tuulikartta.showRoadObservations) {
+          saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupRoad)
+        }
       } else {
-        Tuulikartta.showStationObservations = false
+        saa.Tuulikartta.showStationObservations = false
         saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupSynop)
-        if(Tuulikartta.showRoadObservations)
-        saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupRoad)
+        if (saa.Tuulikartta.showRoadObservations) {
+          saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupRoad)
+        }
       }
     })
 
     $('#road-observations').change(function() {
       if (this.checked == true) {
-        if(Tuulikartta.showStationObservations == true) saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
-        Tuulikartta.showRoadObservations = true
+        saa.Tuulikartta.showRoadObservations = true
+        if (saa.Tuulikartta.showStationObservations) {
+          Tuulikartta.drawData(window.selectedParameter)
+        }
       } else {
+        saa.Tuulikartta.showRoadObservations = false
         saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupRoad)
-        Tuulikartta.showRoadObservations = false
       }
     })
 

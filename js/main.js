@@ -38,8 +38,8 @@ var saa = saa || {};
   var toggleDataSelect = 'close'
   var minRoadZoomLevel = 8
 
-  var showStationObservations = true
-  var showRoadObservations = false
+  saa.Tuulikartta.showStationObservations = true
+  saa.Tuulikartta.showRoadObservations = false
   var showOldObservations = false
   window.getLightningData = false
   window.getTrafficCamData = false
@@ -327,11 +327,14 @@ var saa = saa || {};
 
   Tuulikartta.drawData = function (param) {
 
-    if(!showStationObservations) return false
+    if(!saa.Tuulikartta.showStationObservations) return false
     Tuulikartta.clearMarkers()
 
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
     saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    if (saa.Tuulikartta.showRoadObservations) {
+      saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
+    }
 
     // Choose correct max width
     if (L.Browser.mobile) {
