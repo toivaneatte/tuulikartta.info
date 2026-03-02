@@ -10,6 +10,7 @@ const xml2js = require('xml2js');
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
+const { db } = require('../utils/db');
 
 const xmlParser = new xml2js.Parser();
 
@@ -215,6 +216,50 @@ weatherRouter.get('/xml', async (req, res) => {
   // return xml data as response
   res.set('Content-Type', 'application/xml');
   res.send(xmlData);
+})
+
+// ---------------------------------------------------------
+// GET /api/weather/favourites/:fmisid - returns parsed observations from SQLite
+// Optional query param: ?time=2026-02-25T14:30:00Z
+// Without time: returns the most recent observation for the station
+// With time: returns the observation closest to the given timestamp
+// ---------------------------------------------------------
+weatherRouter.get('/favourites/:fmisid', (req, res) => {
+  const fmisid = parseInt(req.params.fmisid, 10);
+  if (isNaN(fmisid)) {
+    return res.status(400).send({ error: 'Invalid fmisid' });
+  }
+
+  const time = req.query.time;
+  let row;
+
+  try {
+    if (time) {
+      row = db.prepare(`
+        SELECT * FROM favourite_observations
+        WHERE fmisid = ?
+        ORDER BY ABS(strftime('%s', timestamp) - strftime('%s', ?))
+        LIMIT 1
+      `).get(fmisid, time);
+    } else {
+      row = db.prepare(`
+        SELECT * FROM favourite_observations
+        WHERE fmisid = ?
+        ORDER BY timestamp DESC
+        LIMIT 1
+      `).get(fmisid);
+    }
+  } catch (err) {
+    logger.error(`Error querying SQLite for fmisid ${fmisid}: ${err.message}`);
+    return res.status(500).send({ error: 'Internal error' });
+  }
+
+  if (!row) {
+    return res.status(404).send({ error: 'No data found for this station' });
+  }
+
+  logger.info(`Returning favourite observation for fmisid ${fmisid}`);
+  res.send(row);
 })
 
 // ---------------------------------------------------------

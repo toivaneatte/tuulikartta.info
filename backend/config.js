@@ -18,21 +18,26 @@ const favouriteStations = [
   { name: 'Tampere', fmisid: 101311, onOff: 1 },
 ];
 
+// How many days to keep favourite station observations in SQLite
+const favouriteRetentionDays = 3;
+
+// Parameters to fetch for favourite stations (same as all stations)
+const favouriteParameters = 'ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint';
+
 // fetch data for favourite stations in this period.
 const fetchFavouritePeriod = '*/30 * * * * *'
 /*
-* * * * * *
-│ │ │ │ │ │
-│ │ │ │ │ └── day of week
-│ │ │ │ └──── month
-│ │ │ └────── day of month
-│ │ └──────── hour
-│ └────────── minute
-└──────────── second
+* * * * *
+│ │ │ │ │
+│ │ │ │ └── day of week
+│ │ │ └──── month
+│ │ └────── day of month
+│ └──────── hour
+└────────── minute
 */
-// Examples: 
-// Fetch data every 30 seconds: '*/30 * * * * *'
-// Every 30mins: '*/30 * * * *'
+// Examples:
+// Every 5 minutes: '*/5 * * * *'
+// Every 30 minutes: '*/30 * * * *'
 
 module.exports = {
   version,
@@ -40,5 +45,7 @@ module.exports = {
   debugMode,
   FMIWeatherURL,
   favouriteStations,
-  fetchFavouritePeriod
+  fetchFavouritePeriod,
+  favouriteRetentionDays,
+  favouriteParameters
 };

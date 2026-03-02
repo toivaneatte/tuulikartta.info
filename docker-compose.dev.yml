@@ -36,6 +36,9 @@ services:
       - "3000:3000"
     environment:
       - REDIS_URL=redis://redis:6379
+      - DB_PATH=/var/data/favourites.db
+    volumes:
+      - favourites-db:/var/data
     networks:
       - tuulikartta-network
 
@@ -58,4 +61,6 @@ networks:
 volumes:
   data:
   cache:
+    driver: local
+  favourites-db:
     driver: local
