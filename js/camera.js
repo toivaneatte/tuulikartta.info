@@ -496,6 +496,7 @@ camera.normalizeWeatherStation = function(raw) {
         let cleanName = feature.properties.name.substring(feature.properties.name.indexOf("_") + 1).replaceAll("_", " ");
         w.document.getElementById("stationName").textContent =
         `Asema - ${cleanName}`;
+        w.document.title = cleanName;
 
         // Collect station data
         const stationId = feature.properties && feature.properties.id;
@@ -531,15 +532,16 @@ camera.normalizeWeatherStation = function(raw) {
           for (let i = 0; i < imagePresets.length; i++) {
             const preset = imagePresets[i].preset;
             const presetTitle = camera.resolvePresetTitle(preset);
+            const cleanPresetTitle = presetTitle.replaceAll("_", " ");
             // Make the HTML image output and insert it into the popup window 
             if (i == 0) {
               // Build the HTML for the image and insert it into the main picture container
               let mainOutput = `<img src="${imagePresets[i].url}"
                                 style="width:97%;
                                 margin: 10px auto;"
-                                alt="${presetTitle}">
+                                alt="${cleanPresetTitle}">
                                 <p style="text-align:center; color: black;
-                                font-size: 1.5em; margin: 1px;">${presetTitle}</p>`;
+                                font-size: 1.5em; margin: 1px;">${cleanPresetTitle}</p>`;
               w.document.getElementById("mainPic").innerHTML = mainOutput;
             } else {
               // Build the HTML for the image and insert it into the thumbnail container
@@ -564,7 +566,7 @@ camera.normalizeWeatherStation = function(raw) {
                               var tmpAlt=mainImg.alt;
                               mainImg.alt=miniImg.alt||'';
                               miniImg.alt=tmpAlt||'';})(this)"
-                            style="background-color: #cce6ff;
+                            style="background-color: #ccefff;
                             border-radius: 5px;
                             border: none;
                             padding: 0;
@@ -576,9 +578,9 @@ camera.normalizeWeatherStation = function(raw) {
                             style="width:200px;
                             padding: 3px;
                             margin-bottom: 3px;"
-                            alt="${presetTitle}">
+                            alt="${cleanPresetTitle}">
                             <span style="text-align:center; color: black; 
-                            padding: 2px;">${presetTitle}</span>
+                            padding: 2px;">${cleanPresetTitle}</span>
                             </button>`;
               w.document.getElementById("miniPics").innerHTML += output;
             }
@@ -623,15 +625,17 @@ camera.normalizeWeatherStation = function(raw) {
               }
 
               // Hide road data if not available
-              let roadDataAvailable = false;
-              for (const el of w.document.getElementById("roadGroup").querySelectorAll(".dataRow")) {
-                if (el.style.display !== "none") {
-                  roadDataAvailable = true;
-                  break;
+              for (const group of w.document.querySelectorAll(".dataGroup")) {
+                let roadDataAvailable = false;
+                for (const el of group.querySelectorAll(".dataRow")) {
+                  if (el.style.display !== "none") {
+                    roadDataAvailable = true;
+                    break;
+                  }
                 }
-              }
-              if (!roadDataAvailable) {
-                w.document.getElementById("roadGroup").style.display = "none";
+                if (!roadDataAvailable) {
+                  group.style.display = "none";
+                }
               }
             });
           }
