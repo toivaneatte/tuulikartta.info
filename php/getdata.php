@@ -20,6 +20,17 @@ error_log("synop data handled");
 
 $synopdata = $dataMiner->serializeData($synopdata);
 
+// road observations
+$roadSettings = array();
+$roadSettings["stationtype"]    = "road";
+$roadSettings["parameters"]     = "ILMA";
+$roadSettings["storedquery_id"] = "https://tie.digitraffic.fi/api/weather/v1";
+$roadSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+$roadData = $dataMiner->multipointcoverage($timestamp, $roadSettings, false);
+error_log("road data handled");
+
+$roadData = $dataMiner->serializeData($roadData);
+
 // STUK observations
 $radiationSettings = array();
 $radiationSettings["stationtype"]    = "radiation";
@@ -110,7 +121,7 @@ foreach ($airRadioByKey as $row) {
 }
 
 // Combine all data
-$combinedData = array_merge($synopdata, $radiationData, $airRadioData);
+$combinedData = array_merge($synopdata, $roadData, $radiationData, $airRadioData);
 error_log("data combined");
 
 print json_encode($combinedData);
