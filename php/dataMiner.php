@@ -250,6 +250,33 @@ class DataMiner{
         return $final;
     }
 
+    public function roadData($timestamp, $roadSettings, $debug = false) {
+        $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
+
+        $metadataUrl = $WEATHER_API_BASE . "/stations/";
+        $metadataJson = file_get_contents($metadataUrl);
+        $data = json_decode($metadataJson);
+
+        foreach ($data->features as $station) {
+            $stationId = $station->properties->id;
+
+            $dataUrl = $WEATHER_API_BASE . "/stations/" . $stationId . "/data";
+            $stationJson = file_get_contents($dataUrl);
+            $stationData = json_decode($stationJson);
+
+            if (!isset($stationData->sensorValues)) continue;
+
+            foreach ($stationData->sensorValues as $sensor) {
+
+                if ($sensor->name === $roadSettings["parameters"]) {
+
+                    echo $sensor->name . ": " . $sensor->sensorValue . "\n";
+                }
+            }
+        }
+    }
+
+
     /**
      * Parse observation data from multipointcoverage for radionuclide data
      * @param    timestamp timestamp or now if latest observations
