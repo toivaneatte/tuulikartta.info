@@ -5,14 +5,15 @@ Description: This file contains the controller for handling weather-related API 
 
 const weatherRouter = require('express').Router()
 const { request } = require('express')
-const xml2js = require('xml2js');
+const xml2js = require('xml2js');  // not in use atm
 
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
 const { db } = require('../utils/db');
+const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 
-const xmlParser = new xml2js.Parser();
+const xmlParser = new xml2js.Parser(); // not in use atm
 
 /* The new URL for fetching weather data from FMI Open Data API:
 http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::forecast::harmonie::surface::point::multipointcoverage&place=helsinki&
@@ -25,17 +26,29 @@ http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedqu
 // ---------------------------------------------------------
 // Functions for fetching and processing weather data from FMI API
 // ---------------------------------------------------------
+
+
+const fetchNewFMIData = async (url) => {
+  logger.info(`Fetching weather data from FMI API with URL: ${url}`);
+  const xml = await fetch(url).then(r => r.text());
+  const observations = await parseFMIMultipointcoverage(xml, config.favouriteParameters);
+  logger.info(`Fetched and processed ${observations.length} observations from FMI API.`);
+  return observations;
+}
+
+
+/*
 const fetchNewFMIData = async (url) => {
   logger.info(`Fetching weather data from FMI API with URL: ${url}`);
   const parsedData = await fetch(url)
     .then(r => r.text())
     .then(xmlString => xmlParser.parseStringPromise(xmlString))
-  
+
   result1 = []; // this has [{ name: 'Helsinki-Vantaa', fmisid: 100971 }]
   // all the weather stations are in this array
   result2 = []; // this has [{ name: 'Helsinki-Vantaa', coordinates: [24.963, 60.317] }]
-  const members = parsedData['wfs:FeatureCollection']['wfs:member'] 
-  
+  const members = parsedData['wfs:FeatureCollection']['wfs:member']
+
   //Start the iteration of members
   members.forEach(member => {
     // station names and fmisids
@@ -46,7 +59,7 @@ const fetchNewFMIData = async (url) => {
         ['sam:sampledFeature'][0]
         ['target:LocationCollection'][0]
         ['target:member'];
-    
+
     stations.forEach(station => {
       const location = station['target:Location'][0];
       const name = location['gml:name'][0]._;
@@ -80,7 +93,7 @@ const fetchNewFMIData = async (url) => {
       });
     });
   })
-  
+
   // The final array of stations with both fmisid and coordinates
   const final = result1.map((station, index) => ({
     ...station,
@@ -90,6 +103,7 @@ const fetchNewFMIData = async (url) => {
   logger.info(`Fetched and processed ${final.length} weather stations from FMI API.`);
   return final;
 }
+*/
 
 // ---------------------------------------------------------
 // Functions for showing Redis memory info
