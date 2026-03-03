@@ -192,7 +192,7 @@ var saa = saa || {};
       if (this.checked == true) {
         saa.Tuulikartta.showRoadObservations = true
         if (saa.Tuulikartta.showStationObservations) {
-          Tuulikartta.drawData(window.selectedParameter)
+          saa.Tuulikartta.drawData(window.selectedParameter)
         }
       } else {
         saa.Tuulikartta.showRoadObservations = false
