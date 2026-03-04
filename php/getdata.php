@@ -20,7 +20,9 @@ error_log("synop data handled");
 
 $synopdata = $dataMiner->serializeData($synopdata);
 
+print json_encode($synopdata);
 // STUK observations
+/*
 $radiationSettings = array();
 $radiationSettings["stationtype"]    = "radiation";
 $radiationSettings["parameters"]     = "DR_PT10M_avg";

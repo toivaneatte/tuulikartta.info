@@ -95,12 +95,11 @@ class DataMiner{
         }
 
         $url = $url . $this->setTime($timestamp, $graph);
-        $ctx = stream_context_create(array('http'=>
-            array(
-                'timeout' => 240,  //1200 Seconds is 20 Minutes
-            )
-        ));
-        $xmlData = file_get_contents($url, false, $ctx);
+
+        // send reguest to nodejs backend to handle FMI API request and response caching
+        $backendUrl = "http://backend:3000/api/weather/xml";
+
+        $xmlData = file_get_contents($backendUrl); // send request to backend and get response
         if($xmlData == false) {
             return [];
         }

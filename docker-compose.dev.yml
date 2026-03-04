@@ -23,6 +23,39 @@ services:
     environment:
       - APACHE_RUN_USER=www-data
       - APACHE_RUN_GROUP=www-data
+    networks:
+      - tuulikartta-network
+
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DB_PATH=/var/data/favourites.db
+    volumes:
+      - favourites-db:/var/data
+    networks:
+      - tuulikartta-network
+
+  redis:
+    container_name: redis
+    image: redis:7.4-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --save 20 1 --loglevel warning
+    volumes:
+      - cache:/data
+    networks:
+      - tuulikartta-network
+  
+networks:
+  tuulikartta-network:
+    driver: bridge
 
   osm-import:
     container_name: osm-import
@@ -52,3 +85,7 @@ volumes:
   data:
   osm-data:
   osm-tiles:
+  cache:
+    driver: local
+  favourites-db:
+    driver: local
