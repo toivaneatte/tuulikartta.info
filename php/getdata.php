@@ -120,8 +120,11 @@ foreach ($airRadioByKey as $row) {
 	$airRadioData[] = $row;
 }
 
+// R-values
+$R_Values = $dataMiner->getRValues();
+
 // Combine all data
-$combinedData = array_merge($synopdata, /*$roadData,*/ $radiationData, $airRadioData);
+$combinedData = array_merge($synopdata, /*$roadData,*/ $radiationData, $airRadioData, $R_Values);
 error_log("data combined");
 
 print json_encode($combinedData);

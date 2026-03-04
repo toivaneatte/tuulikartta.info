@@ -606,6 +606,33 @@ var saa = globalThis.saa;
         }
       }
 
+      if (param === 'rVal') {
+        // Handle R-values - only for magnetometer stations
+        if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
+          var paramValue = saa.Tuulikartta.data[i]['rVal']
+          if (paramValue !== null && paramValue !== undefined) {
+            var fillColor = Tuulikartta.resolveRProbability(saa.Tuulikartta.data[i]['rProb'])
+            var hex = fillColor.substr(1)
+            hex = 'hex' + hex
+
+            var marker = L.marker(new L.LatLng(saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']),
+              {
+                interactive: true,
+                keyboard: false,
+                icon: Tuulikartta.createLabelIcon(hex, parseFloat(paramValue).toFixed(2))
+              })
+
+            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+            saa.Tuulikartta.data[i]['fmisid']),{
+              maxWidth: maxWidth
+            })
+            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+            marker.type = saa.Tuulikartta.data[i]['type']
+          }
+        }
+      }
+
       if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
 
         var fillColor = Tuulikartta.resolveTemperature(saa.Tuulikartta.data[i][param])
