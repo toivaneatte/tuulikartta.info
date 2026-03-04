@@ -198,6 +198,20 @@ var saa = saa || {};
   }
 
   // ---------------------------------------------------------
+  // Resolve R-probability to color (RWC)
+  // ---------------------------------------------------------
+
+  Tuulikartta.resolveRProbability = function (rProb) {
+    console.log('Resolving R-probability:', rProb)
+    if (rProb === "low") return '#8aedbb'
+    if (rProb === "medium") return '#ffcc00'
+    if (rProb === "high") return '#ff5324'
+    console.log('no color match')
+    return '#ffffff'
+  }
+
+
+  // ---------------------------------------------------------
   // Resolve WaWa weather code to text and color
   // ---------------------------------------------------------
 

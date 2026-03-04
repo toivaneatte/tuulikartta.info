@@ -542,7 +542,7 @@ var saa = saa || {};
         if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
           var paramValue = saa.Tuulikartta.data[i]['rVal']
           if (paramValue !== null && paramValue !== undefined) {
-            var fillColor = '#f7f7f7' // change color according to rProb!!
+            var fillColor = Tuulikartta.resolveRProbability(saa.Tuulikartta.data[i]['rProb'])
             var hex = fillColor.substr(1)
             hex = 'hex' + hex
 
