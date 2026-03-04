@@ -202,11 +202,9 @@ var saa = saa || {};
   // ---------------------------------------------------------
 
   Tuulikartta.resolveRProbability = function (rProb) {
-    console.log('Resolving R-probability:', rProb)
     if (rProb === "low") return '#8aedbb'
     if (rProb === "medium") return '#ffcc00'
     if (rProb === "high") return '#ff5324'
-    console.log('no color match')
     return '#ffffff'
   }
 

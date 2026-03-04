@@ -35,5 +35,4 @@ $airRadioData = [];
 
 // Combine all data
 $combinedData = array_merge($synopdata, $radiationData, $R_Values);
-error_log("logging from getdata");
 print json_encode($combinedData);
