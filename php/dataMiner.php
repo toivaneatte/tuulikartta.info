@@ -52,6 +52,29 @@ class DataMiner{
       return $url;
     }
 
+        private function setTimeRange($timestamp, $graph, $rangeDays) {
+            if (!$graph) {
+                return "";
+            }
+
+            $days = is_numeric($rangeDays) ? intval($rangeDays) : 1;
+            if ($days < 1) {
+                $days = 1;
+            }
+
+            if ($timestamp === "now") {
+                $endtime = new DateTime();
+            } else {
+                $endtime = new DateTime($timestamp, new DateTimeZone('UTC'));
+            }
+
+            $end = $endtime->format('Y-m-d\TH:i:s\Z');
+            $start = $endtime->sub(new DateInterval('P'.$days.'D'));
+            $start = $start->format('Y-m-d\TH:i:s\Z');
+
+            return "&starttime={$start}&endtime={$end}";
+        }
+
     /**
     *
     * Parse observation data from WFS multipointcoverage
@@ -261,6 +284,130 @@ class DataMiner{
     }
 
     /**
+     * Parse observation data from multipointcoverage for radionuclide data
+     * @param    timestamp timestamp or now if latest observations
+     * @param    settings array that contains required query parameters
+     * @return   graph true if graph dat request
+     */
+    public function nuclideMultipointcoverage($timestamp,$settings,$graph,$rangeDays = 150) {
+        date_default_timezone_set("UTC");
+
+        $url = "";
+        $url .= "http://opendata.fmi.fi/wfs?request=getFeature";
+
+        foreach($settings as $key => $value) {
+          $url .= "&{$key}={$value}";
+        }
+
+        $url = $url . $this->setTimeRange($timestamp, $graph, $rangeDays);
+        $ctx = stream_context_create(array('http'=>
+            array(
+                'timeout' => 240,  //1200 Seconds is 20 Minutes
+            )
+        ));
+        $xmlData = file_get_contents($url, false, $ctx);
+        if($xmlData == false) {
+            return [];
+        }
+        if($xmlData == "") {
+            return [];
+        }
+
+        $resultString = simplexml_load_string($xmlData);
+
+        $final = [];
+        $data = $resultString->children("wfs", true);
+
+        foreach ($data->member as $member) {
+            $tmp = [];
+
+            $name = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sam", true)->sampledFeature
+                            ->children("target", true)->Location
+                            ->children("gml", true)->name;
+
+            $fmisid = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sam", true)->sampledFeature
+                            ->children("target", true)->Location
+                            ->children("gml", true)->identifier;
+
+            $time = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->phenomenonTime
+                            ->children("gml", true)->TimePeriod
+                            ->children("gml", true)->endPosition;
+
+            $pos = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sams", true)->shape
+                            ->children("gml", true)->Point
+                            ->children("gml", true)->pos;
+
+            $parameters = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->result
+                            ->children("gmlcov", true)->MultiPointCoverage
+                            ->children("gmlcov", true)->rangeType
+                            ->children("swe", true)->DataRecord
+                            ->children("swe", true)->field;
+
+            $observations = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->result
+                            ->children("gmlcov", true)->MultiPointCoverage
+                            ->children("gml", true)->rangeSet
+                            ->children("gml", true)->DataBlock
+                            ->children("gml", true)->doubleOrNilReasonTupleList;
+
+            $observationsText = trim((string)$observations);
+            $observationsArr = $observationsText === "" ? [] : preg_split('/\s+/', $observationsText);
+
+            $dataResults = [];
+            $i = 0;
+            foreach ($parameters as $parameter) {
+                $paramName = (string)$parameter->attributes()['name'];
+                $paramValue = isset($observationsArr[$i]) ? $observationsArr[$i] : null;
+                if ($paramValue === "" || strtolower((string)$paramValue) === "nan") {
+                    $paramValue = null;
+                } elseif (is_numeric($paramValue)) {
+                    $paramValue = floatval($paramValue);
+                }
+                $dataResults[$paramName] = $paramValue;
+                $i++;
+            }
+
+            $posText = trim((string)$pos);
+            $posParts = $posText === "" ? [] : preg_split('/\s+/', $posText);
+            $lat = null;
+            $lon = null;
+            if (count($posParts) >= 2) {
+                $lon = (float)$posParts[0];
+                $lat = (float)$posParts[1];
+                if ($lat < 40 && $lon > 40) {
+                    $swap = $lat; $lat = $lon; $lon = $swap;
+                }
+            }
+
+            $timeValue = (string)$time;
+            $epochtime = $timeValue !== "" ? strtotime($timeValue) : null;
+
+            $tmp["station"]   = (string)$name;
+            $tmp["fmisid"]    = (int)$fmisid;
+            $tmp["time"]      = $timeValue;
+            $tmp["epochtime"] = $epochtime;
+            $tmp["lat"]       = $lat;
+            $tmp["lon"]       = $lon;
+            $tmp["type"]      = "air_radio";
+            foreach ($dataResults as $k => $v) {
+                $tmp[$k] = $v;
+            }
+            array_push($final, $tmp);
+        }
+        return $final;
+    }
+    /**
     *
     * Get observation data from timeseries
     * @param    timestamp timestamp or now if latest observations
@@ -376,7 +523,21 @@ class DataMiner{
         $r_1d = 0;
         $tmin = 999;
         $tmax = -999;
+        $lastValidInstant = [];
+        $instantParams = ['ws_10min', 'wd_10min', 'wg_10min', 't2m', 'dewpoint', 'vis', 'rh', 'pressure', 'n_man', 'wawa', 'snow_aws', 'ri_10min'];
         for ($i = 0; $i <= count($data)-2; $i++) {
+            # track last valid instantaneous values for fallback
+            $hasAnyInstant = false;
+            foreach ($instantParams as $p) {
+                if (isset($data[$i][$p]) && $data[$i][$p] !== null && $data[$i][$p] !== "nan") {
+                    $lastValidInstant[$p] = $data[$i][$p];
+                    $hasAnyInstant = true;
+                }
+            }
+            if ($hasAnyInstant) {
+                $lastValidInstant['time'] = $data[$i]['time'];
+                $lastValidInstant['epochtime'] = $data[$i]['epochtime'];
+            }
             # check if fmisid value is the same as the next one (ie its the same station)
             if($data[$i]["fmisid"] === $data[$i+1]["fmisid"]) {
                 # check if observations are valid
@@ -412,6 +573,18 @@ class DataMiner{
                 if($wg_1d === -0.1){ $wg_1d = null; }
                 if($ws_max_dir === ""){ $ws_max_dir = null; }
                 if($wg_max_dir === ""){ $wg_max_dir = null; }
+                # fall back to last valid instantaneous values if latest entry has nulls
+                foreach ($instantParams as $p) {
+                    if (($data[$i][$p] === null || $data[$i][$p] === "nan") && isset($lastValidInstant[$p])) {
+                        $data[$i][$p] = $lastValidInstant[$p];
+                    }
+                }
+                if (isset($lastValidInstant['time']) &&
+                    ($data[$i]['ws_10min'] === null || $data[$i]['ws_10min'] === "nan") === false &&
+                    $data[$i]['time'] !== $lastValidInstant['time']) {
+                    $data[$i]['time'] = $lastValidInstant['time'];
+                    $data[$i]['epochtime'] = $lastValidInstant['epochtime'];
+                }
                 $data[$i]["ws_1d"] = $ws_1d;
                 $data[$i]["wg_1d"] = $wg_1d;
                 $data[$i]["wg_max_dir"] = $wg_max_dir;
@@ -429,6 +602,7 @@ class DataMiner{
                 $tmax = -999;
                 $wg_max_dir = "";
                 $ws_max_dir = "";
+                $lastValidInstant = [];
             }
 
         }
