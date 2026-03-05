@@ -92,6 +92,8 @@ var saa = saa || {};
     output += `<div id="weather-chart-${fmisid}"></div>`
     output += `<div id="weather-chart-${fmisid}_alt"></div>`
     output += `<div id="weather-chart-${fmisid}_alt2"></div>`
+    output += `<div id="weather-chart-${fmisid}_radiation"></div>`
+    output += `<div id="weather-chart-${fmisid}_air_radio"></div>`
     output += '</div>'
     output += `</div>`
 

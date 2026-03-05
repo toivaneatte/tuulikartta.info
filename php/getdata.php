@@ -119,6 +119,9 @@ foreach ($airRadioByKey as $row) {
 	$airRadioData[] = $row;
 }
 
+// R-values
+$R_Values = $dataMiner->getRValues();
+
 // Combine all data
 $combinedData = array_merge($synopdata, $roadData, $radiationData, $airRadioData);
 error_log("data combined");
