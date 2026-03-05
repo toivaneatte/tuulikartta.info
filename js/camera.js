@@ -520,11 +520,14 @@ camera.normalizeWeatherStation = function(raw) {
           for (let i = 0; i < presets.length; i++) {
             // Don't show presets not in collection
             if (presets[i].inCollection === false) continue;
+            // Skip if over a month old
+            if (moment().diff(presets[i].measuredTime, 'months') > 1) {
+              continue;
+            }
 
             const presetUrl = camera.resolvePresetImageUrl(presets[i]);
             if (presetUrl) {
               imagePresets.push({ preset: presets[i], url: presetUrl });
-
             }
           } 
 
