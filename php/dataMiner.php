@@ -250,31 +250,52 @@ class DataMiner{
         return $final;
     }
 
-    public function roadData($timestamp, $roadSettings, $debug = false) {
+/*    public function getRoadData($timestamp, $roadSettings, $debug = false) {
         $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
 
         $metadataUrl = $WEATHER_API_BASE . "/stations/";
         $metadataJson = file_get_contents($metadataUrl);
-        $data = json_decode($metadataJson);
+        $stations = json_decode($metadataJson, true);
 
-        foreach ($data->features as $station) {
-            $stationId = $station->properties->id;
+        $dataUrl = $metadataUrl . "/data";
+        $stationJson = file_get_contents($dataUrl);
+        $allSensorData = json_decode($stationJson, true);
 
-            $dataUrl = $WEATHER_API_BASE . "/stations/" . $stationId . "/data";
-            $stationJson = file_get_contents($dataUrl);
-            $stationData = json_decode($stationJson);
+        $indexedSensors = [];
+        if (isset($allSensorData['stations'])) {
+            foreach ($allSensorData['stations'] as $sData) {    
+                $indexedSensors[$sData['id']] = $sData['sensorValues'];
+            }
+    }
 
-            if (!isset($stationData->sensorValues)) continue;
+        $result = [];
+        $targets = $roadSettings["parameters"];
 
-            foreach ($stationData->sensorValues as $sensor) {
+        foreach ($stations['features'] as $station) {
+            $stationId = $station['properties']['id'];
 
-                if ($sensor->name === $roadSettings["parameters"]) {
+            if (!isset($indexedSensors[$stationId])) {
+                continue;
+            }
 
-                    echo $sensor->name . ": " . $sensor->sensorValue . "\n";
+            foreach ($indexedSensors[$stationId] as $sensor) {
+                if ($sensor['name'] === $targets) {
+                    $temp = [
+                        "station" => $station['properties']['name'],
+                        "id" => stationId,
+                        "lat" => $station['geometry']['coordinates'][1],
+                        "lon" => $station['geometry']['coordinates'][0],
+                        "type" => "road",
+                        "time"      => $sensor['measuredTime'],
+                        "epochtime" => strtotime($sensor['measuredTime']),
+                        $targets => floatval($sensor['value'])
+                    ];
+                    array_push($result, $temp);
                 }
             }
         }
-    }
+        return $result;
+    }*/
 
 
     /** Parse observation data about R-values from RWC
