@@ -413,6 +413,11 @@ function formatHighChart($data, $winddirections) {
       }
     }
 
+    // Lajittele päivämäärän mukaan (indeksi 0 = epochtime ms)
+    usort($formattedData['obs']['pb210'], fn($a, $b) => $a[0] <=> $b[0]);
+    usort($formattedData['obs']['be7'],   fn($a, $b) => $a[0] <=> $b[0]);
+    usort($formattedData['obs']['cs137'], fn($a, $b) => $a[0] <=> $b[0]);
+
     $formattedData['obs']['windrose'] = $winddirections;
 
     return $formattedData;
