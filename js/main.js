@@ -5,6 +5,12 @@
 * Main application coordinator - initializes namespace and delegates to modular components
 */
 
+// URL for fetching the OSM base map
+const OSM_TILE_SERVER_URL =
+  window.APP_CONFIG?.OSM_TILE_SERVER_URL ||
+  "http://localhost:8080/tile/{z}/{x}/{y}.png";
+
+
 // Use globalThis for compatibility with both browser and test environments
 globalThis.saa = globalThis.saa || {};
 var saa = globalThis.saa;
@@ -120,8 +126,13 @@ var saa = globalThis.saa;
       attribution: 'Tuulikartta.info'
     })
 
-    
-    saa.Tuulikartta.baselayer = L.tileLayer('http://localhost:8080/tile/{z}/{x}/{y}.png', {
+    // add OpenStreetMap tile layer from OSM data server
+
+    //console.log(`---------------------------------`);
+    //console.log("Using OSM tile server URL: " + OSM_TILE_SERVER_URL);
+    //console.log(`---------------------------------`);
+
+    saa.Tuulikartta.baselayer = L.tileLayer(OSM_TILE_SERVER_URL, {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map)
 

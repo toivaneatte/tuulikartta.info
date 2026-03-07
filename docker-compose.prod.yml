@@ -1,0 +1,11 @@
+services:
+  tuulikartta:
+    container_name: tuulikartta
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - PROD_MODE=true
+      - OSM_TILE_SERVER_URL=http://94.154.13.61/tiles/{z}/{x}/{y}.png
