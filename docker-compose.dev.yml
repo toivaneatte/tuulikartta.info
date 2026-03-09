@@ -52,10 +52,6 @@ services:
       - cache:/data
     networks:
       - tuulikartta-network
-  
-networks:
-  tuulikartta-network:
-    driver: bridge
 
   osm-import:
     container_name: osm-import
@@ -80,6 +76,10 @@ networks:
       osm-import:
         condition: service_completed_successfully
     shm_size: 256m
+
+networks:
+  tuulikartta-network:
+    driver: bridge
 
 volumes:
   data:

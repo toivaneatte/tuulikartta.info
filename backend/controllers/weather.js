@@ -126,19 +126,37 @@ const redisMemoryInfo = async () => {
 // ---------------------------------------------------------
 // Function for URL time construction
 // ---------------------------------------------------------
+/*
 const constructURL = () => {
-  // this is the format: 
+  // this is the format:
   // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
 
   const now = new Date();
-  const startTime = new Date(now.getTime()); 
+  const startTime = new Date(now.getTime());
   startTime.setHours(0, 0, 0, 0); // set to the start of the day (00:00:00)
   const endTime = new Date(now.getTime()); // now
 
   const startISO = startTime.toISOString();
   const endISO = endTime.toISOString();
 
-  const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&endtime=${endISO}&`; 
+  const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&endtime=${endISO}&`;
+  return fullURL;
+}
+*/
+
+const constructURLLatest = () => {
+  // this is the format:
+  // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
+
+  const now = new Date();
+  const startTime = new Date(now.getTime() - 15 * 60 * 1000); // now - 15 minutes
+  const endTime = new Date(now.getTime() + 10 * 60 * 1000);
+
+  const startISO = startTime.toISOString();
+  const endISO = endTime.toISOString();
+
+  //const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&endtime=${endISO}&`;
+  const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&`;
   return fullURL;
 }
 
@@ -161,8 +179,10 @@ weatherRouter.get('/json', async (req, res) => {
     return res.send(JSON.parse(cached));
   }
 
+
   // get data from FMI API
-  const stations = await fetchNewFMIData(config.FMIWeatherURL);
+  const url = constructURLLatest();
+  const stations = await fetchNewFMIData(url);
 
   // cache the data in Redis for 30 minutes
   if (!redisClient.isOpen) {

@@ -115,4 +115,4 @@ foreach ($airRadioByKey as $row) {
 $combinedData = array_merge($synopdata, $radiationData, $airRadioData);
 error_log("data combined");
 
-print json_encode($combinedData);
+*/
