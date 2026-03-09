@@ -1,7 +1,7 @@
 /*
-Description: Parses FMI WFS multipointcoverage XML into an array of observation
-objects. Uses the logic of dataMiner.php multipointcoverage() but in JS.
-Uses xml2js which is already a project dependency.
+Description: Parses FMI multipointcoverage XML into an array of observation
+objects. Uses the logic of dataMiner.php multipointcoverage but in JS.
+Uses xml2js which is a project dependency.
 */
 
 const xml2js = require('xml2js');

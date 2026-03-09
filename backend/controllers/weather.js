@@ -5,7 +5,6 @@ Description: This file contains the controller for handling weather-related API 
 
 const weatherRouter = require('express').Router()
 const { request } = require('express')
-const xml2js = require('xml2js');  // not in use atm
 
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
@@ -13,7 +12,6 @@ const config = require('../config');
 const { db } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 
-const xmlParser = new xml2js.Parser(); // not in use atm
 
 /* The new URL for fetching weather data from FMI Open Data API:
 http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::forecast::harmonie::surface::point::multipointcoverage&place=helsinki&
@@ -27,7 +25,6 @@ http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedqu
 // Functions for fetching and processing weather data from FMI API
 // ---------------------------------------------------------
 
-
 const fetchNewFMIData = async (url) => {
   logger.info(`Fetching weather data from FMI API with URL: ${url}`);
   const xml = await fetch(url).then(r => r.text());
@@ -36,74 +33,6 @@ const fetchNewFMIData = async (url) => {
   return observations;
 }
 
-
-/*
-const fetchNewFMIData = async (url) => {
-  logger.info(`Fetching weather data from FMI API with URL: ${url}`);
-  const parsedData = await fetch(url)
-    .then(r => r.text())
-    .then(xmlString => xmlParser.parseStringPromise(xmlString))
-
-  result1 = []; // this has [{ name: 'Helsinki-Vantaa', fmisid: 100971 }]
-  // all the weather stations are in this array
-  result2 = []; // this has [{ name: 'Helsinki-Vantaa', coordinates: [24.963, 60.317] }]
-  const members = parsedData['wfs:FeatureCollection']['wfs:member']
-
-  //Start the iteration of members
-  members.forEach(member => {
-    // station names and fmisids
-    const stations =
-      member['omso:GridSeriesObservation'][0]
-        ['om:featureOfInterest'][0]
-        ['sams:SF_SpatialSamplingFeature'][0]
-        ['sam:sampledFeature'][0]
-        ['target:LocationCollection'][0]
-        ['target:member'];
-
-    stations.forEach(station => {
-      const location = station['target:Location'][0];
-      const name = location['gml:name'][0]._;
-      const fmisid = parseInt(location['gml:identifier'][0]._, 10);
-      result1.push({
-        name: name,
-        fmisid: fmisid
-      });
-    })
-
-    // station names and coordinates
-    const stationLocations =
-      member['omso:GridSeriesObservation'][0]
-        ['om:featureOfInterest'][0]
-        ['sams:SF_SpatialSamplingFeature'][0]
-        ['sams:shape'][0]
-        ['gml:MultiPoint'][0];
-    const pointMembers = stationLocations['gml:pointMember'];
-
-    pointMembers.forEach(station => {
-      const point = station['gml:Point'][0];
-      //logger.info(`Processing station: ${JSON.stringify(point)}`);
-
-      const name = point['gml:name']?.[0] ?? null;
-      const pos = point['gml:pos']?.[0] ?? null;
-      //logger.info(`Station name: ${name}, Coordinates: ${pos}`);
-
-      result2.push({
-        name: name,
-        pos: pos   // e.g. "23.761 61.498"
-      });
-    });
-  })
-
-  // The final array of stations with both fmisid and coordinates
-  const final = result1.map((station, index) => ({
-    ...station,
-    ...result2[index]
-  }));
-
-  logger.info(`Fetched and processed ${final.length} weather stations from FMI API.`);
-  return final;
-}
-*/
 
 // ---------------------------------------------------------
 // Functions for showing Redis memory info
@@ -126,25 +55,9 @@ const redisMemoryInfo = async () => {
 // ---------------------------------------------------------
 // Function for URL time construction
 // ---------------------------------------------------------
-/*
+
 const constructURL = () => {
-  // this is the format:
-  // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
 
-  const now = new Date();
-  const startTime = new Date(now.getTime());
-  startTime.setHours(0, 0, 0, 0); // set to the start of the day (00:00:00)
-  const endTime = new Date(now.getTime()); // now
-
-  const startISO = startTime.toISOString();
-  const endISO = endTime.toISOString();
-
-  const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&endtime=${endISO}&`;
-  return fullURL;
-}
-*/
-
-const constructURLLatest = () => {
   // this is the format:
   // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
 
@@ -155,7 +68,10 @@ const constructURLLatest = () => {
   const startISO = startTime.toISOString();
   const endISO = endTime.toISOString();
 
+  // with endtime:
   //const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&endtime=${endISO}&`;
+
+  // only starttime:
   const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&`;
   return fullURL;
 }
@@ -181,7 +97,7 @@ weatherRouter.get('/json', async (req, res) => {
 
 
   // get data from FMI API
-  const url = constructURLLatest();
+  const url = constructURL();
   const stations = await fetchNewFMIData(url);
 
   // cache the data in Redis for 30 minutes
