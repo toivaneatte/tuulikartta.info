@@ -64,7 +64,7 @@ nodeCron.schedule(config.fetchFavouritePeriod, async () => {
 
   for (const station of config.favouriteStations) {
     if (station.onOff === 1) {
-      baseURL += `place=${station.name.toLowerCase()}&`;
+      baseURL += `fmisid=${station.fmisid}&`;
     }
   }
 

@@ -18,7 +18,7 @@ const favouriteParameters = 'ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_
 // Favourite weather stations for the application
 const favouriteStations = [
   { name: 'Pirkkala', fmisid: 101118, onOff: 1 },
-  { name: 'Tampere', fmisid: 101311, onOff: 1 },
+  { name: 'Tampere', fmisid: 101124, onOff: 1 }, //härmälä
 ];
 
 
