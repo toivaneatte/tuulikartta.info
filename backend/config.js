@@ -6,7 +6,10 @@ const serverPort = 3000;
 const debugMode = true;
 
 // Needed URLs for data fetching and processing
+// Used for the main map (all stations)
 const FMIWeatherURL = "http://opendata.fmi.fi/wfs?request=getFeature&stationtype=synop&parameters=ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint&storedquery_id=fmi::observations::weather::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326&timestep=10&";
+// Used for graph requests (single station by fmisid)
+const FMISingleStationURL = "http://opendata.fmi.fi/wfs?request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&parameters=ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint&timestep=10&";
 
 // Start and endtime look like this (debugging)
 // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
@@ -39,6 +42,7 @@ module.exports = {
   serverPort,
   debugMode,
   FMIWeatherURL,
+  FMISingleStationURL,
   favouriteStations,
   fetchFavouritePeriod
 };

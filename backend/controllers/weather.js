@@ -111,28 +111,44 @@ const redisMemoryInfo = async () => {
 // ---------------------------------------------------------
 // Function for URL time construction
 // ---------------------------------------------------------
-const constructURL = (timestamp = null) => {
-  // this is the format: 
-  // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
+// Params:
+//   timestamp  – ISO string or 'now' used for start-of-day window
+//   fmisid     – when set, uses FMISingleStationURL
+//   starttime  – explicit ISO window start (graph requests, forwarded from PHP setTime)
+//   endtime    – explicit ISO window end   (graph requests, forwarded from PHP setTime)
+//   parameters – comma-separated FMI parameter list; overrides the hardcoded one in the base URL
+              
+// When starttime+endtime are supplied they take priority over the timestamp logic
+const constructURL = (timestamp = null, { fmisid, starttime, endtime, parameters } = {}) => {
+  let baseURL = fmisid ? config.FMISingleStationURL : config.FMIWeatherURL;
+
+  // Replace the hardcoded parameter list in the base URL
+  if (parameters) {
+    baseURL = baseURL.replace(/parameters=[^&]+/, `parameters=${parameters}`);
+  }
+
+  // Graph requests: PHP already computed the correct 24-h window via setTime().
+  if (starttime && endtime) {
+    let url = `${baseURL}starttime=${starttime}&endtime=${endtime}&`;
+    if (fmisid) url += `fmisid=${fmisid}&`;
+    return url;
+  }
 
   let startTime, endTime;
-
   if (timestamp && timestamp !== 'now') {
     endTime = new Date(timestamp);
     startTime = new Date(endTime);
     startTime.setUTCHours(0, 0, 0, 0); // set to the start of UTC day
   } else {
     const now = new Date();
-    endTime = new Date(now.getTime()); // now
-    startTime = new Date(now.getTime());
+    endTime = now;
+    startTime = new Date(now);
     startTime.setHours(0, 0, 0, 0); // set to the start of today (local time)
   }
 
-  const startISO = startTime.toISOString();
-  const endISO = endTime.toISOString();
-
-  const fullURL = `${config.FMIWeatherURL}starttime=${startISO}&endtime=${endISO}&`; 
-  return fullURL;
+  let url = `${baseURL}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
+  if (fmisid) url += `fmisid=${fmisid}&`;
+  return url;
 }
 
 
@@ -198,6 +214,7 @@ const classifyTime = (timestamp) => {
 // ---------------------------------------------------------
 weatherRouter.get('/xml', async (req, res) => {
   const timestamp = req.query.time || 'now';
+  const { fmisid, starttime, endtime, parameters } = req.query;
   const timeType = classifyTime(timestamp);
 
   // Reject future timestamps, no data exists yet
@@ -208,12 +225,19 @@ weatherRouter.get('/xml', async (req, res) => {
 
   const current = timeType === 'current';
 
-  // Only cache current (last 30 min) requests
-  if (current && redisClient.isOpen) {
+  // Use a per-station cache key when a specific station is requested so that
+  // different stations don't overwrite each other's cached data.
+  const cacheKey = fmisid ? `weather:xml:${fmisid}` : 'weather:xml';
+
+  // Cache-first for current (≤30 min) requests. Per-station key prevents
+  // different stations from colliding. Historical requests always bypass cache.
+  const useCache = current;
+
+  if (useCache && redisClient.isOpen) {
     try {
-      const cached = await redisClient.get('weather:xml');
+      const cached = await redisClient.get(cacheKey);
       if (cached) {
-        logger.info('Cache found, returning cached current weather XML');
+        logger.info(`Cache found, returning cached XML (key: ${cacheKey})`);
         res.set('Content-Type', 'application/xml');
         return res.send(cached);
       }
@@ -225,8 +249,8 @@ weatherRouter.get('/xml', async (req, res) => {
   }
 
   // Fetch from FMI API
-  logger.info(`No cached data found, fetching from FMI API (timestamp: ${timestamp})`);
-  const url = constructURL(current ? null : timestamp);
+  logger.info(`No cached data found, fetching from FMI API (timestamp: ${timestamp}, fmisid: ${fmisid ?? 'all'})`);
+  const url = constructURL(current ? null : timestamp, { fmisid, starttime, endtime, parameters });
   logger.info(`Constructed URL: ${url}`);
 
   const xmlData = await fetch(url)
@@ -240,11 +264,11 @@ weatherRouter.get('/xml', async (req, res) => {
     return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
   }
 
-  // Cache  data for 30 minutes
-  if (current && redisClient.isOpen) {
+  // Cache current data (per-station key when fmisid is present)
+  if (useCache && redisClient.isOpen) {
     try {
-      await redisClient.set('weather:xml', xmlData, { EX: 1800 });
-      logger.info('Cached current weather XML in Redis for 30 minutes');
+      await redisClient.set(cacheKey, xmlData, { EX: 1800 });
+      logger.info(`Cached XML in Redis 30 min (key: ${cacheKey})`);
       redisMemoryInfo();
     } catch (err) {
       logger.error(`Error caching data in Redis: ${err.message}`);

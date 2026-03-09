@@ -73,8 +73,23 @@ class DataMiner{
 
         $url = $url . $this->setTime($timestamp, $graph);
 
-        // send reguest to nodejs backend to handle FMI API request and response caching
-        $backendUrl = "http://backend:3000/api/weather/xml?time=" . urlencode($timestamp);
+        // Forward fmisid and the time to the backend
+        $backendParams = ['time' => $timestamp];
+        if (isset($settings['fmisid'])) {
+            $backendParams['fmisid'] = $settings['fmisid'];
+        }
+        // Forward the parameter list so the backend requests exactly the same fields the PHP parser expects
+        if (isset($settings['parameters'])) {
+            $backendParams['parameters'] = $settings['parameters'];
+        }
+        // Extract the starttime/endtime from setTime() and forward them to the backend
+        if (preg_match('/starttime=([^&]+)/', $url, $m)) {
+            $backendParams['starttime'] = urldecode($m[1]);
+        }
+        if (preg_match('/endtime=([^&]+)/', $url, $m)) {
+            $backendParams['endtime'] = urldecode($m[1]);
+        }
+        $backendUrl = "http://backend:3000/api/weather/xml?" . http_build_query($backendParams);
 
         $xmlData = file_get_contents($backendUrl); // send request to backend and get response
         if($xmlData == false) {
