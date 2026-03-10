@@ -104,6 +104,7 @@ var saa = saa || {};
         html += '<div id="weather-chart-' + fmisid + '_alt" style="width:100%; height:400px;"></div>';
         html += '<div id="weather-chart-' + fmisid + '_alt2" style="width:100%; height:400px;"></div>';
         html += '<div id="weather-chart-' + fmisid + '_radiation" style="width:100%; height:400px;"></div>';
+        html += '<div id="weather-chart-' + fmisid + '_air_radio" style="width:100%; height:400px;"></div>';
         html += '</div>';
 
         $('#graph-box').html(html);
@@ -825,17 +826,17 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
         type: 'datetime',
         labels: {
             formatter: function () {
-                var date    = new Date(this.value),
-                    hours   = weatherGraph.formatTimeLabel(date.getHours()),
-                    minutes = weatherGraph.formatTimeLabel(date.getMinutes()),
-                    day     = weatherGraph.resolveWeekDay(date.getDay());
-
-                if( hours !== "00" ) {
-                    return hours + ":" + minutes;
+                var date = new Date(this.value);
+                var day = date.getDate();
+                var month = date.getMonth();
+                var year = date.getFullYear();
+                var months_fi = ['Tam', 'Hel', 'Maa', 'Huh', 'Tou', 'Kes', 'Hei', 'Elo', 'Syy', 'Lok', 'Marr', 'Jou'];
+                var months_en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                var months = window.selectedLanguage === 'en' ? months_en : months_fi;
+                if (day === 1) {
+                    return months[month] + ' ' + year;
                 }
-                else {
-                    return day;
-                }
+                return day + '. ' + months[month];
             }
         },
         style: {
@@ -861,7 +862,6 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
                 font: '12px Roboto, sans-serif'
             }
         },
-        tickInterval: 100,
         minorTickInterval: 'auto',
         minorTickColor: '#f2f2f2'
     },
@@ -923,6 +923,14 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
                 }
             }
         }]
+    },
+    plotOptions: {
+        line: {
+            marker: {
+                enabled: true,
+                radius: 2
+            }
+        }
     }
 });
 

@@ -1,4 +1,3 @@
-
 services:
   tuulikartta:
     container_name: tuulikartta
@@ -39,6 +38,9 @@ services:
       - /app/node_modules
     environment:
       - REDIS_URL=redis://redis:6379
+      - DB_PATH=/var/data/favourites.db
+    volumes:
+      - favourites-db:/var/data
     networks:
       - tuulikartta-network
 
@@ -53,12 +55,40 @@ services:
       - cache:/data
     networks:
       - tuulikartta-network
-  
+
+  osm-import:
+    container_name: osm-import
+    build:
+      context: ./karttapalvelin/import
+    volumes:
+      - osm-data:/data/database/
+    environment:
+      - DOWNLOAD_PBF=https://download.geofabrik.de/europe/finland-latest.osm.pbf
+
+  osm-tile-server:
+    container_name: osm-tile-server
+    build:
+      context: ./karttapalvelin/render
+    ports:
+      - "8080:80"
+    volumes:
+      - osm-data:/data/database/
+      - osm-tiles:/data/tiles/
+    command: ["run"]
+    depends_on:
+      osm-import:
+        condition: service_completed_successfully
+    shm_size: 256m
+
 networks:
   tuulikartta-network:
     driver: bridge
 
 volumes:
   data:
+  osm-data:
+  osm-tiles:
   cache:
+    driver: local
+  favourites-db:
     driver: local
