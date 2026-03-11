@@ -55,7 +55,15 @@ var saa = saa || {};
       localStorage.setItem('longitude', lon)
       localStorage.setItem('zoomlevel', zoom)
 
-      window.location.replace('#lang='+window.selectedLanguage+'#latlon='+Math.round(lat*100)/100+','+Math.round(lon*100)/100+','+zoom+'#parameter='+window.selectedParameter)
+      // debounce only the location.replace call
+      if (saa.Tuulikartta._replaceTimeout) clearTimeout(saa.Tuulikartta._replaceTimeout)
+      saa.Tuulikartta._replaceTimeout = setTimeout(function() {
+        window.location.replace(
+          '#lang='+window.selectedLanguage+
+          '#latlon='+Math.round(lat*100)/100+','+Math.round(lon*100)/100+','+zoom+
+          '#parameter='+window.selectedParameter
+        )
+      }, 300) // run once every 300ms at most
     })
 
     // Get observations with timestamp
