@@ -194,10 +194,12 @@ weatherRouter.get('/latest', async (req, res) => {
       return res.send(rows.map(obsToStation));
     }
 
-    // Not in SQLite, fetch from FMI API. 
+    // Not in SQLite, fetch a 20-min window around the requested time from FMI API.
     // Is not stored in sql since this is a historical request.
     logger.info(`No SQLite data within 5 min of ${timestamp}, fetching from FMI API`);
-    const url = constructURL(timestamp);
+    const endTime = new Date(timestamp);
+    const startTime = new Date(endTime.getTime() - 10 * 60 * 1000);
+    const url = `${config.FMIWeatherURL}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
     let observations;
     try {
       observations = await fetchNewFMIData(url);
