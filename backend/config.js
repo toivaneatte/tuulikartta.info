@@ -28,6 +28,13 @@ const favouriteStations = [
 // How many days to keep favourite station observations in SQLite
 const favouriteRetentionDays = 3;
 
+// How many minutes the latest observation data is considered fresh before re-fetching from FMI
+const currentDataMaxAgeMinutes = 10;
+
+// In minutes. How long the observations are kept in the database.
+// observations older than this are fetched straight from fmi api.
+const mapObservationsWindowMinutes = 210;
+
 // fetch data for favourite stations in this period.
 const fetchFavouritePeriod = '*/10 * * * *'
 /*
@@ -52,5 +59,7 @@ module.exports = {
   favouriteStations,
   fetchFavouritePeriod,
   favouriteRetentionDays,
-  favouriteParameters
+  favouriteParameters,
+  currentDataMaxAgeMinutes,
+  mapObservationsWindowMinutes,
 };

@@ -9,7 +9,7 @@ const { request } = require('express')
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
-const { db } = require('../utils/db');
+const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 
 
@@ -17,7 +17,7 @@ const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::forecast::harmonie::surface::point::multipointcoverage&place=helsinki&
 */
 
-/* Test URL 
+/* Test URL
 http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=helsinki&
 */
 
@@ -61,7 +61,7 @@ const redisMemoryInfo = async () => {
 //   starttime  – explicit ISO window start (graph requests, forwarded from PHP setTime)
 //   endtime    – explicit ISO window end   (graph requests, forwarded from PHP setTime)
 //   parameters – comma-separated FMI parameter list; overrides the hardcoded one in the base URL
-              
+
 // When starttime+endtime are supplied they take priority over the timestamp logic
 const constructURL = (timestamp = null, { fmisid, starttime, endtime, parameters } = {}) => {
   let baseURL = fmisid ? config.FMISingleStationURL : config.FMIWeatherURL;
@@ -96,11 +96,166 @@ const constructURL = (timestamp = null, { fmisid, starttime, endtime, parameters
 }
 
 
+
+// ---------------------------------------------------------
+// Classify a timestamp as 'current' (≤30 min ago), 'historical' (>30 min ago),
+// or 'future'. Used by /xml endpoint.
+// ---------------------------------------------------------
+const CURRENT_WINDOW_MS = 30 * 60 * 1000;
+
+const classifyTime = (timestamp) => {
+  if (!timestamp || timestamp === 'now') return 'current';
+  const ts = new Date(timestamp);
+  if (isNaN(ts.getTime())) return 'current';
+  const diffMs = Date.now() - ts.getTime();
+  logger.info(`Timestamp: ${timestamp}, age: ${(diffMs / 60000)} min`);
+  if (diffMs < 0) return 'future';
+  if (diffMs <= CURRENT_WINDOW_MS) return 'current';
+  return 'historical';
+};
+
+
+// ---------------------------------------------------------
+// Converts a raw observation object from FMI parser or SQLite row to the
+// station response format with epochtime, dewpoint difference and type fields.
+// ---------------------------------------------------------
+const obsToStation = (obs) => {
+  const epochtime = Math.floor(new Date(obs.timestamp).getTime() / 1000);
+  const t2mdewpoint = (obs.t2m !== null && obs.dewpoint !== null)
+    ? parseFloat((obs.t2m - obs.dewpoint).toFixed(2))
+    : null;
+  return {
+    fmisid:      obs.fmisid,
+    station:     obs.station,
+    lat:         obs.lat,
+    lon:         obs.lon,
+    time:        obs.timestamp,
+    epochtime,
+    type:        'synop',
+    ri_10min:    obs.ri_10min,
+    ws_10min:    obs.ws_10min,
+    wg_10min:    obs.wg_10min,
+    wd_10min:    obs.wd_10min,
+    vis:         obs.vis,
+    wawa:        obs.wawa,
+    t2m:         obs.t2m,
+    n_man:       obs.n_man,
+    r_1h:        obs.r_1h,
+    snow_aws:    obs.snow_aws,
+    pressure:    obs.pressure,
+    rh:          obs.rh,
+    dewpoint:    obs.dewpoint,
+    t2mdewpoint,
+  };
+};
+
+const computeLatestPerStation = (observations) => {
+  const byStation = {};
+  observations.forEach(obs => {
+    if (!byStation[obs.fmisid] || obs.timestamp > byStation[obs.fmisid].timestamp) {
+      byStation[obs.fmisid] = obs;
+    }
+  });
+  return Object.values(byStation).map(obsToStation);
+};
+
+
+// ---------------------------------------------------------
+// GET /api/weather/latest
+// optional query param: ?time=2026-02-25T14:30:00Z
+// example: /api/weather/latest?time=2026-03-10T14:30:00Z
+//
+// can be called with or without timestamp
+// with timestamp: returns the observation closest to that time (from SQLite if within 5 min, else from FMI API)
+// without timestamp: returns the latest observation for each station (from SQLite if data is fresh enough, else from FMI API)
+// ---------------------------------------------------------
+weatherRouter.get('/latest', async (req, res) => {
+  const timestamp = req.query.time;
+
+  if (timestamp && timestamp !== 'now' && new Date(timestamp) > new Date()) {
+    logger.info(`Rejected future timestamp: ${timestamp}`);
+    return res.status(400).send({ error: 'No data available for future timestamps' });
+  }
+
+
+  // When time is given:
+
+
+  // time given: SQLite if close enough, else FMI API
+  if (timestamp && timestamp !== 'now') {
+    const closest = getClosestMapTimestamp.get(timestamp);
+    const diffMs = closest
+      ? Math.abs(new Date(timestamp).getTime() - new Date(closest.timestamp).getTime())
+      : Infinity;
+
+    if (closest && diffMs <= 5 * 60 * 1000) {
+      const rows = getMapObsByTimestamp.all(closest.timestamp);
+      logger.info(`SQLite hit for time=${timestamp}, snapshot at ${closest.timestamp} (diff: ${Math.round(diffMs / 60000)} min, ${rows.length} stations)`);
+      return res.send(rows.map(obsToStation));
+    }
+
+    // Not in SQLite, fetch from FMI API. 
+    // Is not stored in sql since this is a historical request.
+    logger.info(`No SQLite data within 5 min of ${timestamp}, fetching from FMI API`);
+    const url = constructURL(timestamp);
+    let observations;
+    try {
+      observations = await fetchNewFMIData(url);
+    } catch (err) {
+      logger.error(`Error fetching from FMI API: ${err.message}`);
+      return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
+    }
+    return res.send(computeLatestPerStation(observations));
+  }
+
+
+  // No time given, or it is "now":
+
+
+  // No time (current): return SQLite data if latest observation is fresh enough
+  const latestRow = getLatestMapTimestamp.get();
+  if (latestRow) {
+    const dataAgeMs = Date.now() - new Date(latestRow.timestamp).getTime();
+    if (dataAgeMs < config.currentDataMaxAgeMinutes * 60 * 1000) {
+      const rows = getMapObsByTimestamp.all(latestRow.timestamp);
+      logger.info(`SQLite data fresh (age: ${Math.round(dataAgeMs / 1000)}s), returning ${rows.length} stations`);
+      return res.send(rows.map(obsToStation));
+    }
+  }
+
+  // no time, or time is "now", but it is not fresh enough.
+  // Fetch from FMI, store all rows.  Return the latest observations per station.
+  const now = new Date();
+  const startTime = new Date(now.getTime() - config.mapObservationsWindowMinutes * 60 * 1000);
+  const url = `${config.FMIWeatherURL}starttime=${startTime.toISOString()}&endtime=${now.toISOString()}&`;
+  logger.info(`Fetching /latest from FMI API (last ${config.mapObservationsWindowMinutes} min)`);
+
+  let observations;
+  try {
+    observations = await fetchNewFMIData(url);
+  } catch (err) {
+    logger.error(`Error fetching /latest from FMI API: ${err.message}`);
+    return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
+  }
+
+  try {
+    insertMapObsMany(observations);
+    logger.info(`Stored ${observations.length} observations in map_observations`);
+    const deleted = deleteOldMapObservations(config.mapObservationsWindowMinutes);
+    if (deleted > 0) logger.info(`Deleted ${deleted} old map_observations rows`);
+  } catch (err) {
+    logger.error(`Error storing map_observations: ${err.message}`);
+  }
+
+  res.send(computeLatestPerStation(observations));
+});
+
+
 // ---------------------------------------------------------
 // GET /api/weather endpoint for fetching weather station data from FMI API and returning it as JSON
 // ---------------------------------------------------------
 weatherRouter.get('/json', async (req, res) => {
-  let cached = null; 
+  let cached = null;
 
   if (redisClient.isOpen) {
     try { cached = await redisClient.get('weather:json');}
@@ -138,22 +293,6 @@ weatherRouter.get('/json', async (req, res) => {
   res.send(stations);
 })
 
-// ---------------------------------------------------------
-// Classify a timestamp as 'current' (≤30 min ago), 'historical' (>30 min ago),
-// or 'future'
-// ---------------------------------------------------------
-const CURRENT_WINDOW_MS = 30 * 60 * 1000;
-
-const classifyTime = (timestamp) => {
-  if (!timestamp || timestamp === 'now') return 'current';
-  const ts = new Date(timestamp);
-  if (isNaN(ts.getTime())) return 'current'; // unparseable, treat as current
-  const diffMs = Date.now() - ts.getTime();
-  logger.info(`Timestamp: ${timestamp}, age: ${(diffMs / 60000)} min`);
-  if (diffMs < 0) return 'future';
-  if (diffMs <= CURRENT_WINDOW_MS) return 'current';
-  return 'historical';
-};
 
 // ---------------------------------------------------------
 // GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
