@@ -407,6 +407,72 @@ class DataMiner{
         }
         return $final;
     }
+
+    /**
+     * Get magnetometer data from FMI open data
+     * @param    timestamp timestamp or now if latest observations
+     * @param    settings array that contains required query parameters
+     * @return   data as an array
+     */
+    public function magnetometer($timestamp,$magnSettings,$graph) {
+        date_default_timezone_set("UTC");
+
+        $url = "";
+        $url .= "http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature";
+
+        foreach($magnSettings as $key => $value) {
+          $url .= "&{$key}={$value}";
+        }
+
+        $url = $url . $this->setTime($timestamp, $graph);
+        $ctx = stream_context_create(array('http'=>
+            array(
+                'timeout' => 240,  //1200 Seconds is 20 Minutes
+            )
+        ));
+        $xmlData = file_get_contents($url, false, $ctx);
+        if($xmlData == false) {
+            return [];
+        }
+        if($xmlData == "") {
+            return [];
+        }
+
+        $resultString = simplexml_load_string($xmlData);
+
+        $data = $resultString->children("wfs", true);
+        $final = [];
+
+        foreach($data as $member) {
+            $tmp = [];
+            $member = $member->children("BsWfs", true)->BsWfsElement;
+
+            $location = $member->children("BsWfs", true)->Location
+                            ->children("gml", true)->Point
+                            ->children("gml", true)->pos;
+
+            $time = $member->children("BsWfs", true)->Time;
+
+            $component = $member->children("BsWfs", true)->ParameterName;
+
+            $value = $member->children("BsWfs", true)->ParameterValue;
+
+            $location = explode(" ", (string)$location);
+            $lat = floatval($location[0]);
+            $lon = floatval($location[1]);
+
+            $tmp["lat"] = $lat;
+            $tmp["lon"] = $lon;
+            $tmp["time"] = (string)$time;
+            $tmp["type"] = "magnetometer";
+            $tmp["component"] = (string)$component;
+            $tmp["value"] = (string)$value;
+            array_push($final, $tmp);
+        }
+        
+        return $final;
+    }
+
     /**
     *
     * Get observation data from timeseries

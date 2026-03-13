@@ -123,8 +123,18 @@ foreach ($airRadioByKey as $row) {
 // R-values
 $R_Values = $dataMiner->getRValues();
 
+// Earth's magnetic field
+$magnSettings = array();
+$magnSettings["parameters"]     = "MAGNX_PT1M_AVG,MAGNY_PT1M_AVG,MAGNZ_PT1M_AVG";
+$magnSettings["storedquery_id"] = "fmi::observations::magnetometer::simple";
+$magnSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+$magnSettings["timestep"]       = "10";
+$magnData = $dataMiner->magnetometer($timestamp, $magnSettings, false);
+error_log("magnetometer data handled");
+
+
 // Combine all data
-$combinedData = array_merge($synopdata, /*$roadData,*/ $radiationData, $airRadioData, $R_Values);
+$combinedData = array_merge($synopdata, /*$roadData,*/ $radiationData, $airRadioData, $R_Values, $magnData);
 error_log("data combined");
 
 print json_encode($combinedData);
