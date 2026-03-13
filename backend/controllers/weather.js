@@ -9,7 +9,7 @@ const { request } = require('express')
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
-const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations } = require('../utils/db');
+const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 
 
@@ -194,7 +194,7 @@ weatherRouter.get('/latest', async (req, res) => {
       return res.send(rows.map(obsToStation));
     }
 
-    // Not in SQLite, fetch a 20-min window around the requested time from FMI API.
+    // Not in SQLite, fetch the observations for the requested timestamp from FMI API.
     // Is not stored in sql since this is a historical request.
     logger.info(`No SQLite data within 5 min of ${timestamp}, fetching from FMI API`);
     const endTime = new Date(timestamp);
@@ -407,7 +407,40 @@ weatherRouter.get('/favourites/:fmisid', (req, res) => {
   }
 
   logger.info(`Returning favourite observation for fmisid ${fmisid}`);
-  res.send(row);
+  res.send(obsToStation(row));
+})
+
+// ---------------------------------------------------------
+// GET /api/weather/favourites - returns latest observation for all favourite stations
+// Optional query param: ?time=2026-02-25T14:30:00Z
+// Without time: returns the most recent observation per station
+// With time: returns the closest observation per station to the given timestamp
+// Same format as /latest
+// ---------------------------------------------------------
+weatherRouter.get('/favourites', (req, res) => {
+  const time = req.query.time;
+  let rows;
+
+  try {
+    if (time && time !== 'now') {
+      const reqMs = new Date(time).getTime();
+      rows = getClosestFavouritePerStation.all(time).filter(row =>
+        Math.abs(new Date(row.timestamp).getTime() - reqMs) <= 5 * 60 * 1000
+      );
+    } else {
+      rows = getLatestFavouritePerStation.all();
+    }
+  } catch (err) {
+    logger.error(`Error querying favourite_observations: ${err.message}`);
+    return res.status(500).send({ error: 'Internal error' });
+  }
+
+  if (!rows || rows.length === 0) {
+    return res.status(404).send({ error: 'No data found' });
+  }
+
+  logger.info(`Returning ${rows.length} favourite station observations`);
+  res.send(rows.map(obsToStation));
 })
 
 // ---------------------------------------------------------

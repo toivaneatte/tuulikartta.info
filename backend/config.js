@@ -18,10 +18,17 @@ const FMISingleStationURL = "http://opendata.fmi.fi/wfs?request=getFeature&store
 // Parameters to fetch for favourite stations (same as all stations)
 const favouriteParameters = 'ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint';
 
-// Favourite weather stations for the application
+// Favourite weather stations for the application. The names can be whatever, fmisid is the important part.
 const favouriteStations = [
   { name: 'Pirkkala', fmisid: 101118, onOff: 1 },
-  { name: 'Tampere', fmisid: 101124, onOff: 1 }, //härmälä
+  { name: 'Tampere', fmisid: 101311, onOff: 1 },
+  { name: 'Hailuoto marjaniemi', fmisid: 101784, onOff: 1 },
+  { name: 'Kaskinen sälgrund', fmisid: 101256, onOff: 1 },
+  { name: 'Pyhtää lentokenttä', fmisid: 107029, onOff: 1 },
+  { name: 'Pyhäjärvi ojakylä', fmisid: 101705, onOff: 1 },
+  { name: 'Kuopio ritoniemi', fmisid: 101580, onOff: 1 },
+  { name: 'Lappeenranta hiekkapakka', fmisid: 101252, onOff: 1 },
+  { name: 'Pyhä', fmisid: 101958, onOff: 1 },
 ];
 
 
@@ -36,7 +43,7 @@ const currentDataMaxAgeMinutes = 10;
 const mapObservationsWindowMinutes = 210;
 
 // fetch data for favourite stations in this period.
-const fetchFavouritePeriod = '*/10 * * * *'
+const fetchFavouritePeriod = '*/1 * * * *'
 /*
 * * * * *
 │ │ │ │ │

@@ -8,6 +8,8 @@ header('Content-Type: application/json');
 $timestamp = isset($_GET["time"]) ? $_GET["time"] : "now";
 
 $backendUrl = "http://backend:3000/api/weather/latest";
+//$backendUrl = "http://backend:3000/api/weather/favourites";
+
 if ($timestamp && $timestamp !== "now") {
     $backendUrl .= "?time=" . urlencode($timestamp);
 }

@@ -109,6 +109,25 @@ const getMapObsByTimestamp = db.prepare(`
   SELECT * FROM map_observations WHERE timestamp = ?
 `);
 
+// Returns the latest observation per fmisid from favourite_observations
+const getLatestFavouritePerStation = db.prepare(`
+  SELECT * FROM favourite_observations
+  WHERE (fmisid, timestamp) IN (
+    SELECT fmisid, MAX(timestamp) FROM favourite_observations GROUP BY fmisid
+  )
+`);
+
+// Returns the closest observation per fmisid to a given ISO timestamp
+const getClosestFavouritePerStation = db.prepare(`
+  SELECT fo.* FROM favourite_observations fo
+  WHERE fo.timestamp = (
+    SELECT timestamp FROM favourite_observations
+    WHERE fmisid = fo.fmisid
+    ORDER BY ABS(strftime('%s', timestamp) - strftime('%s', ?))
+    LIMIT 1
+  )
+`);
+
 // Delete map_observations older than retentionMinutes
 const deleteOldMapObservations = (retentionMinutes) => {
   const cutoff = new Date(Date.now() - retentionMinutes * 60 * 1000);
@@ -126,4 +145,6 @@ module.exports = {
   getClosestMapTimestamp,
   getMapObsByTimestamp,
   deleteOldMapObservations,
+  getLatestFavouritePerStation,
+  getClosestFavouritePerStation,
 };
