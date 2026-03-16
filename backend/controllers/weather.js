@@ -217,12 +217,14 @@ weatherRouter.get('/latest', async (req, res) => {
 
   // No time param given, or it is "now":
 
+  // For delaying the fetch from fmi, so all stations have updated their observations, before the fetch.
+  const fetchDelayMinutes = 2;
 
   // Return SQLite data if latest observation is fresh enough
   const latestRow = getLatestMapTimestamp.get();
   if (latestRow) {
     const dataAgeMs = Date.now() - new Date(latestRow.timestamp).getTime();
-    if (dataAgeMs < config.currentDataMaxAgeMinutes * 60 * 1000) {
+    if (dataAgeMs < (config.currentDataMaxAgeMinutes + fetchDelayMinutes) * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(latestRow.timestamp);
       logger.info(`SQLite data fresh (age: ${Math.round(dataAgeMs / 1000)}s), returning ${rows.length} stations`);
       return res.send(rows.map(obsToStation));
@@ -231,9 +233,11 @@ weatherRouter.get('/latest', async (req, res) => {
 
   // no time, or time is "now", but it is not fresh enough.
   // Fetch from FMI, store all rows.  Return the latest observations per station.
+
   const now = new Date();
-  const startTime = new Date(now.getTime() - config.mapObservationsWindowMinutes * 60 * 1000);
-  const url = `${config.FMIWeatherURL}starttime=${startTime.toISOString()}&endtime=${now.toISOString()}&`;
+  const endTime = new Date(now.getTime() - fetchDelayMinutes * 60 * 1000);
+  const startTime = new Date(endTime.getTime() - config.mapObservationsWindowMinutes * 60 * 1000);
+  const url = `${config.FMIWeatherURL}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
   logger.info(`Fetching /latest from FMI API (last ${config.mapObservationsWindowMinutes} min)`);
 
   let observations;
