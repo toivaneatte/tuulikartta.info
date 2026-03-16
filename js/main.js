@@ -26,7 +26,7 @@ var saa = globalThis.saa;
   saa.Tuulikartta.markerGroupSynop = L.layerGroup()
   saa.Tuulikartta.markerGroupRoad = L.layerGroup()
   var emptymarker = []
-  var showForeignObservations = localStorage.getItem('foreignObservations') ? localStorage.getItem('foreigObservations') : false
+  var showForeignObservations = localStorage.getItem('foreignObservations') ? localStorage.getItem('foreignObservations') : false
 
   saa.Tuulikartta.graphIds = ""
 

@@ -253,12 +253,20 @@ class DataMiner{
     public function getRoadData($timestamp, $roadSettings, $debug = false) {
         $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
 
-        $metadataUrl = $WEATHER_API_BASE . "/stations/";
-        $metadataJson = file_get_contents($metadataUrl);
+        $opts = [
+            "http" => [
+                "method" => "GET",
+                "header" => "User-Agent: Tuulikartta (anni.s.laurila@tuni.fi)\r\n"
+            ]
+        ];
+        $context = stream_context_create($opts);
+
+        $metadataUrl = $WEATHER_API_BASE . "/stations";
+        $metadataJson = file_get_contents($metadataUrl, false, $context);
         $stations = json_decode($metadataJson, true);
 
         $dataUrl = $metadataUrl . "/data";
-        $stationJson = file_get_contents($dataUrl);
+        $stationJson = file_get_contents($dataUrl, false, $context);
         $allSensorData = json_decode($stationJson, true);
 
         $indexedSensors = [];
@@ -282,7 +290,7 @@ class DataMiner{
                 if ($sensor['name'] === $targets) {
                     $temp = [
                         "station" => $station['properties']['name'],
-                        "id" => stationId,
+                        "fmisid" => $stationId,
                         "lat" => $station['geometry']['coordinates'][1],
                         "lon" => $station['geometry']['coordinates'][0],
                         "type" => "road",

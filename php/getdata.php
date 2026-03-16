@@ -19,19 +19,17 @@ $synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
 error_log("synop data handled");
 
 $synopdata = $dataMiner->serializeData($synopdata);
-/*
+
 // road observations
 $roadSettings = array();
 $roadSettings["stationtype"]    = "road";
 $roadSettings["parameters"]     = "ILMA";
 $roadSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
-$roadData = $dataMiner->roadData($timestamp, $roadSettings, false);
-error_log("road data handled");*/
+$roadData = $dataMiner->getRoadData($timestamp, $roadSettings, false);
+error_log("road data handled");
 
-$roadData = $dataMiner->serializeData($roadData);
-/*
-$roadSettings["parameters"] = "ILMA";
-$roadData = $dataMiner->getRoadData($timestamp, $roadSettings, false);*/
+// $roadData = $dataMiner->serializeData($roadData);
+
 
 // STUK observations
 $radiationSettings = array();
