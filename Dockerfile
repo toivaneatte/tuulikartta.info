@@ -26,5 +26,10 @@ RUN mkdir -p ./data && \
     chmod -R 755 /var/www/html && \
     chmod -R 775 ./data
 
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
+
 # Switch to non-root user
 USER www-data
