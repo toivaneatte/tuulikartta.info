@@ -19,25 +19,6 @@ $synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
 error_log("synop data handled");
 
 $synopdata = $dataMiner->serializeData($synopdata);
-
-// road observations
-$settings = array();
-$settings["stationtype"]    = "road";
-$settings["parameters"]     = "TA";
-$settings["storedquery_id"] = "livi::observations::road::multipointcoverage";
-$settings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
-$settings["timestep"]       = "10";
-$roadData = $dataMiner->multipointcoverage($timestamp, $settings, false);
-foreach ($roadData as &$row) {
-    if (isset($row["TA"])) {
-        $row["t2m"] = $row["TA"];   // normalize road temperature to t2m
-        unset($row["TA"]);
-    }
-}
-error_log("synop data handled");
-
-//$roadData = $dataMiner->serializeData($roadData);
-
 /*
 // road observations
 $roadSettings = array();
@@ -45,9 +26,9 @@ $roadSettings["stationtype"]    = "road";
 $roadSettings["parameters"]     = "ILMA";
 $roadSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
 $roadData = $dataMiner->roadData($timestamp, $roadSettings, false);
-error_log("road data handled");
+error_log("road data handled");*/
 
-$roadData = $dataMiner->serializeData($roadData);*/
+$roadData = $dataMiner->serializeData($roadData);
 /*
 $roadSettings["parameters"] = "ILMA";
 $roadData = $dataMiner->getRoadData($timestamp, $roadSettings, false);*/

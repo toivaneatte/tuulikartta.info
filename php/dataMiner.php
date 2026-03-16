@@ -250,7 +250,7 @@ class DataMiner{
         return $final;
     }
 
-/*    public function getRoadData($timestamp, $roadSettings, $debug = false) {
+    public function getRoadData($timestamp, $roadSettings, $debug = false) {
         $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
 
         $metadataUrl = $WEATHER_API_BASE . "/stations/";
@@ -295,7 +295,7 @@ class DataMiner{
             }
         }
         return $result;
-    }*/
+    }
 
 
     /** Parse observation data about R-values from RWC
