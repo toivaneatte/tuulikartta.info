@@ -149,6 +149,10 @@ const obsToStation = (obs) => {
   };
 };
 
+// ---------------------------------------------------------
+// Compute the latest observation per station from a list of observations.
+// Used for /latest endpoint when fetching a one off request with a timestamp from FMI API.
+// ---------------------------------------------------------
 const computeLatestPerStation = (observations) => {
   const byStation = {};
   observations.forEach(obs => {
@@ -178,7 +182,7 @@ weatherRouter.get('/latest', async (req, res) => {
   }
 
 
-  // When time is given:
+  // When time param is given:
 
 
   // time given: SQLite if close enough, else FMI API
@@ -211,10 +215,10 @@ weatherRouter.get('/latest', async (req, res) => {
   }
 
 
-  // No time given, or it is "now":
+  // No time param given, or it is "now":
 
 
-  // No time (current): return SQLite data if latest observation is fresh enough
+  // Return SQLite data if latest observation is fresh enough
   const latestRow = getLatestMapTimestamp.get();
   if (latestRow) {
     const dataAgeMs = Date.now() - new Date(latestRow.timestamp).getTime();
@@ -249,51 +253,11 @@ weatherRouter.get('/latest', async (req, res) => {
     logger.error(`Error storing map_observations: ${err.message}`);
   }
 
-  res.send(computeLatestPerStation(observations));
+  const freshRow = getLatestMapTimestamp.get();
+  const rows = getMapObsByTimestamp.all(freshRow.timestamp);
+  res.send(rows.map(obsToStation));
 });
 
-
-// ---------------------------------------------------------
-// GET /api/weather endpoint for fetching weather station data from FMI API and returning it as JSON
-// ---------------------------------------------------------
-weatherRouter.get('/json', async (req, res) => {
-  let cached = null;
-
-  if (redisClient.isOpen) {
-    try { cached = await redisClient.get('weather:json');}
-    catch (err) { logger.error(`Error accessing Redis cache: ${err.message}`);}
-  } else {
-    logger.error('Redis client is not connected, skipping cache');
-  }
-
-  if (cached) {
-    logger.info('Returning cached weather station data');
-    return res.send(JSON.parse(cached));
-  }
-
-
-  // get data from FMI API
-  const url = constructURL();
-  const stations = await fetchNewFMIData(url);
-
-  // cache the data in Redis for 30 minutes
-  if (!redisClient.isOpen) {
-    logger.error('Redis client is not connected, skipping cache');
-  } else {
-    try {
-      await redisClient.set(
-        'weather:json',
-        JSON.stringify(stations),
-        { EX: 1800 }
-      );
-      logger.info('Cached weather station data in Redis for 30 minutes');
-    } catch (err) {
-      logger.error(`Error caching data in Redis: ${err.message}`);
-    }
-  }
-  // return that data
-  res.send(stations);
-})
 
 
 // ---------------------------------------------------------
@@ -367,50 +331,6 @@ weatherRouter.get('/xml', async (req, res) => {
 })
 
 // ---------------------------------------------------------
-// GET /api/weather/favourites/:fmisid - returns parsed observations from SQLite
-// Optional query param: ?time=2026-02-25T14:30:00Z
-// Without time: returns the most recent observation for the station
-// With time: returns the observation closest to the given timestamp
-// ---------------------------------------------------------
-weatherRouter.get('/favourites/:fmisid', (req, res) => {
-  const fmisid = parseInt(req.params.fmisid, 10);
-  if (isNaN(fmisid)) {
-    return res.status(400).send({ error: 'Invalid fmisid' });
-  }
-
-  const time = req.query.time;
-  let row;
-
-  try {
-    if (time) {
-      row = db.prepare(`
-        SELECT * FROM favourite_observations
-        WHERE fmisid = ?
-        ORDER BY ABS(strftime('%s', timestamp) - strftime('%s', ?))
-        LIMIT 1
-      `).get(fmisid, time);
-    } else {
-      row = db.prepare(`
-        SELECT * FROM favourite_observations
-        WHERE fmisid = ?
-        ORDER BY timestamp DESC
-        LIMIT 1
-      `).get(fmisid);
-    }
-  } catch (err) {
-    logger.error(`Error querying SQLite for fmisid ${fmisid}: ${err.message}`);
-    return res.status(500).send({ error: 'Internal error' });
-  }
-
-  if (!row) {
-    return res.status(404).send({ error: 'No data found for this station' });
-  }
-
-  logger.info(`Returning favourite observation for fmisid ${fmisid}`);
-  res.send(obsToStation(row));
-})
-
-// ---------------------------------------------------------
 // GET /api/weather/favourites - returns latest observation for all favourite stations
 // Optional query param: ?time=2026-02-25T14:30:00Z
 // Without time: returns the most recent observation per station
@@ -422,12 +342,14 @@ weatherRouter.get('/favourites', (req, res) => {
   let rows;
 
   try {
+    // if time is given and it is not "now", return the closest observations to that time, if they are within 5 minutes of the requested time.
     if (time && time !== 'now') {
       const reqMs = new Date(time).getTime();
       rows = getClosestFavouritePerStation.all(time).filter(row =>
         Math.abs(new Date(row.timestamp).getTime() - reqMs) <= 5 * 60 * 1000
       );
     } else {
+      // otherwise return the latest observations per station
       rows = getLatestFavouritePerStation.all();
     }
   } catch (err) {

@@ -20,15 +20,15 @@ const favouriteParameters = 'ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_
 
 // Favourite weather stations for the application. The names can be whatever, fmisid is the important part.
 const favouriteStations = [
-  { name: 'Pirkkala', fmisid: 101118, onOff: 1 },
-  { name: 'Tampere', fmisid: 101311, onOff: 1 },
+  { name: 'Tampere-pirkkala lentoasema', fmisid: 101118, onOff: 1 },
+  { name: 'Tampere siilinkari', fmisid: 101311, onOff: 1 },
   { name: 'Hailuoto marjaniemi', fmisid: 101784, onOff: 1 },
   { name: 'Kaskinen sälgrund', fmisid: 101256, onOff: 1 },
   { name: 'Pyhtää lentokenttä', fmisid: 107029, onOff: 1 },
   { name: 'Pyhäjärvi ojakylä', fmisid: 101705, onOff: 1 },
   { name: 'Kuopio ritoniemi', fmisid: 101580, onOff: 1 },
   { name: 'Lappeenranta hiekkapakka', fmisid: 101252, onOff: 1 },
-  { name: 'Pyhä', fmisid: 101958, onOff: 1 },
+  { name: 'Pyhätunturi', fmisid: 101958, onOff: 1 },
 ];
 
 
@@ -38,7 +38,7 @@ const favouriteRetentionDays = 3;
 // How many minutes the latest observation data is considered fresh before re-fetching from FMI
 const currentDataMaxAgeMinutes = 10;
 
-// In minutes. How long the observations are kept in the database.
+// In minutes. For how long the observations are kept in the database.
 // observations older than this are fetched straight from fmi api.
 const mapObservationsWindowMinutes = 210;
 
