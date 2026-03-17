@@ -284,7 +284,13 @@ class DataMiner{
 
         // Map Digitraffic → Tuulikartta names
         $roadParamMap = [
-            "ILMA"   => "t2m"
+            "SADE_INTENSITEETTI" => "ri_10min",
+            "KESKITUULI" => "ws_10min",
+            "TUULENSUUNTA" => "wd_10min",
+            "NÄKYVYYS_KM" => "vis",
+            "ILMA"   => "t2m",
+            "LUMEN_MÄÄRÄ1" => "snow_aws",
+            "KASTEPISTE" => "dewpoint"
         ];
 
         $result = [];
