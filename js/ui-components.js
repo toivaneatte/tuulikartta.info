@@ -24,6 +24,7 @@ var saa = saa || {};
     html = html + '<option value="dose_rate">'+translations[window.selectedLanguage]["dose_rate"]+'</option>'
     html = html + '<option value="rVal">'+translations[window.selectedLanguage]["rVal"]+'</option>'
     html = html + '<option value="air_activity">'+translations[window.selectedLanguage]["air_activity"]+'</option>'
+    html = html + '<option value="magnetism">'+translations[window.selectedLanguage]["magnetism"]+'</option>'
     html = html + '<option value="t2mdewpoint">'+translations[window.selectedLanguage]["t2mdewpoint"]+'</option>'
     html = html + '<option value="dewpoint">'+translations[window.selectedLanguage]["dewpoint"]+'</option>'
     html = html + '<option value="vis">'+translations[window.selectedLanguage]["vis"]+'</option>'

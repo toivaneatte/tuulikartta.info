@@ -427,9 +427,10 @@ class DataMiner{
         $url = $url . $this->setTime($timestamp, $graph);
         $ctx = stream_context_create(array('http'=>
             array(
-                'timeout' => 240,  //1200 Seconds is 20 Minutes
+                'timeout' => 20,  //1200 Seconds is 20 Minutes
             )
         ));
+
         $xmlData = file_get_contents($url, false, $ctx);
         if($xmlData == false) {
             return [];
@@ -455,21 +456,41 @@ class DataMiner{
 
             $component = $member->children("BsWfs", true)->ParameterName;
 
+            if($component == "MAGNZ_PT1M_AVG") {
+                $component = "Z";
+            } elseif ($component == "MAGNY_PT1M_AVG") {
+                $component = "Y";
+            } elseif ($component == "MAGNX_PT1M_AVG") {
+                $component = "X";
+            };
+
             $value = $member->children("BsWfs", true)->ParameterValue;
 
             $location = explode(" ", (string)$location);
             $lat = floatval($location[0]);
             $lon = floatval($location[1]);
 
-            $tmp["lat"] = $lat;
-            $tmp["lon"] = $lon;
-            $tmp["time"] = (string)$time;
-            $tmp["type"] = "magnetometer";
-            $tmp["component"] = (string)$component;
-            $tmp["value"] = (string)$value;
-            array_push($final, $tmp);
+            $locationKey = $lat . "," . $lon;
+
+            if(!isset($final[$locationKey])) {
+                $final[$locationKey] = [
+                    "lat" => $lat,
+                    "lon" => $lon,
+                    "type" => "magnetometer",
+                    "data" => []
+                ];
+            }
+
+            $time = (string)$time;
+            if(!isset($final[$locationKey]["data"][$time])) {
+                $final[$locationKey]["data"][$time] = [
+                    "time" => $time
+                ];
+            }
+
+            $final[$locationKey]["data"][$time][$component] = (string)$value;
         }
-        
+        print json_encode($final);
         return $final;
     }
 
