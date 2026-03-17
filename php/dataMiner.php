@@ -254,35 +254,40 @@ class DataMiner{
         $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
         $user = 'TuulikarttaTuni';
 
-        $options = array(
-            'http' => array(
+        $options = [
+            'http' => [
                 'method' => "GET",
                 'header' => "Accept-Encoding: gzip\r\n" .
-                            "Accept: application/json\r\n"  .
-			                                "Digitraffic-User: ".$user
-            )
-        );
+                            "Accept: application/json\r\n" .
+                            "Digitraffic-User: ".$user
+            ]
+        ];
         $context = stream_context_create($options);
 
+        // Load metadata
         $metadataUrl = $WEATHER_API_BASE . "/stations";
-        $metadataJson = file_get_contents($metadataUrl, false, $context);
-        $metadataJson = gzdecode($metadataJson);
+        $metadataJson = gzdecode(file_get_contents($metadataUrl, false, $context));
         $stations = json_decode($metadataJson, true);
 
+        // Load sensor data
         $dataUrl = $metadataUrl . "/data";
-        $stationJson = file_get_contents($dataUrl, false, $context);
-        $stationJson = gzdecode($stationJson);
+        $stationJson = gzdecode(file_get_contents($dataUrl, false, $context));
         $allSensorData = json_decode($stationJson, true);
 
+        // Index sensors by station ID
         $indexedSensors = [];
         if (isset($allSensorData['stations'])) {
-            foreach ($allSensorData['stations'] as $sData) {    
+            foreach ($allSensorData['stations'] as $sData) {
                 $indexedSensors[$sData['id']] = $sData['sensorValues'];
             }
-    }
+        }
+
+        // Map Digitraffic → Tuulikartta names
+        $roadParamMap = [
+            "ILMA"   => "t2m"
+        ];
 
         $result = [];
-        $targets = $roadSettings["parameters"];
 
         foreach ($stations['features'] as $station) {
             $stationId = $station['properties']['id'];
@@ -291,24 +296,38 @@ class DataMiner{
                 continue;
             }
 
+            // Create a single entry per station
+            $entry = [
+                "station"   => $station['properties']['name'],
+                "fmisid"    => $stationId,
+                "lat"       => $station['geometry']['coordinates'][1],
+                "lon"       => $station['geometry']['coordinates'][0],
+                "type"      => "road",
+                "time"      => null,
+                "epochtime" => null
+            ];
+
+            // Add all mapped sensor values
             foreach ($indexedSensors[$stationId] as $sensor) {
-                if ($sensor['name'] === $targets) {
-                    $temp = [
-                        "station" => $station['properties']['name'],
-                        "fmisid" => $stationId,
-                        "lat" => $station['geometry']['coordinates'][1],
-                        "lon" => $station['geometry']['coordinates'][0],
-                        "type" => "road",
-                        "time"      => $sensor['measuredTime'],
-                        "epochtime" => strtotime($sensor['measuredTime']),
-                        $targets => floatval($sensor['value'])
-                    ];
-                    array_push($result, $temp);
+                $rawName = $sensor['name'];
+
+                if (isset($roadParamMap[$rawName])) {
+                    $mappedName = $roadParamMap[$rawName];
+                    $entry[$mappedName] = floatval($sensor['value']);
+
+                    // Use the newest timestamp
+                    $entry["time"] = $sensor['measuredTime'];
+                    $entry["epochtime"] = strtotime($sensor['measuredTime']);
                 }
             }
+
+            $result[] = $entry;
         }
+
         return $result;
     }
+
+
 
 
     /** Parse observation data about R-values from RWC
