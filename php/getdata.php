@@ -23,7 +23,8 @@ if ($response === false) {
 
 echo $response;
 
-$synopdata = $dataMiner->serializeData($synopdata);
+//$synopdata = $dataMiner->serializeData($synopdata);
+
 /*
 // road observations
 $roadSettings = array();
@@ -131,9 +132,8 @@ foreach ($airRadioByKey as $row) {
 $R_Values = $dataMiner->getRValues();
 
 // Combine all data
-$combinedData = array_merge($synopdata, /*$roadData,*/ $radiationData, $airRadioData, $R_Values);
+$combinedData = array_merge($synopdata, $roadData, $radiationData, $airRadioData, $R_Values);
 error_log("data combined");
-
 
 */
 
