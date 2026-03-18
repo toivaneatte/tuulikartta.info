@@ -283,7 +283,7 @@ class DataMiner{
             "KESKITUULI" => "ws_10min",
             "MAKSIMITUULI" => "wg_10min",
             "TUULENSUUNTA" => "wd_10min",
-            "NÄKYVYYS_KM" => "vis",
+            "NÄKYVYYS_M" => "vis",
             "VALLITSEVA_SÄÄ" => "wawa",
             "ILMA"   => "t2m",
             "LUMEN_MÄÄRÄ1" => "snow_aws",
