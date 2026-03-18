@@ -357,7 +357,9 @@ var saa = globalThis.saa;
     Tuulikartta.clearMarkers()
 
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
-    saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    if (saa.Tuulikartta.showStationObservations) { 
+      saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    }
     if (saa.Tuulikartta.showRoadObservations) {
       saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
     }
