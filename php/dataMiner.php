@@ -304,7 +304,16 @@ class DataMiner{
                 "lon"       => $station['geometry']['coordinates'][0],
                 "type"      => "road",
                 "time"      => null,
-                "epochtime" => null
+                "epochtime" => null,
+
+                // Default as null, filled if corresponding sensor is found
+                "ws_10min"  => null,
+                "wd_10min"  => null,
+                "ri_10min"  => null,
+                "vis"       => null,
+                "t2m"       => null,
+                "snow_aws"  => null,
+                "dewpoint"  => null
             ];
             $hasRecentSensor = false;
             // Add all mapped sensor values
