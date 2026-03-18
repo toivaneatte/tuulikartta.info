@@ -137,4 +137,4 @@ error_log("magnetometer data handled");
 $combinedData = array_merge($synopdata, /*$roadData,*/ $radiationData, $airRadioData, $R_Values, $magnData);
 error_log("data combined");
 
-//print json_encode($combinedData);
+print json_encode($combinedData);

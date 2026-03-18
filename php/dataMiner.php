@@ -52,6 +52,48 @@ class DataMiner{
       return $url;
     }
 
+    // set start- and endtime slightly differently: magnetometer data doesn't
+    // need data for full day because max values are not counted
+    private function setTimeforMagnetometer($timestamp, $graph) {
+      $url = "";
+      if($graph) {
+        if ( $timestamp === "now" ) {
+          $endtime = new DateTime();
+          $end     = $endtime->format('Y-m-d\TH:i:s\Z');
+          $start   = $endtime->sub(new DateInterval('PT24H'));
+          $start   = $start->format('Y-m-d\TH:i:s\Z');
+          
+          $url     = "&starttime={$start}&endtime={$end}";
+        } else {
+          $endtime = new DateTime($timestamp);
+          $end     = $endtime->format('Y-m-d\TH:i:s\Z');
+          $start   = $endtime->sub(new DateInterval('PT24H'));
+          $start   = $start->format('Y-m-d\TH:i:s\Z');
+
+          $url     = "&starttime={$start}&endtime={$end}";
+        }
+    // set start and endtime as the same to get only one timestamp's data
+      } else {
+        if ( $timestamp === "now" ) {
+          $start  = new DateTime();
+        } 
+        else {
+          $start = new DateTime($timestamp);
+        }
+        // round down to nearest 10 min, otherwise API returns nothing?
+        $start->setTime(
+        (int)$start->format('H'),
+        floor($start->format('i') / 10) * 10,
+        0
+        );
+          $start->setTimezone(new DateTimeZone('UTC'));
+          $start  = $start->format('Y-m-d\TH:i:s\Z');
+          $end    = $start;
+          $url     = "&starttime={$start}&endtime={$end}";
+      }
+      return $url;
+    }
+
         private function setTimeRange($timestamp, $graph, $rangeDays) {
             if (!$graph) {
                 return "";
@@ -264,7 +306,7 @@ class DataMiner{
             $tmp["lat"] = $item["Leveyspiiri"];
             $tmp["lon"] = $item["Pituuspiiri"];
             $tmp["time"] = $item["Aika"];
-            $tmp["type"] = "magnetometer";
+            $tmp["type"] = "R";
             $tmp   ["rVal"] = $item["R-luku"];
             $tmp["upperLim"] = $item["Ylempi raja-arvo"];
             $tmp["lowerLim"] = $item["Alempi raja-arvo"];
@@ -424,10 +466,10 @@ class DataMiner{
           $url .= "&{$key}={$value}";
         }
 
-        $url = $url . $this->setTime($timestamp, $graph);
+        $url = $url . $this->setTimeforMagnetometer($timestamp, $graph);
         $ctx = stream_context_create(array('http'=>
             array(
-                'timeout' => 20,  //1200 Seconds is 20 Minutes
+                'timeout' => 240,  //1200 Seconds is 20 Minutes, 
             )
         ));
 
@@ -441,6 +483,7 @@ class DataMiner{
 
         $resultString = simplexml_load_string($xmlData);
 
+        // extract wanted stuff from xml data
         $data = $resultString->children("wfs", true);
         $final = [];
 
@@ -470,29 +513,23 @@ class DataMiner{
             $lat = floatval($location[0]);
             $lon = floatval($location[1]);
 
-            $locationKey = $lat . "," . $lon;
+            // store stuff in nice array
+            $dataPointKey = $lat . "," . $lon . "," . (string)$time;
 
-            if(!isset($final[$locationKey])) {
-                $final[$locationKey] = [
+            if(!isset($final[$dataPointKey])) {
+                $final[$dataPointKey] = [
                     "lat" => $lat,
                     "lon" => $lon,
-                    "type" => "magnetometer",
-                    "data" => []
+                    "time" => (string)$time,
+                    "type" => "magnetometer"
                 ];
             }
-
-            $time = (string)$time;
-            if(!isset($final[$locationKey]["data"][$time])) {
-                $final[$locationKey]["data"][$time] = [
-                    "time" => $time
-                ];
+            $final[$dataPointKey][$component] = (string)$value;
             }
-
-            $final[$locationKey]["data"][$time][$component] = (string)$value;
+            
+            $final = array_values($final);
+            return $final;
         }
-        print json_encode($final);
-        return $final;
-    }
 
     /**
     *
