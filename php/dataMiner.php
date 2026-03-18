@@ -309,14 +309,17 @@ class DataMiner{
                 "epochtime" => null,
 
                 // Default as null, filled if corresponding sensor is found
+                "ri_10min"  => null,
                 "ws_10min"  => null,
                 "wg_10min"  => null,
                 "wd_10min"  => null,
-                "ri_10min"  => null,
                 "vis"       => null,
                 "wawa"      => null,
                 "t2m"       => null,
+                "n_man"     => null,
+                "r_1h"      => null,
                 "snow_aws"  => null,
+                "pressure"  => null,
                 "dewpoint"  => null
             ];
             $hasRecentSensor = false;
