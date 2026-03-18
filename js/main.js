@@ -966,8 +966,11 @@ var saa = globalThis.saa;
                 keyboard: false,
                 icon: Tuulikartta.createLabelIcon(hex, parseFloat(saa.Tuulikartta.data[i][param]).toFixed(1))
               })
-
-            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+            }
             marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
             saa.Tuulikartta.data[i]['fmisid']),{
               maxWidth: maxWidth
@@ -984,7 +987,11 @@ var saa = globalThis.saa;
               keyboard: false,
               icon: Tuulikartta.createLabelIcon('textLabelclass', '–')
             })
-          marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+          }
           marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
           saa.Tuulikartta.data[i]['fmisid']),{
             maxWidth: maxWidth

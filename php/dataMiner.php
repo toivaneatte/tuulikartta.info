@@ -281,8 +281,10 @@ class DataMiner{
         $roadParamMap = [
             "SADE_INTENSITEETTI" => "ri_10min",
             "KESKITUULI" => "ws_10min",
+            "MAKSIMITUULI" => "wg_10min",
             "TUULENSUUNTA" => "wd_10min",
             "NÄKYVYYS_KM" => "vis",
+            "VALLITSEVA_SÄÄ" => "wawa",
             "ILMA"   => "t2m",
             "LUMEN_MÄÄRÄ1" => "snow_aws",
             "KASTEPISTE" => "dewpoint"
@@ -308,9 +310,11 @@ class DataMiner{
 
                 // Default as null, filled if corresponding sensor is found
                 "ws_10min"  => null,
+                "wg_10min"  => null,
                 "wd_10min"  => null,
                 "ri_10min"  => null,
                 "vis"       => null,
+                "wawa"      => null,
                 "t2m"       => null,
                 "snow_aws"  => null,
                 "dewpoint"  => null
