@@ -890,6 +890,7 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
         name: translations[window.selectedLanguage]['pb210'],
         color: '#FF6B6B',
         data: data.obs.pb210,
+        connectNulls: true,
         tooltip: {
             valueSuffix: ' µBq/m³'
         },
@@ -899,6 +900,7 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
         name: translations[window.selectedLanguage]['be7'],
         color: '#4ECDC4',
         data: data.obs.be7,
+        connectNulls: true,
         tooltip: {
             valueSuffix: ' µBq/m³'
         },
@@ -908,6 +910,7 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
         name: translations[window.selectedLanguage]['cs137'],
         color: '#95E1D3',
         data: data.obs.cs137,
+        connectNulls: true,
         tooltip: {
             valueSuffix: ' µBq/m³'
         },

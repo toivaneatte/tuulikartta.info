@@ -6,10 +6,58 @@
         <meta http-equiv="x-ua-compatible" content="IE=edge">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
-        <link rel="apple-touch-icon" href="favicon/android-chrome-192x192.png">
         <meta name="theme-color" content="#397CAC">
         <title>Kelikamera</title>
+        <script src="../js/camera.js"></script>
+        <link rel="stylesheet" href="../css/camera.css">
     </head>
     <body>
-        <h1>Kelikamera</h1>
+        <header>
+            <h1 class="container">Kelikamerat</h1>
+        </header>
+        <main>
+            <h2 id="stationName" class="container"></h2>
+            <h3 id="updateTime" class="container"></h3>
+            <div id="mainPic" class="container">
+                <!--pääkuva tähän-->
+            </div>
+            <div id="buttons" class="container">
+                <!--buttons eri kuvasuunnille tai jotain-->
+            </div>
+            <div id="miniPics" class="container">
+                <!--pienet kuvat jos ne halutaan-->
+            </div>
+            <div id="noNearestStation" class="container"><em id="noWeatherData"></em></div>
+            <div id="stationInfoView" class="container">
+                <!--sääasematietoja-->
+                <div id="viewHeader">
+                    <p class="viewHeader">Lähimmän sääaseman tiedot: <span class="viewHeader" id="date"></span></p>
+                </div>
+                <div id="viewContent">
+                    <ul class="dataGroup">
+                        <li class="groupHeader"><h4>Perustiedot</h4></li>
+                        <li class="dataRow"><span class="title">Lämpötila</span><span class="value" id="temp"></span></li>
+                        <li class="dataRow"><span class="title">Tuulen nopeus</span><span class="value" id="wind"></span></li>
+                        <li class="dataRow"><span class="title">Näkyvyys kilometreissä</span><span class="value" id="visibKm"></span></li>
+                        <li class="dataRow"><span class="title">Ilman kosteus</span><span class="value" id="humid"></span></li>
+                    </ul>
+                    <ul class="dataGroup">
+                        <li class="groupHeader"><h4>Tie</h4></li>
+                        <li class="dataRow"><span class="title">Veden syvyys</span><span class="value" id="water"></span></li>
+                        <li class="dataRow"><span class="title">Lumen syvyys</span><span class="value" id="snow"></span></li>
+                        <li class="dataRow"><span class="title">Jään syvyys</span><span class="value" id="ice"></span></li>
+                        <li class="dataRow"><span class="title">Tienpinnan lämpötila</span><span class="value" id="roadTemp"></span></li>
+                        <li class="dataRow"><span class="title">Maan lämpötila</span><span class="value" id="groundTemp"></span></li>
+                    </ul>
+                    <ul class="dataGroup">
+                        <li class="groupHeader"><h4>Ilma</h4></li>
+                        <li class="dataRow"><span class="title">Keskimääräinen tuulensuunta 10 minuutin ajalta</span><span class="value" id="windDir"></span></li>
+                        <li class="dataRow"><span class="title">Näkyvyys metreissä</span><span class="value" id="visibM"></span></li>
+                        <li class="dataRow"><span class="title">Sateen voimakkuus (Viimeisen 30 s)</span><span class="value" id="rain"></span></li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+        <footer>
+        </footer>
     </body>

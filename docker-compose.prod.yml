@@ -1,0 +1,21 @@
+services:
+  tuulikartta:
+    container_name: tuulikartta
+    build:
+      context: .
+      dockerfile: Dockerfile
+    #ports:
+    #  - "80:80"
+    environment:
+      - PROD_MODE=true
+      - OSM_TILE_SERVER_URL=/osm_tiles/{z}/{x}/{y}.png
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - tuulikartta

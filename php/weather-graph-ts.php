@@ -376,11 +376,6 @@ function formatHighChart($data, $winddirections) {
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, $pb210Value);
           array_push($formattedData['obs']['pb210'], $tmp);
-        } else {
-          $tmp = [];
-          array_push($tmp, $array['epochtime']*1000);
-          array_push($tmp, null);
-          array_push($formattedData['obs']['pb210'], $tmp);
         }
 
         // Be-7
@@ -388,11 +383,6 @@ function formatHighChart($data, $winddirections) {
           $tmp = [];
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, $be7Value);
-          array_push($formattedData['obs']['be7'], $tmp);
-        } else {
-          $tmp = [];
-          array_push($tmp, $array['epochtime']*1000);
-          array_push($tmp, null);
           array_push($formattedData['obs']['be7'], $tmp);
         }
 
@@ -402,16 +392,16 @@ function formatHighChart($data, $winddirections) {
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, $cs137Value);
           array_push($formattedData['obs']['cs137'], $tmp);
-        } else {
-          $tmp = [];
-          array_push($tmp, $array['epochtime']*1000);
-          array_push($tmp, null);
-          array_push($formattedData['obs']['cs137'], $tmp);
         }
 
         $i++;
       }
     }
+
+    // Lajittele päivämäärän mukaan (indeksi 0 = epochtime ms)
+    usort($formattedData['obs']['pb210'], fn($a, $b) => $a[0] <=> $b[0]);
+    usort($formattedData['obs']['be7'],   fn($a, $b) => $a[0] <=> $b[0]);
+    usort($formattedData['obs']['cs137'], fn($a, $b) => $a[0] <=> $b[0]);
 
     $formattedData['obs']['windrose'] = $winddirections;
 

@@ -5,7 +5,15 @@
 * Main application coordinator - initializes namespace and delegates to modular components
 */
 
-var saa = saa || {};
+// URL for fetching the OSM base map
+const OSM_TILE_SERVER_URL =
+  window.APP_CONFIG?.OSM_TILE_SERVER_URL ||
+  "http://localhost:8080/tile/{z}/{x}/{y}.png";
+
+
+// Use globalThis for compatibility with both browser and test environments
+globalThis.saa = globalThis.saa || {};
+var saa = globalThis.saa;
 
 (function (Tuulikartta, undefined) {
   'use strict'
@@ -38,8 +46,8 @@ var saa = saa || {};
   var toggleDataSelect = 'close'
   var minRoadZoomLevel = 8
 
-  var showStationObservations = true
-  var showRoadObservations = false
+  saa.Tuulikartta.showStationObservations = true
+  saa.Tuulikartta.showRoadObservations = false
   var showOldObservations = false
   window.getLightningData = false
   window.getTrafficCamData = false
@@ -118,8 +126,13 @@ var saa = saa || {};
       attribution: 'Tuulikartta.info'
     })
 
-    
-    saa.Tuulikartta.baselayer = L.tileLayer('http://localhost:8080/tile/{z}/{x}/{y}.png', {
+    // add OpenStreetMap tile layer from OSM data server
+
+    //console.log(`---------------------------------`);
+    //console.log("Using OSM tile server URL: " + OSM_TILE_SERVER_URL);
+    //console.log(`---------------------------------`);
+
+    saa.Tuulikartta.baselayer = L.tileLayer(OSM_TILE_SERVER_URL, {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map)
 
@@ -332,13 +345,22 @@ var saa = saa || {};
   // Draw station observations
   // ---------------------------------------------------------
 
+  Tuulikartta.isDataStale = function (epochtime) {
+    if (saa.Tuulikartta.timeValue !== 'now') return false
+    var currentBlockStart = Math.floor(Date.now() / 1000 / 600) * 600
+    return epochtime < currentBlockStart
+  }
+
   Tuulikartta.drawData = function (param) {
 
-    if(!showStationObservations) return false
+    if(!saa.Tuulikartta.showStationObservations) return false
     Tuulikartta.clearMarkers()
 
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
     saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    if (saa.Tuulikartta.showRoadObservations) {
+      saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
+    }
 
     // Choose correct max width
     if (L.Browser.mobile) {
@@ -347,6 +369,15 @@ var saa = saa || {};
       maxWidth = 650
     }
 
+    var renderedStationIndices = new Set()
+
+    var warningIcon = L.icon({
+      iconUrl: '../css/images/exclamation_mark.png',
+      iconSize: [18, 18],
+      iconAnchor: [-4, 22],
+      interactive: false
+    })
+
     for (var i = 0; i < sizeofdata; i++) {
       var location = { lat: parseFloat(saa.Tuulikartta.data[i]['lat']), lng: parseFloat(saa.Tuulikartta.data[i]['lon']) }
       var time = Tuulikartta.timeTotime(saa.Tuulikartta.data[i]['epochtime'])
@@ -354,6 +385,7 @@ var saa = saa || {};
 
       if (saa.Tuulikartta.data[i]['type'] === 'air_radio' && param !== 'air_activity') continue
       if (saa.Tuulikartta.data[i]['type'] === 'radiation' && param !== 'dose_rate') continue
+      if (saa.Tuulikartta.data[i]['type'] === 'magnetometer' && param !== 'rVal') continue
 
       if (param == 'ws_10min' || param === 'wg_10min') {
         // Only show wind data for synop and road stations that have wind data
@@ -404,6 +436,7 @@ var saa = saa || {};
           } else {
             marker.addTo(saa.Tuulikartta.markerGroupSynop)
           }
+          renderedStationIndices.add(i)
         }
       }
 
@@ -464,6 +497,7 @@ var saa = saa || {};
           } else {
             marker.addTo(saa.Tuulikartta.markerGroupSynop)
           }
+          renderedStationIndices.add(i)
         }
       }
 
@@ -491,6 +525,7 @@ var saa = saa || {};
             })
             marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            renderedStationIndices.add(i)
           }
         }
         // draw '–' if theres no precipitation
@@ -513,6 +548,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -582,6 +618,33 @@ var saa = saa || {};
         }
       }
 
+      if (param === 'rVal') {
+        // Handle R-values - only for magnetometer stations
+        if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
+          var paramValue = saa.Tuulikartta.data[i]['rVal']
+          if (paramValue !== null && paramValue !== undefined) {
+            var fillColor = Tuulikartta.resolveRProbability(saa.Tuulikartta.data[i]['rProb'])
+            var hex = fillColor.substr(1)
+            hex = 'hex' + hex
+
+            var marker = L.marker(new L.LatLng(saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']),
+              {
+                interactive: true,
+                keyboard: false,
+                icon: Tuulikartta.createLabelIcon(hex, parseFloat(paramValue).toFixed(2))
+              })
+
+            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+            saa.Tuulikartta.data[i]['fmisid']),{
+              maxWidth: maxWidth
+            })
+            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+            marker.type = saa.Tuulikartta.data[i]['type']
+          }
+        }
+      }
+
       if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
 
         var fillColor = Tuulikartta.resolveTemperature(saa.Tuulikartta.data[i][param])
@@ -644,6 +707,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -674,6 +738,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -703,6 +768,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -773,6 +839,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -802,6 +869,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -882,6 +950,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -905,6 +974,7 @@ var saa = saa || {};
             })
             marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            renderedStationIndices.add(i)
           }
         }
         if(parseFloat(saa.Tuulikartta.data[i][param]) == 0 && saa.Tuulikartta.data[i][param] !== 'NaN' ) {
@@ -921,6 +991,7 @@ var saa = saa || {};
           })
           marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
           marker.type = saa.Tuulikartta.data[i]['type']
+          renderedStationIndices.add(i)
         }
       }
 
@@ -949,11 +1020,27 @@ var saa = saa || {};
             })
             marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            renderedStationIndices.add(i)
           }
         }
 
       }
     }
+
+    renderedStationIndices.forEach(function(idx) {
+      var data = saa.Tuulikartta.data[idx]
+      if (Tuulikartta.isDataStale(data['epochtime'])) {
+        var warnMarker = L.marker(
+          [parseFloat(data['lat']), parseFloat(data['lon'])],
+          { icon: warningIcon, interactive: false, keyboard: false, zIndexOffset: 1000 }
+        )
+        if (data['type'] === 'road') {
+          warnMarker.addTo(saa.Tuulikartta.markerGroupRoad)
+        } else {
+          warnMarker.addTo(saa.Tuulikartta.markerGroupSynop)
+        }
+      }
+    })
 
     if (saa.Tuulikartta.timeValue === 'now') {
       for (var i = 0; i < saa.Tuulikartta.data.length && i < 100; i++) {
@@ -968,52 +1055,7 @@ var saa = saa || {};
     }
   }
 
-  // ---------------------------------------------------------
-  // populate infowindow with observations
-  // ---------------------------------------------------------
-
-  Tuulikartta.populateInfoWindow = function (data,fmisid) {
-    var location = { lat: parseFloat(data['lat']), lng: parseFloat(data['lon']) }
-    var time = Tuulikartta.timeTotime(data['epochtime'])
-    var latlon = data['lat'] + ',' + data['lon']
-
-    if (L.Browser.mobile) {
-      maxWidth = 250
-    } else {
-      maxWidth = 650
-    }
-
-    if (data['type'] === 'synop') {
-      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['synop']+'</span> <br>'
-    } else {
-      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['road']+'</span> <br>'
-    }
-
-    var output = '<div style="text-align:center;">'
-    output += '<b>'+translations[window.selectedLanguage]['observationStation']+': </b>' + data['station'] + '<br>'
-    output += stationType
-
-    if (saa.Tuulikartta.timeValue === 'now') {
-      output += '<b>'+translations[window.selectedLanguage]['latestObservation']+': </b>' + time + '<br>'
-    } else {
-      output += '<b>'+translations[window.selectedLanguage]['observationTime']+': </b>' + time + '<br>'
-    }
-    output += '</div>'
-
-    output += `<div id="graph-box-loader" style="text-align: center;"></div>`;
-    output += `<div id="graph-box" style="width:${maxWidth}px;">`
-    output += `<div id="owl-carousel-chart-${fmisid}" class="owl-carousel owl-theme">`
-    output += `<div id="weather-chart-${fmisid}_windrose"></div>`
-    output += `<div id="weather-chart-${fmisid}"></div>`
-    output += `<div id="weather-chart-${fmisid}_alt"></div>`
-    output += `<div id="weather-chart-${fmisid}_alt2"></div>`
-    output += `<div id="weather-chart-${fmisid}_radiation"></div>`
-    output += `<div id="weather-chart-${fmisid}_air_radio"></div>`
-    output += '</div>'
-    output += `</div>`
-
-    return output
-  }
+  // tässä oli ennen populateInfoWindow
 
   window.resolveGraphStartposition = function(value) {
     if(value === 'ws_10min' || value === 'wg_10min' || value === 'ws_1d' || value === 'wg_1d')

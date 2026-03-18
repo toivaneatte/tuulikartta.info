@@ -15,6 +15,7 @@ services:
       - ./sitemap.fi.xml:/var/www/html/sitemap.fi.xml
       - ./sitemap.xml:/var/www/html/sitemap.xml
       - ./css:/var/www/html/css
+      - ./html:/var/www/html/html
       - ./js:/var/www/html/js
       - ./php:/var/www/html/php
       - ./symbols:/var/www/html/symbols

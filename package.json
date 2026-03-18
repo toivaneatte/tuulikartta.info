@@ -5,7 +5,7 @@
   "main": "js/main.js",
   "type": "module",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha --file test/setup.js"
   },
   "repository": {
     "type": "git",

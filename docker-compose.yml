@@ -22,6 +22,7 @@ services:
       context: ./karttapalvelin/render
     ports:
       - "8080:80"
+    command: "run"
     volumes:
       - osm-data:/data/database/
       - osm-tiles:/data/tiles/

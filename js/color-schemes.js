@@ -3,7 +3,8 @@
 * Maps observation values (wind speed, temperature, etc.) to color codes
 */
 
-var saa = saa || {};
+globalThis.saa = globalThis.saa || {};
+var saa = globalThis.saa;
 
 (function (Tuulikartta, undefined) {
   'use strict'
@@ -196,6 +197,18 @@ var saa = saa || {};
     if (dose >= 0.40) return '#ff3300'
     return '#ccffcc'
   }
+
+  // ---------------------------------------------------------
+  // Resolve R-probability to color (RWC)
+  // ---------------------------------------------------------
+
+  Tuulikartta.resolveRProbability = function (rProb) {
+    if (rProb === "low") return '#8aedbb'
+    if (rProb === "medium") return '#ffcc00'
+    if (rProb === "high") return '#ff5324'
+    return '#ffffff'
+  }
+
 
   // ---------------------------------------------------------
   // Resolve WaWa weather code to text and color
