@@ -127,6 +127,8 @@ var saa = saa || {};
       },
       error: function () {
         document.body.style.cursor = 'default'
+        saa.Tuulikartta.dataLoader(false)
+        saa.Tuulikartta.map.spin(false)
       },
       success: function (data) {
         saa.Tuulikartta.dataLoader(false)
