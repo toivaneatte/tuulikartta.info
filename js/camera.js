@@ -414,7 +414,6 @@ camera.normalizeWeatherStation = function(raw) {
     }).always(function() {
       saa.Tuulikartta.map.spin(false);
       isLoading = false;
-      camera.initTimeSlider();
     });
   };
 
@@ -666,6 +665,7 @@ camera.normalizeWeatherStation = function(raw) {
 
   // Time Slider Handler
   camera.initTimeSlider = function(w, latestTime) {
+    w.console.log('Initializing time slider with latest time:', latestTime);
     const timeSlider = w.document.getElementById('timeInput');
     const timeDisplay = w.document.getElementById('timeDisplay');
     
@@ -677,12 +677,12 @@ camera.normalizeWeatherStation = function(raw) {
     // Set min and max values for the slider based on latest camera time
     timeSlider.min = latestTime;
     timeSlider.max = latestTime;
-    w.console.log(latestTime);
     
     // Update display when slider changes
     timeSlider.addEventListener('input', function() {
       const minutes = parseInt(this.value);
       selectedTimeMinutes = minutes;
+      w.console.log(`Time slider input: ${minutes} minutes`);
       
       // Convert minutes to HH:mm format
       const hours = Math.floor(minutes / 60);
