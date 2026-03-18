@@ -252,7 +252,7 @@ class DataMiner{
 
     public function getRoadData($timestamp, $roadSettings, $debug = false) {
         $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
-        $user = 'TuulikarttaTuni';
+        $user = 'Tuulen Viemät';
 
         $options = [
             'http' => [
