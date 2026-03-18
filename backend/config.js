@@ -14,6 +14,8 @@ const FMISingleStationURL = "http://opendata.fmi.fi/wfs?request=getFeature&store
 // Start and endtime look like this (debugging)
 // starttime=2026-02-07T22:00:00Z&endtime=2026-02-08T14:48:44Z&
 
+const SpaceFMIURL = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.json";
+
 
 // Parameters to fetch for favourite stations (same as all stations)
 const favouriteParameters = 'ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint';
@@ -63,6 +65,7 @@ module.exports = {
   debugMode,
   FMIWeatherURL,
   FMISingleStationURL,
+  SpaceFMIURL,
   favouriteStations,
   fetchFavouritePeriod,
   favouriteRetentionDays,

@@ -7,26 +7,51 @@ header('Content-Type: application/json');
 
 $timestamp = isset($_GET["time"]) ? $_GET["time"] : "now";
 
-$backendUrl = "http://backend:3000/api/weather/latest";
-//$backendUrl = "http://backend:3000/api/weather/favourites";
+$backendUrlWeather = "http://backend:3000/api/weather/latest";
+//$backendUrlWeather = "http://backend:3000/api/weather/favourites";
+$backendUrlRValues = "http://backend:3000/api/radiation/rvalue";
 
 if ($timestamp && $timestamp !== "now") {
-    $backendUrl .= "?time=" . urlencode($timestamp);
+    $backendUrlWeather .= "?time=" . urlencode($timestamp);
 }
 
-$response = file_get_contents($backendUrl);
-if ($response === false) {
+$synopdata = file_get_contents($backendUrlWeather);
+if ($synopdata === false) {
     http_response_code(502);
     echo json_encode(["error" => "Failed to fetch data from backend"]);
     exit;
 }
+error_log("Synop raw: " . $synopdata); // debugging logs
 
-echo $response;
+// R-values
+$R_Values = file_get_contents($backendUrlRValues);
+if ($R_Values === false) {
+		http_response_code(502);
+		echo json_encode(["error" => "Failed to fetch R values from backend"]);
+		exit;
+}
 
-//$synopdata = $dataMiner->serializeData($synopdata);
+error_log("R values: " . $R_Values); // debugging logs
+
+// combine data and output
+// Decode JSON -> arrays
+$synopArray = json_decode($synopdata, true);
+$rValuesArray = json_decode($R_Values, true);
+
+if ($synopArray === null || $rValuesArray === null) {
+    http_response_code(500);
+    echo json_encode(["error" => "Invalid JSON"]);
+    exit;
+}
+
+error_log("Combining data...");
+$combinedData = array_merge($synopArray, $rValuesArray);
+
+error_log("data combined");
+print json_encode($combinedData);
 
 /*
-// road observations
+// road observations = tiesää
 $roadSettings = array();
 $roadSettings["stationtype"]    = "road";
 $roadSettings["parameters"]     = "ILMA";
@@ -38,7 +63,7 @@ error_log("road data handled");
 // $roadData = $dataMiner->serializeData($roadData);
 */
 
-// STUK observations
+// STUK observations = säteily
 /*
 $radiationSettings = array();
 $radiationSettings["stationtype"]    = "radiation";
@@ -128,13 +153,10 @@ foreach ($airRadioByKey as $row) {
 	$airRadioData[] = $row;
 }
 
-// R-values
-$R_Values = $dataMiner->getRValues();
-
-// Combine all data
 $combinedData = array_merge($synopdata, $roadData, $radiationData, $airRadioData, $R_Values);
 error_log("data combined");
 
+print json_encode($combinedData);
 */
 
 

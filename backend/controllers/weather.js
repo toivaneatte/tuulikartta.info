@@ -12,19 +12,9 @@ const config = require('../config');
 const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 
-
-/* The new URL for fetching weather data from FMI Open Data API:
-http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::forecast::harmonie::surface::point::multipointcoverage&place=helsinki&
-*/
-
-/* Test URL
-http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=helsinki&
-*/
-
 // ---------------------------------------------------------
 // Functions for fetching and processing weather data from FMI API
 // ---------------------------------------------------------
-
 const fetchNewFMIData = async (url) => {
   logger.info(`Fetching weather data from FMI API with URL: ${url}`);
   const xml = await fetch(url).then(r => r.text());
