@@ -184,24 +184,17 @@ var saa = saa || {};
       if (this.checked == true) {
         saa.Tuulikartta.showStationObservations = true
         saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupSynop)
-        if (saa.Tuulikartta.showRoadObservations) {
-          saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupRoad)
-        }
       } else {
         saa.Tuulikartta.showStationObservations = false
         saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupSynop)
-        if (saa.Tuulikartta.showRoadObservations) {
-          saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupRoad)
-        }
       }
     })
 
     $('#road-observations').change(function() {
       if (this.checked == true) {
         saa.Tuulikartta.showRoadObservations = true
-        if (saa.Tuulikartta.showStationObservations) {
-          Tuulikartta.drawData(window.selectedParameter)
-        }
+        saa.Tuulikartta.map.addLayer(saa.Tuulikartta.markerGroupRoad)
+        Tuulikartta.drawData(window.selectedParameter)
       } else {
         saa.Tuulikartta.showRoadObservations = false
         saa.Tuulikartta.map.removeLayer(saa.Tuulikartta.markerGroupRoad)
