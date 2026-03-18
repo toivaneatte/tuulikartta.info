@@ -353,7 +353,7 @@ var saa = globalThis.saa;
 
   Tuulikartta.drawData = function (param) {
 
-    if(!saa.Tuulikartta.showStationObservations) return false
+    if(!saa.Tuulikartta.showStationObservations && !saa.Tuulikartta.showRoadObservations) return false
     Tuulikartta.clearMarkers()
 
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
