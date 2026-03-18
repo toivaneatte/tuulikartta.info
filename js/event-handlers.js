@@ -77,13 +77,6 @@ var saa = saa || {};
       var timestring = moment(date + ' ' + time, ['DD-MM-YYYY HH:mm'])
       timestring = timestring.utc().format('YYYY-MM-DDTHH:mm:ss')
       timestring = timestring + 'Z'
-
-      // Don't fetch or spin if the selected time is in the future
-      if (moment.utc(timestring).isAfter(moment.utc())) {
-        Tuulikartta.clearMarkers()
-        return
-      }
-
       saa.Tuulikartta.timeValue = timestring
       saa.Tuulikartta.timeStamp = timestring
 

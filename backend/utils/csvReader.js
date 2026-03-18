@@ -3,10 +3,9 @@ const { parse } = require('csv-parse/sync');
 
 const logger = require('./logger');
 
-function readConfig(filename) {
+function readConfig() {
   try {
-    logger.info(`Reading configuration from ${filename}`);
-    const file = fs.readFileSync(filename, 'utf-8');
+    const file = fs.readFileSync('config.csv', 'utf-8');
     const records = parse(file, {
       columns: true,
       skip_empty_lines: true

@@ -1,27 +1,22 @@
 <?php
+require_once("dataMiner.php");
 date_default_timezone_set('Europe/Helsinki');
 
 header('Content-Type: application/json');
 
+$timestamp = $_GET["time"];
 
+$dataMiner = new DataMiner();
 
-$timestamp = isset($_GET["time"]) ? $_GET["time"] : "now";
-
-$backendUrl = "http://backend:3000/api/weather/latest";
-//$backendUrl = "http://backend:3000/api/weather/favourites";
-
-if ($timestamp && $timestamp !== "now") {
-    $backendUrl .= "?time=" . urlencode($timestamp);
-}
-
-$response = file_get_contents($backendUrl);
-if ($response === false) {
-    http_response_code(502);
-    echo json_encode(["error" => "Failed to fetch data from backend"]);
-    exit;
-}
-
-echo $response;
+// synop observations
+$settings = array();
+$settings["stationtype"]    = "synop";
+$settings["parameters"]     = "ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint";
+$settings["storedquery_id"] = "fmi::observations::weather::multipointcoverage";
+$settings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+$settings["timestep"]       = "10";
+$synopdata = $dataMiner->multipointcoverage($timestamp, $settings, false);
+error_log("synop data handled");
 
 $synopdata = $dataMiner->serializeData($synopdata);
 /*
@@ -34,11 +29,9 @@ $roadSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
 $roadData = $dataMiner->multipointcoverage($timestamp, $roadSettings, false);
 error_log("road data handled");
 
-// $roadData = $dataMiner->serializeData($roadData);
-*/
+// $roadData = $dataMiner->serializeData($roadData);*/
 
 // STUK observations
-/*
 $radiationSettings = array();
 $radiationSettings["stationtype"]    = "radiation";
 $radiationSettings["parameters"]     = "DR_PT10M_avg";
@@ -134,7 +127,4 @@ $R_Values = $dataMiner->getRValues();
 $combinedData = array_merge($synopdata, /*$roadData,*/ $radiationData, $airRadioData, $R_Values);
 error_log("data combined");
 
-
-*/
-
-
+print json_encode($combinedData);

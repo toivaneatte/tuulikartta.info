@@ -10,7 +10,6 @@
   "author": "Kasper Kivistö",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^9.4.3",
     "csv-parse": "^6.1.0",
     "express": "^5.2.1",
     "node-cron": "^4.2.1",
