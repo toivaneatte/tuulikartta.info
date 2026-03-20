@@ -12,9 +12,10 @@ const xmlParser = new xml2js.Parser();
  * @param {string} xmlString  - raw XML from FMI API
  * @param {string} parameters - comma-separated parameter names matching the order
  *                              they appear in the XML (e.g. 'ws_10min,wd_10min,...')
+ * @param {string|null} type - optional type to include in the output (e.g. "radiation")
  * @returns {Array} array of observation objects, one per station per timestamp
  */
-const parseFMIMultipointcoverage = async (xmlString, parameters) => {
+const parseFMIMultipointcoverage = async (xmlString, parameters, type = null) => {
   const parsedData = await xmlParser.parseStringPromise(xmlString);
   const members = parsedData['wfs:FeatureCollection']['wfs:member'];
   const paramList = parameters.split(',');
@@ -87,12 +88,14 @@ const parseFMIMultipointcoverage = async (xmlString, parameters) => {
         measurements[param] = isNaN(v) ? null : v;
       });
 
+      // return station name, fmisid, lat, lon, timestamp, measurements and type (if provided)
       results.push({
         fmisid: station.fmisid,
         station: station.name,
         timestamp,
         lat,
         lon,
+        type,
         ...measurements
       });
     });
