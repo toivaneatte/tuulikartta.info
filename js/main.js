@@ -353,11 +353,13 @@ var saa = globalThis.saa;
 
   Tuulikartta.drawData = function (param) {
 
-    if(!saa.Tuulikartta.showStationObservations) return false
+    if(!saa.Tuulikartta.showStationObservations && !saa.Tuulikartta.showRoadObservations) return false
     Tuulikartta.clearMarkers()
 
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
-    saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    if (saa.Tuulikartta.showStationObservations) { 
+      saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    }
     if (saa.Tuulikartta.showRoadObservations) {
       saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
     }
@@ -966,8 +968,11 @@ var saa = globalThis.saa;
                 keyboard: false,
                 icon: Tuulikartta.createLabelIcon(hex, parseFloat(saa.Tuulikartta.data[i][param]).toFixed(1))
               })
-
-            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+            }
             marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
             saa.Tuulikartta.data[i]['fmisid']),{
               maxWidth: maxWidth
@@ -984,7 +989,11 @@ var saa = globalThis.saa;
               keyboard: false,
               icon: Tuulikartta.createLabelIcon('textLabelclass', '–')
             })
-          marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+          }
           marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
           saa.Tuulikartta.data[i]['fmisid']),{
             maxWidth: maxWidth
