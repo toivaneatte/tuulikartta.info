@@ -288,7 +288,7 @@ var saa = saa || {};
           }},
         ]},
         {title: translations[window.selectedLanguage]['dose_rate'], columns: [
-          {title: 'DR_PT10M_avg (nSv/h)', field: 'DR_PT10M_avg', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
+          {title: translations[window.selectedLanguage]['dose_rate'] + ' (nSv/h)', field: 'DR_PT10M_avg', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
             var v = cell.getValue()
             if(v !== null && v !== undefined) {
               cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveDoseRate(v), 0.4)
@@ -298,12 +298,21 @@ var saa = saa || {};
           }},
         ]},
         {title: translations[window.selectedLanguage]['rVal'], columns: [
-          {title: 'R', field: 'rVal', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
+          {title: translations[window.selectedLanguage]['rVal'], field: 'rVal', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
             var v = cell.getValue()
             var row = cell.getRow().getData()
             if(v !== null && v !== undefined) {
               cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveRProbability(row.rProb), 0.4)
               return parseFloat(v).toFixed(2)
+            }
+            return null
+          }},
+          {title: translations[window.selectedLanguage]['aurora'], field: 'rProb', hozAlign:"center", formatter:function(cell, formatterParams, onRendered){
+            var v = cell.getValue()
+            if(v !== null && v !== undefined) {
+              cell.getElement().style.backgroundColor = Tuulikartta.hexToRgbA(Tuulikartta.resolveRProbability(v), 0.4)
+              var key = 'rProb_' + v
+              return translations[window.selectedLanguage][key] || v
             }
             return null
           }},
