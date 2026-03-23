@@ -1,6 +1,9 @@
 /*
-Author: 
-Description:
+Author: Kasper Kivistö
+Description: Controller for radiation-related endpoints. Currently includes:
+- GET /api/radiation/rvalue: Fetches R values from space.fmi API and returns them in a structured format.
+- GET /api/radiation/external: Fetches external radiation data from STUK FMI API, parses the XML response, and returns an array of observation objects.
+- GET /api/radiation/nuclides: Fetches nuclide data from STUK FMI API, parses the XML response, and returns an array of observation objects.
 
 */
 
@@ -8,67 +11,19 @@ const radiationRouter = require('express').Router()
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
+const { getRValues } = require('../services/fetchRValues');
 const { parseFMIMultipointcoverage, parseNuclideMultipointcoverage } = require('../utils/fmiParser');
 
 const DEBUG = config.debugMode;
-// tänne R luvut (avaruussäkeskus), STUK FMI (Ulkoinen säteily) ja ilman radioaktiivisuus (STUK FMI)
+/*
+DONE:
+- R values from avaruuskeskus space.fmi API 
+- External radiation from ilmatieteenlaitos STUK FMI API 
+- Nuclides from ilmatieteenlaitos STUK FMI API 
 
-// ja joskus vielä maan maagneettikenttä (STUK FMI)
-
-// ---------------------------------------------------------
-// Functions for fetching and processing R value data from space.fmi API
-// ---------------------------------------------------------
-async function getRValues() {
-  const url = config.SpaceFMIURL;
-
-  try {
-    const response = await fetch(url)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-
-    const json = await response.json();
-    logger.info("Fetched R values from space.fmi API");
-    //logger.info("Raw R value data: " + JSON.stringify(json));
-
-    // convert the API response into an array of objects with the desired structure
-    const dataArray = Object.values(json.data);
-    const result = [];
-
-    for (const item of dataArray) {
-      const tmp = {
-        station: item["Asema"],
-        lat: item["Leveyspiiri"],
-        lon: item["Pituuspiiri"],
-        time: item["Aika"],
-        type: "magnetometer",
-        rVal: item["R-luku"],
-        upperLim: item["Ylempi raja-arvo"],
-        lowerLim: item["Alempi raja-arvo"],
-        rProb: null
-      };
-
-      const prob = item["Revontulten todennäköisyys"];
-
-      if (prob === "Revontulet epätodennäköisiä") {
-        tmp.rProb = "low";
-      } else if (prob === "Revontulet mahdollisia") {
-        tmp.rProb = "medium";
-      } else if (prob === "Revontulet todennäköisiä") {
-        tmp.rProb = "high";
-      }
-
-      result.push(tmp);
-    }
-
-    return result;
-
-    } catch (error) {
-    console.error("Error fetching R values:", error);
-    throw error;
-  }
-}
+TODO:
+- Earth magnetic field from ilmatieteenlaitos STUK FMI API (maagneettikenttä)
+*/
 
 // ---------------------------------------------------------
 // GET /api/radiation/rvalue endpoint for fetching R values from space.fmi API
@@ -159,8 +114,8 @@ radiationRouter.get('/nuclides', async (req, res) => {
 // ---------------------------------------------------------
 // Other endpoints return 404 Not Found
 // ---------------------------------------------------------
-radiationRouter.get('/', (req, res) => {
-  return res.status(404).send({ error: 'Not found' });
-})
+radiationRouter.use((req, res) => {
+  res.status(404).json({ error: "Endpoint not found" });
+});
 
 module.exports = radiationRouter;
