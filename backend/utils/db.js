@@ -66,6 +66,16 @@ db.exec(`
 
 logger.info('SQLite schema ready');
 
+// Add daily aggregate columns to map_observations if they don't exist yet
+const dailyColumns = ['wg_1d', 'ws_1d', 'tmax', 'tmin', 'rr_1d'];
+for (const col of dailyColumns) {
+  try {
+    db.exec(`ALTER TABLE map_observations ADD COLUMN ${col} REAL`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+}
+
 // Delete observations older than retentionDays. Returns number of deleted rows.
 const deleteOldObservations = (retentionDays) => {
   const cutoff = new Date();
@@ -128,6 +138,13 @@ const getClosestFavouritePerStation = db.prepare(`
   )
 `);
 
+// Updates daily aggregate columns for a specific fmisid + timestamp row
+const updateMapObsDailyValues = db.prepare(`
+  UPDATE map_observations
+  SET wg_1d=@wg_1d, ws_1d=@ws_1d, tmax=@tmax, tmin=@tmin, rr_1d=@rr_1d
+  WHERE fmisid=@fmisid AND timestamp=@timestamp
+`);
+
 // Delete map_observations older than retentionMinutes
 const deleteOldMapObservations = (retentionMinutes) => {
   const cutoff = new Date(Date.now() - retentionMinutes * 60 * 1000);
@@ -145,6 +162,7 @@ module.exports = {
   getClosestMapTimestamp,
   getMapObsByTimestamp,
   deleteOldMapObservations,
+  updateMapObsDailyValues,
   getLatestFavouritePerStation,
   getClosestFavouritePerStation,
 };
