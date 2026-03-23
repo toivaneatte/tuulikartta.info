@@ -1,6 +1,6 @@
 /*
-Fetches lightweight daily aggregate parameters from FMI API (midnight Helsinki → now/given timestamp),
-calculates running max/min/sum per station per timestamp, and optionally stores results into map_observations.
+Fetches daily aggregate weather observation values.
+max gust, max wind, max and min temp, daily precipitation for each station for the current day.
 */
 
 const config = require('../config');
@@ -38,7 +38,14 @@ const fetchDailyAggregates = async (endTimestamp) => {
 
   let observations;
   try {
-    const xml = await fetch(url).then(r => r.text());
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    let xml;
+    try {
+      xml = await fetch(url, { signal: controller.signal }).then(r => r.text());
+    } finally {
+      clearTimeout(timeoutId);
+    }
     observations = await parseFMIMultipointcoverage(xml, config.dailyAggregateParameters);
   } catch (err) {
     logger.error(`Error fetching daily aggregates: ${err.message}`);
