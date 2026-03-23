@@ -71,10 +71,21 @@ const fetchDailyAggregates = async (endTimestamp) => {
   const aggregated = [];
   for (const fmisid of Object.keys(byStation)) {
     let wg_1d = null, ws_1d = null, tmax = null, tmin = null, rr_1d = 0;
+    let wg_max_dir = null, ws_max_dir = null;
 
     for (const obs of byStation[fmisid]) {
-      if (obs.wg_10min !== null) wg_1d = wg_1d === null ? obs.wg_10min : Math.max(wg_1d, obs.wg_10min);
-      if (obs.ws_10min !== null) ws_1d = ws_1d === null ? obs.ws_10min : Math.max(ws_1d, obs.ws_10min);
+      if (obs.wg_10min !== null) {
+        if (wg_1d === null || obs.wg_10min > wg_1d) {
+          wg_1d = obs.wg_10min;
+          wg_max_dir = obs.wd_10min ?? null;
+        }
+      }
+      if (obs.ws_10min !== null) {
+        if (ws_1d === null || obs.ws_10min > ws_1d) {
+          ws_1d = obs.ws_10min;
+          ws_max_dir = obs.wd_10min ?? null;
+        }
+      }
       if (obs.t2m !== null) {
         tmax = tmax === null ? obs.t2m : Math.max(tmax, obs.t2m);
         tmin = tmin === null ? obs.t2m : Math.min(tmin, obs.t2m);
@@ -89,6 +100,8 @@ const fetchDailyAggregates = async (endTimestamp) => {
         tmax,
         tmin,
         rr_1d: Math.round(rr_1d * 10) / 10,
+        wg_max_dir,
+        ws_max_dir,
       });
     }
   }

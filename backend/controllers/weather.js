@@ -137,11 +137,13 @@ const obsToStation = (obs) => {
     rh:          obs.rh,
     dewpoint:    obs.dewpoint,
     t2mdewpoint,
-    wg_1d:       obs.wg_1d  ?? null,
-    ws_1d:       obs.ws_1d  ?? null,
-    tmax:        obs.tmax   ?? null,
-    tmin:        obs.tmin   ?? null,
-    rr_1d:       obs.rr_1d  ?? null,
+    wg_1d:       obs.wg_1d      ?? null,
+    ws_1d:       obs.ws_1d      ?? null,
+    tmax:        obs.tmax       ?? null,
+    tmin:        obs.tmin       ?? null,
+    rr_1d:       obs.rr_1d      ?? null,
+    wg_max_dir:  obs.wg_max_dir ?? null,
+    ws_max_dir:  obs.ws_max_dir ?? null,
   };
 };
 

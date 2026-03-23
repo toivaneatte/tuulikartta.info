@@ -67,7 +67,7 @@ db.exec(`
 logger.info('SQLite schema ready');
 
 // Add daily aggregate columns to map_observations if they don't exist yet
-const dailyColumns = ['wg_1d', 'ws_1d', 'tmax', 'tmin', 'rr_1d'];
+const dailyColumns = ['wg_1d', 'ws_1d', 'tmax', 'tmin', 'rr_1d', 'wg_max_dir', 'ws_max_dir'];
 for (const col of dailyColumns) {
   try {
     db.exec(`ALTER TABLE map_observations ADD COLUMN ${col} REAL`);
@@ -141,7 +141,8 @@ const getClosestFavouritePerStation = db.prepare(`
 // Updates daily aggregate columns for a specific fmisid + timestamp row
 const updateMapObsDailyValues = db.prepare(`
   UPDATE map_observations
-  SET wg_1d=@wg_1d, ws_1d=@ws_1d, tmax=@tmax, tmin=@tmin, rr_1d=@rr_1d
+  SET wg_1d=@wg_1d, ws_1d=@ws_1d, tmax=@tmax, tmin=@tmin, rr_1d=@rr_1d,
+      wg_max_dir=@wg_max_dir, ws_max_dir=@ws_max_dir
   WHERE fmisid=@fmisid AND timestamp=@timestamp
 `);
 
