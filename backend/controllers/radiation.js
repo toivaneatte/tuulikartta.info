@@ -8,7 +8,7 @@ const radiationRouter = require('express').Router()
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
-const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
+const { parseFMIMultipointcoverage, parseNuclideMultipointcoverage } = require('../utils/fmiParser');
 
 const DEBUG = config.debugMode;
 // tänne R luvut (avaruussäkeskus), STUK FMI (Ulkoinen säteily) ja ilman radioaktiivisuus (STUK FMI)
@@ -88,6 +88,7 @@ radiationRouter.get('/rvalue', async (req, res) => {
 // GET /api/radiation/exteral endpoint for fetching external radiation data from STUK FMI API
 // ---------------------------------------------------------
 radiationRouter.get('/external', async (req, res) => {
+  logger.info("GET request received at /api/radiation/external");
   // get the URL from config
   let URL = config.STUKRadiationURL;
 
@@ -95,8 +96,8 @@ radiationRouter.get('/external', async (req, res) => {
   const timestamp = req.query.time || "now";
   logger.debug("Timestamp is: " + timestamp);
 
-  URL += setTimeService(timestamp, false); // isGraph = false for map data
-  logger.debug("Constructed URL for STUK FMI API: " + URL);
+  URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
+  logger.debug("Constructed URL for external radiation: " + URL);
 
   // fetch actual data from API
   try {
@@ -119,6 +120,41 @@ radiationRouter.get('/external', async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------
+// GET /api/radiation/nuclides endpoint for fetching nuclide data from STUK FMI API
+// ---------------------------------------------------------
+radiationRouter.get('/nuclides', async (req, res) => {
+  logger.info("GET request received at /api/radiation/nuclides");
+  // get the URL from config
+  let URL = config.STUKNuclidesURL;
+
+  //start by making time stamp
+  const timestamp = req.query.time || "now";
+  logger.debug("Timestamp is: " + timestamp);
+
+  URL += setTimeService.setDayRange(timestamp, true, 90); // isGraph = true for graph data
+  logger.debug("Constructed URL for nuclides: " + URL);
+
+  // fetch actual data from API
+  try{
+    const responseXml = await fetch(URL).then(r => r.text());
+    
+    if (!responseXml) {
+      throw new Error(`HTTP error: ${responseXml.status}`);
+    }
+
+    // parse the XML response using the utility function
+    const result = await parseNuclideMultipointcoverage(responseXml);
+    logger.info(`Parsed nuclide data, number of observations: ${result.length}`);
+
+    res.set('Content-Type', 'application/json');
+    res.send(result);
+
+  } catch (error) {
+    logger.error("Error in /api/radiation/nuclides endpoint:", error);
+    res.status(500).json({ error: "Failed to fetch nuclide data" });
+  }
+});
 
 // ---------------------------------------------------------
 // Other endpoints return 404 Not Found

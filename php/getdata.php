@@ -8,12 +8,16 @@ $backendUrlWeather = "http://backend:3000/api/weather/latest";
 //$backendUrlWeather = "http://backend:3000/api/weather/favourites";
 $backendUrlRValues = "http://backend:3000/api/radiation/rvalue";
 $backendUrlExternalRadiation = "http://backend:3000/api/radiation/external";
+$backendUrlNuclides = "http://backend:3000/api/radiation/nuclides";
 
+
+// set timestamps to query
 $timestamp = isset($_GET["time"]) ? $_GET["time"] : "now";
 
 if ($timestamp && $timestamp !== "now") {
 	$backendUrlWeather .= "?time=" . urlencode($timestamp);
 	$backendUrlExternalRadiation .= "?time=" . urlencode($timestamp);
+	$backendUrlNuclides .= "?time=" . urlencode($timestamp);
 }
 
 // Utility function to fetch multiple URLs in parallel using cURL multihandles
@@ -61,7 +65,8 @@ function fetchMultiple($urls) {
 $responses = fetchMultiple([
 	"synop" => $backendUrlWeather,
 	"rvalues" => $backendUrlRValues,
-	"radiation" => $backendUrlExternalRadiation
+	"radiation" => $backendUrlExternalRadiation,
+	"nuclides" => $backendUrlNuclides
 ]);
 error_log("Responses fetched");
 
@@ -69,16 +74,19 @@ error_log("Responses fetched");
 $synopArray = json_decode($responses["synop"], true) ?? [];
 $rValuesArray = json_decode($responses["rvalues"], true) ?? [];
 $externalRadiationArray = json_decode($responses["radiation"], true) ?? [];
+$nuclidesArray = json_decode($responses["nuclides"], true) ?? [];
 
 // error_log("synop data: " . $responses["synop"]); // debugging logs
 // error_log("External radiation data: " . $responses["radiation"]); // debugging logs
+error_log("Nuclide data: " . $responses["nuclides"]); // debugging logs
 
 error_log("Responses decoded, combining data...");
 // $combinedData = array_merge($synopArray, $rValuesArray, $externalRadiationArray);
 $combinedData = [
 	...$synopArray,
 	...$rValuesArray,
-	...$externalRadiationArray
+	...$externalRadiationArray,
+	...$nuclidesArray
 ];
 //error_log("Combined data array: " . json_encode($combinedData)); // debugging logs
 
@@ -113,6 +121,9 @@ $radiationSettings["storedquery_id"] = "stuk::observations::external-radiation::
 $radiationData = $dataMiner->multipointcoverage($timestamp, $radiationSettings, false);
 error_log("External radiation data: " . $radiationData); // debugging logs
 
+
+
+
 // Use the non-::latest:: query with a 90-day window so that each nuclide's
 // most recent measurement is found independently (different nuclides are
 // measured on different schedules and ::latest:: only returns one common
@@ -122,6 +133,8 @@ $nuclideSettings["storedquery_id"] = "stuk::observations::air::radionuclide-acti
 $nuclideSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
 $nuclideData = $dataMiner->nuclideMultipointcoverage($timestamp, $nuclideSettings, true, 90);
 error_log("nuclide data handled");
+
+
 
 // Merge all time-series entries by station (fmisid), keeping the most recent
 // non-null value seen for each nuclide individually.

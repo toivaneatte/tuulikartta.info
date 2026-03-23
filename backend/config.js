@@ -18,8 +18,12 @@ const FMISingleStationURL = "http://opendata.fmi.fi/wfs?request=getFeature&store
 // URL for fetching R values from space.fmi API
 const SpaceFMIURL = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.json";
 
-// URL for fetching radiation data from STUK API
+// URL for fetching external radiation data from FMI STUK API
 const STUKRadiationURL = "https://opendata.fmi.fi/wfs?request=getFeature&stationType=radiation&parameters=DR_PT10M_avg&storedquery_id=stuk::observations::external-radiation::latest::multipointcoverage&";
+
+
+// URL for fetching nuclide data from FMI STUK API
+const STUKNuclidesURL = "https://opendata.fmi.fi/wfs?request=getFeature&storedquery_id=stuk::observations::air::radionuclide-activity-concentration::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326";
 // ----------------------------------------------------------
 
 // Parameters to fetch for favourite stations (same as all stations)
@@ -72,6 +76,7 @@ module.exports = {
   FMISingleStationURL,
   SpaceFMIURL,
   STUKRadiationURL,
+  STUKNuclidesURL,
   favouriteStations,
   fetchFavouritePeriod,
   favouriteRetentionDays,

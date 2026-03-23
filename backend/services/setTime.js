@@ -1,6 +1,6 @@
 /*
 Author: Kasper Kivistö
-Description: Function for calculating start and endtime for API. Taken from dataMiner.php and adapted to JS. 
+Description: Function for calculating start and endtime for API. Taken from dataMiner.php and adapted to JS and added new features.
 */
 
 const { DateTime } = require("luxon");
@@ -50,4 +50,32 @@ function setTime(timestamp, isGraph) {
   return url;
 }
 
-module.exports = setTime;
+/**
+ *  setDayRange calculates the start and end time parameters for FMI API requests based on the provided timestamp, whether the data is for graph or map, and a custom day range for graph data.
+ * @param {*} timestamp - ISO string or "now". For graph data, it defines the end of the window. For map data, it defines the end of the day window.
+ * @param {*} isGraph  - If true, calculates a window of rangeDays ending at the timestamp. If false, calculates a window from the start of the day to the timestamp.
+ * @param {*} rangeDays  - For graph data, defines how many days the window should cover. If not a valid positive integer, defaults to 1 day.
+ * @returns  - A URL query string with the appropriate starttime and endtime parameters for the FMI API.
+ */
+const setDayRange = (timestamp, isGraph, rangeDays) => {
+  if (!isGraph) {
+    return "";
+  }
+
+  // check if rangeDays is a valid positive integer, if not default to 1 day
+  const days = Number.isInteger(rangeDays) && rangeDays > 1 ? rangeDays : 1;
+
+  const end = timestamp === "now"
+    ? DateTime.utc()
+    : DateTime.fromISO(timestamp, { zone: "utc" });
+
+  const start = end.minus({ days });
+
+  return `&starttime=${start.toISO({ suppressMilliseconds: true })}&endtime=${end.toISO({ suppressMilliseconds: true })}`;
+}
+
+
+module.exports = {
+  setTime,
+  setDayRange
+};
