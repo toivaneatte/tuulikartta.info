@@ -9,11 +9,11 @@ const roadRouter = require('express').Router()
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
-const { parseRoadObs } = require('../services/parseRoadObs');
+const { parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
 const { parse } = require('csv-parse/browser/esm');
 
 // ---------------------------------------------------------
-// GET /api/road/obs endpoint for fetching road observations from **WHAT API?**
+// GET /api/road/obs endpoint for fetching road observations from Digitraffic API
 // ---------------------------------------------------------
 roadRouter.get('/obs', async (req, res) => {
   logger.info("GET request received at /api/road/obs");
@@ -57,7 +57,48 @@ roadRouter.get('/obs', async (req, res) => {
 });
 
 // ---------------------------------------------------------
-// GET /api/road/camera endpoint for fetching road camera data from **WHAT API?**
+// GET /api/road/obs(:stationId) endpoint for fetching road observations for a specific station from Digitraffic API
+// ---------------------------------------------------------
+roadRouter.get('/obs/:stationId', async (req, res) => {
+  logger.info(`GET request received at /api/road/obs/${req.params.stationId}`);
+  // get the URL from config
+  let metaURL = `${config.roadObsURL}/${req.params.stationId}`;
+  let dataURL = metaURL + "/data";
+  const headers = {
+    "Accept-Encoding": "gzip",
+    "Accept": "application/json",
+    "User-Agent": config.digitrafficAPIuser
+  };
+
+  //start by making time stamp
+  const timestamp = req.query.time || "now";
+  const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
+  
+  logger.debug(`Constructed URL for road observations metadata for station ${req.params.stationId}: ${metaURL}`);
+  logger.debug(`Constructed URL for road observations data for station ${req.params.stationId}: ${dataURL}`);
+
+  try {
+    // fetch metadata first to get the list of stations, then fetch data for those stations. 
+    const [metaResponse, dataResponse] = await Promise.all([
+      fetch(metaURL, {headers}),
+      fetch(dataURL, {headers})
+    ]);
+
+    // parse the responses and return the observations
+    logger.info(`Road observation metadata and data for station ${req.params.stationId} fetched successfully. Parsing responses...`);
+    const observation = await parseSingleRoadObs(metaResponse, dataResponse, UTCtimestamp);
+    
+    res.set('Content-Type', 'application/json');
+    res.json(observation);
+
+  } catch (error) {
+    logger.error(`Error in /api/road/obs/${req.params.stationId} endpoint:`, error);
+    res.status(500).json({ error: `Failed to fetch road observations for station ${req.params.stationId}` });
+  }
+});
+
+// ---------------------------------------------------------
+// GET /api/road/camera endpoint for fetching road camera data from Digitraffic API
 // ---------------------------------------------------------
 roadRouter.get('/camera', async (req, res) => {
   logger.info("GET request received at /api/road/camera");

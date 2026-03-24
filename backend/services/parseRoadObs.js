@@ -92,6 +92,37 @@ async function parseRoadObs(metaResponse, dataResponse, timestamp) {
   return result;
 }
 
+async function parseSingleRoadObs(metaResponse, dataResponse, timestamp) {
+  // start parsing the responses
+  const meta = await metaResponse.json();
+  const data = await dataResponse.json();
+
+  // Index data by station id for easier lookup
+  if ( meta.properties.sensors && data.sensorValues ) {
+    for ( const metaSensor of meta.properties.sensors ) {
+      // find the matching sensor in data by id
+      const match = data.sensorValues.find(
+        sensor => sensor.id === metaSensor.id
+      )
+
+      // if there is a match, add the measured time to meta
+      if (match) {
+        metaSensor.measuredTime = match.measuredTime;
+      }
+    }
+
+    // add the data updated time to meta if it exists
+    if (data.dataUpdatedTime) {
+      meta.properties.dataUpdatedTime = data.dataUpdatedTime;
+    }
+
+    // map the sensor values to the meta properties using the same mapping as in parseRoadObs
+    meta.properties.sensorValues = data.sensorValues;
+  }
+
+  return meta;
+};
+
 module.exports = {
-  parseRoadObs
+  parseRoadObs, parseSingleRoadObs
 };

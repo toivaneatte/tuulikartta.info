@@ -12,8 +12,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 
 WORKDIR /var/www/html/
 
+# Copy apache configuration 
+COPY apache-proxy.conf /etc/apache2/sites-available/000-default.conf
 # Enable required Apache modules
-RUN a2enmod rewrite headers
+RUN a2enmod rewrite headers proxy proxy_http
 
 # Enable PHP error display for development
 RUN echo "display_errors = On" > /usr/local/etc/php/conf.d/dev.ini && \
