@@ -1,6 +1,8 @@
-/*
+/* 
 Author: 
-Description:
+Description: Service for parsing road observation data from the Digitraffic API. Currently includes:
+- parseRoadObs: Parses the metadata and data responses from the Digitraffic API for road observations and returns an array of observation objects for the stations.
+- parseSingleRoadObs: Parses the metadata and data responses from the Digitraffic API for a single station and returns a single observation object for that station.
 */
 
 const logger = require('../utils/logger');

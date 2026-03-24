@@ -50,9 +50,9 @@ function fetchMultiple($urls) {
 			if (curl_errno($ch)) {
 				error_log("Error fetching URL for key '$key': " . curl_error($ch));
 				$results[$key] = null;
-			} else {
-				error_log("$key HTTP status: " . curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        error_log("$key response length: " . strlen($content));
+			} else { // for debugging
+				//error_log("$key HTTP status: " . curl_getinfo($ch, CURLINFO_HTTP_CODE));
+        //error_log("$key response length: " . strlen($content));
 			}
 			
 			$results[$key] = $content;

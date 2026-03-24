@@ -10,7 +10,7 @@ const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
 const { parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
-const { parse } = require('csv-parse/browser/esm');
+const { parseRoadCameras, parseSingleRoadCamera } = require('../services/parseRoadCameras');
 
 // ---------------------------------------------------------
 // GET /api/road/obs endpoint for fetching road observations from Digitraffic API
@@ -32,8 +32,8 @@ roadRouter.get('/obs', async (req, res) => {
   
   // TODO: for historical data, we might need to use this like in other enpoints. But at the moment no timestamp is given to the API.
   //URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
-  logger.debug("Constructed URL for road observations metadata: " + metaURL);
-  logger.debug("Constructed URL for road observations data: " + dataURL);
+  //logger.debug("Constructed URL for road observations metadata: " + metaURL);
+  //logger.debug("Constructed URL for road observations data: " + dataURL);
 
   // fetch actual data from API
   try {
@@ -74,8 +74,8 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
   const timestamp = req.query.time || "now";
   const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
   
-  logger.debug(`Constructed URL for road observations metadata for station ${req.params.stationId}: ${metaURL}`);
-  logger.debug(`Constructed URL for road observations data for station ${req.params.stationId}: ${dataURL}`);
+  //logger.debug(`Constructed URL for road observations metadata for station ${req.params.stationId}: ${metaURL}`);
+  //logger.debug(`Constructed URL for road observations data for station ${req.params.stationId}: ${dataURL}`);
 
   try {
     // fetch metadata first to get the list of stations, then fetch data for those stations. 
@@ -100,18 +100,67 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 // ---------------------------------------------------------
 // GET /api/road/camera endpoint for fetching road camera data from Digitraffic API
 // ---------------------------------------------------------
-roadRouter.get('/camera', async (req, res) => {
-  logger.info("GET request received at /api/road/camera");
+roadRouter.get('/cameras', async (req, res) => {
+  logger.info("GET request received at /api/road/cameras");
   // get the URL from config
-  let URL = config.roadCameraURL;
+  let metaURL = config.roadCameraURL;
+  let dataURL = metaURL + "/data";
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
+  const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
   
-  URL += setTimeService.setTime(timestamp, false);
-  logger.debug("Constructed URL for road cameras: " + URL);
+  try {
+    // fetch actual data from API
+    const [metaResponse, dataResponse] = await Promise.all([
+      fetch(metaURL).then(r => r.json()),
+      fetch(dataURL).then(r => r.json())
+    ]);
 
-  // fetch actual data from API
+    // parse the responses and return the camera data
+    logger.info("Road camera metadata and data fetched successfully. Parsing responses...");
+    const cameras = await parseRoadCameras(metaResponse, dataResponse, UTCtimestamp);
+    
+    res.set('Content-Type', 'application/json');
+    res.json(cameras);
+  } catch (error) {
+    logger.error("Error in /api/road/cameras endpoint:", error);
+    res.status(500).json({ error: "Failed to fetch road camera data" });
+    return;
+  }
+});
+
+// ---------------------------------------------------------
+// GET /api/road/cameras/:stationId endpoint for fetching road camera data from Digitraffic API for one station
+// ---------------------------------------------------------
+roadRouter.get('/cameras/:stationId', async (req, res) => {
+  logger.info(`GET request received at /api/road/cameras/${req.params.stationId}`);
+  // get the URL from config
+  let metaURL = `${config.roadCameraURL}/${req.params.stationId}`;
+  let dataURL = metaURL + "/data";
+
+  //start by making time stamp
+  const timestamp = req.query.time || "now";
+  const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
+  
+  try {
+    // fetch actual data from API
+    const [metaResponse, dataResponse] = await Promise.all([
+      fetch(metaURL).then(r => r.json()),
+      fetch(dataURL).then(r => r.json())
+    ]);
+
+    // parse the responses and return the camera data
+    logger.info(`Road camera metadata and data fetched successfully for station: ${req.params.stationId}. Parsing responses...`);
+    const camera = await parseSingleRoadCamera(metaResponse, dataResponse, UTCtimestamp);
+    
+    res.set('Content-Type', 'application/json');
+    res.json(camera);
+  } catch (error) {
+    logger.error("Error in /api/road/cameras endpoint:", error);
+    res.status(500).json({ error: "Failed to fetch road camera data" });
+    return;
+  }
 });
 
 // ---------------------------------------------------------

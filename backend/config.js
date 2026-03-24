@@ -21,13 +21,15 @@ const SpaceFMIURL = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.jso
 // URL for fetching external radiation data from FMI STUK API
 const STUKRadiationURL = "https://opendata.fmi.fi/wfs?request=getFeature&stationType=radiation&parameters=DR_PT10M_avg&storedquery_id=stuk::observations::external-radiation::latest::multipointcoverage&";
 
-
 // URL for fetching nuclide data from FMI STUK API
 const STUKNuclidesURL = "https://opendata.fmi.fi/wfs?request=getFeature&storedquery_id=stuk::observations::air::radionuclide-activity-concentration::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326";
 
 // URL for fetching road observations from digitraffic API
 const roadObsURL = "https://tie.digitraffic.fi/api/weather/v1/stations";
 const digitrafficAPIuser = "Tuulen-Viemät/Tuulikartta.info-v2";
+
+// URL for fetching digitraffic camera data
+const roadCameraURL = "https://tie.digitraffic.fi/api/weathercam/v1/stations";
 // ----------------------------------------------------------
 
 // Parameters to fetch for favourite stations (same as all stations)
@@ -58,7 +60,7 @@ const currentDataMaxAgeMinutes = 10;
 const mapObservationsWindowMinutes = 210;
 
 // fetch data for favourite stations in this period.
-const fetchFavouritePeriod = '*/1 * * * *'
+const fetchFavouritePeriod = '*/30 * * * *'
 /*
 * * * * *
 │ │ │ │ │
@@ -83,6 +85,7 @@ module.exports = {
   STUKNuclidesURL,
   roadObsURL,
   digitrafficAPIuser,
+  roadCameraURL,
   favouriteStations,
   fetchFavouritePeriod,
   favouriteRetentionDays,

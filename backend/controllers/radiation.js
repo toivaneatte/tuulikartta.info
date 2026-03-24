@@ -49,10 +49,9 @@ radiationRouter.get('/external', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  logger.debug("Timestamp is: " + timestamp);
-
+  
   URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
-  logger.debug("Constructed URL for external radiation: " + URL);
+  // logger.debug("Constructed URL for external radiation: " + URL);
 
   // fetch actual data from API
   try {
@@ -85,10 +84,9 @@ radiationRouter.get('/nuclides', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  logger.debug("Timestamp is: " + timestamp);
-
+  
   URL += setTimeService.setDayRange(timestamp, true, 90); // isGraph = true for graph data
-  logger.debug("Constructed URL for nuclides: " + URL);
+  //logger.debug("Constructed URL for nuclides: " + URL);
 
   // fetch actual data from API
   try{

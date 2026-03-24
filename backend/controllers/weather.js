@@ -164,6 +164,7 @@ const computeLatestPerStation = (observations) => {
 // without timestamp: returns the latest observation for each station (from SQLite if data is fresh enough, else from FMI API)
 // ---------------------------------------------------------
 weatherRouter.get('/latest', async (req, res) => {
+  logger.info("GET request received at /api/weather/latest");
   const timestamp = req.query.time;
 
   if (timestamp && timestamp !== 'now' && new Date(timestamp) > new Date()) {

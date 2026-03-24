@@ -125,10 +125,11 @@ var saa = saa || {};
       data: {
         time: saa.Tuulikartta.timeValue
       },
-      error: function () {
+      error: function (err) {
         document.body.style.cursor = 'default'
         saa.Tuulikartta.dataLoader(false)
         saa.Tuulikartta.map.spin(false)
+        console.log("Tuulikartta data error!!", err)
       },
       success: function (data) {
         saa.Tuulikartta.dataLoader(false)
