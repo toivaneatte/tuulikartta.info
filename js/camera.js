@@ -33,6 +33,10 @@ var saa = saa || {};
   let imageWidth = IMAGE_CONFIG.desktop.width;
   let maxWidth = IMAGE_CONFIG.desktop.maxWidth;
   let isLoading = false;
+  
+  // Time Slider - store selected time value
+  let selectedTime = null; // Stores time in HH:mm format (e.g., "14:30")
+  let selectedTimeMinutes = 0; // Stores time as minutes since midnight (0-1440)
 
   // Cache with TTL
   const stationCache = {
@@ -512,6 +516,7 @@ camera.normalizeWeatherStation = function(raw) {
           const local = moment.utc(latestTime).local();
           const formatted = local.format("DD.MM.YYYY HH:mm");
           w.document.getElementById("updateTime").textContent = formatted;
+          camera.initTimeSlider(w, latestTime);
 
           // Collect presets with images
           const presets = station.properties.presets || [];
@@ -520,11 +525,14 @@ camera.normalizeWeatherStation = function(raw) {
           for (let i = 0; i < presets.length; i++) {
             // Don't show presets not in collection
             if (presets[i].inCollection === false) continue;
+            // Skip if over a month old
+            if (moment().diff(presets[i].measuredTime, 'months') > 1) {
+              continue;
+            }
 
             const presetUrl = camera.resolvePresetImageUrl(presets[i]);
             if (presetUrl) {
               imagePresets.push({ preset: presets[i], url: presetUrl });
-
             }
           } 
 
@@ -653,6 +661,58 @@ camera.normalizeWeatherStation = function(raw) {
     stationCache.clear();
     weatherCache.clear();
     console.log('Camera cache cleared');
+  };
+
+  // Time Slider Handler
+  camera.initTimeSlider = function(w, latestTime) {
+    w.console.log('Initializing time slider with latest time:', latestTime);
+    const timeSlider = w.document.getElementById('timeInput');
+    const timeDisplay = w.document.getElementById('timeDisplay');
+    
+    if (!timeSlider || !timeDisplay) {
+      w.console.warn('Time slider elements not found in DOM');
+      return;
+    }
+
+    // Set min and max values for the slider based on latest camera time
+    timeSlider.min = latestTime;
+    timeSlider.max = latestTime;
+    
+    // Update display when slider changes
+    timeSlider.addEventListener('input', function() {
+      const minutes = parseInt(this.value);
+      selectedTimeMinutes = minutes;
+      w.console.log(`Time slider input: ${minutes} minutes`);
+      
+      // Convert minutes to HH:mm format
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      selectedTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+      
+      // Update display
+      timeDisplay.textContent = selectedTime;
+      
+      console.log(`Time slider updated: ${selectedTime} (${minutes} minutes)`);
+    });
+    /*
+    // Set initial value to current time
+    const now = new Date();
+    const initialMinutes = now.getHours() * 60 + now.getMinutes();
+    timeSlider.value = initialMinutes;
+    selectedTimeMinutes = initialMinutes;
+    selectedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    timeDisplay.textContent = selectedTime;
+    */
+  };
+  
+  // Public method to get selected time
+  camera.getSelectedTime = function() {
+    return selectedTime;
+  };
+  
+  // Public method to get selected time in minutes
+  camera.getSelectedTimeMinutes = function() {
+    return selectedTimeMinutes;
   };
 
 }(saa.camera = saa.camera || {}));

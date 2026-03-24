@@ -78,10 +78,9 @@ $nuclidesArray = json_decode($responses["nuclides"], true) ?? [];
 
 // error_log("synop data: " . $responses["synop"]); // debugging logs
 // error_log("External radiation data: " . $responses["radiation"]); // debugging logs
-error_log("Nuclide data: " . $responses["nuclides"]); // debugging logs
+// error_log("Nuclide data: " . $responses["nuclides"]); // debugging logs
 
 error_log("Responses decoded, combining data...");
-// $combinedData = array_merge($synopArray, $rValuesArray, $externalRadiationArray);
 $combinedData = [
 	...$synopArray,
 	...$rValuesArray,
@@ -101,14 +100,13 @@ print json_encode($combinedData);
 // road observations = tiesää
 $roadSettings = array();
 $roadSettings["stationtype"]    = "road";
-$roadSettings["parameters"]     = "ILMA";
-$roadSettings["storedquery_id"] = "https://tie.digitraffic.fi/api/weather/v1";
 $roadSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
-$roadData = $dataMiner->multipointcoverage($timestamp, $roadSettings, false);
+$roadData = $dataMiner->getRoadData($timestamp, $roadSettings, false);
 error_log("road data handled");
 
 // $roadData = $dataMiner->serializeData($roadData);
 */
+
 
 // STUK observations = säteily
 /*

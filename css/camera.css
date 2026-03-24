@@ -52,6 +52,15 @@ h3 {
     gap: 10px;
     margin-bottom: 10px;
 }
+#timeSlider {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: aliceblue;
+    border-radius: 8px;
+    padding: 5px;
+    margin-bottom: 10px;
+}
 #noNearestStation {
     justify-content: center;
     background-color: dodgerblue;
