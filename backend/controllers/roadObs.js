@@ -39,8 +39,8 @@ roadRouter.get('/obs', async (req, res) => {
   try {
     // fetch metadata first to get the list of stations, then fetch data for those stations. 
     const [metaResponse, dataResponse] = await Promise.all([
-      fetch(metaURL, {headers}),
-      fetch(dataURL, {headers})
+      fetch(metaURL, {headers}).then(r => r.json()),
+      fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
     // parse the responses and return the observations
@@ -80,8 +80,8 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
   try {
     // fetch metadata first to get the list of stations, then fetch data for those stations. 
     const [metaResponse, dataResponse] = await Promise.all([
-      fetch(metaURL, {headers}),
-      fetch(dataURL, {headers})
+      fetch(metaURL, {headers}).then(r => r.json()),
+      fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
     // parse the responses and return the observations

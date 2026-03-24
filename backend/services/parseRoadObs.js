@@ -6,14 +6,14 @@ Description:
 const logger = require('../utils/logger');
 const config = require('../config');
 
-// ---------------------------------------------------------
-// Functions for parsing road observation data from digitraffic API
-// ---------------------------------------------------------
-async function parseRoadObs(metaResponse, dataResponse, timestamp) {
-  // start parsing the responses
-    const stations = await metaResponse.json();
-    const data = await dataResponse.json();
-
+/**
+ *  Parse road observations from the metadata and data responses from the Digitraffic API. This is used for the /api/road/obs endpoint.
+ * @param {*} stations  - the metadata response from the Digitraffic API containing the list of stations and their properties
+ * @param {*} data  - the data response from the Digitraffic API containing the sensor values for the stations
+ * @param {*} timestamp  - the timestamp for which to parse the observations (in milliseconds since epoch). Only sensor values measured within 24 hours of this timestamp will be included.
+ * @returns  - an array of observation objects for the stations, each containing the station information and the relevant sensor values
+ */
+async function parseRoadObs(stations, data, timestamp) {
   // Index data by station id for easier lookup
   const indexedData = {};
   if (data.stations) {
@@ -92,18 +92,22 @@ async function parseRoadObs(metaResponse, dataResponse, timestamp) {
   return result;
 }
 
-async function parseSingleRoadObs(metaResponse, dataResponse, timestamp) {
-  // start parsing the responses
-  const meta = await metaResponse.json();
-  const data = await dataResponse.json();
-
+/**
+ *  Parse a single road observation for a specific station. This is used for the /api/road/obs/:stationId endpoint.
+ * @param {*} meta  - the metadata response from the Digitraffic API for a single station
+ * @param {*} data  - the data response from the Digitraffic API for a single station
+ * @param {*} timestamp  - the timestamp for which to parse the observation (in milliseconds since epoch)
+ * @returns  - a single observation object for the station, or null if no valid observation is found
+ */
+async function parseSingleRoadObs(meta, data, timestamp) {
   // Index data by station id for easier lookup
   if ( meta.properties.sensors && data.sensorValues ) {
     for ( const metaSensor of meta.properties.sensors ) {
       // find the matching sensor in data by id
-      const match = data.sensorValues.find(
-        sensor => sensor.id === metaSensor.id
-      )
+      const sensorMap = Object.fromEntries(
+        data.sensorValues.map(s => [s.id, s])
+      );
+      const match = sensorMap[metaSensor.id];
 
       // if there is a match, add the measured time to meta
       if (match) {
