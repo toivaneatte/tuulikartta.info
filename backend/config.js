@@ -5,8 +5,8 @@ const version = '0.0.2';
 const serverPort = 3000;
 const debugMode = true;
 
-// ----------------------------------------------------------
 // Needed URLs for data fetching and processing
+// ----------------------------------------------------------
 // URL for FMI api for fetching weather data for all stations in Finland
 const FMIWeatherURL = "http://opendata.fmi.fi/wfs?request=getFeature&stationtype=synop&parameters=ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint&storedquery_id=fmi::observations::weather::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326&timestep=10&";
 // Used for graph requests (single station by fmisid)
@@ -24,6 +24,10 @@ const STUKRadiationURL = "https://opendata.fmi.fi/wfs?request=getFeature&station
 
 // URL for fetching nuclide data from FMI STUK API
 const STUKNuclidesURL = "https://opendata.fmi.fi/wfs?request=getFeature&storedquery_id=stuk::observations::air::radionuclide-activity-concentration::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326";
+
+// URL for fetching road observations from digitraffic API
+const roadObsURL = "https://tie.digitraffic.fi/api/weather/v1/stations";
+const digitrafficAPIuser = "Tuulen-Viemät/Tuulikartta.info-v2";
 // ----------------------------------------------------------
 
 // Parameters to fetch for favourite stations (same as all stations)
@@ -77,6 +81,8 @@ module.exports = {
   SpaceFMIURL,
   STUKRadiationURL,
   STUKNuclidesURL,
+  roadObsURL,
+  digitrafficAPIuser,
   favouriteStations,
   fetchFavouritePeriod,
   favouriteRetentionDays,

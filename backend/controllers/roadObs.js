@@ -9,9 +9,8 @@ const roadRouter = require('express').Router()
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
-const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
-
-const DEBUG = config.debugMode;
+const { parseRoadObs } = require('../services/parseRoadObs');
+const { parse } = require('csv-parse/browser/esm');
 
 // ---------------------------------------------------------
 // GET /api/road/obs endpoint for fetching road observations from **WHAT API?**
@@ -19,25 +18,41 @@ const DEBUG = config.debugMode;
 roadRouter.get('/obs', async (req, res) => {
   logger.info("GET request received at /api/road/obs");
   // get the URL from config
-  let URL = config.roadObsURL;
+  let metaURL = config.roadObsURL;
+  let dataURL = metaURL + "/data";
+  const headers = {
+    "Accept-Encoding": "gzip",
+    "Accept": "application/json",
+    "User-Agent": config.digitrafficAPIuser
+  };
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
+  const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
   
-  URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
-  logger.debug("Constructed URL for road observations: " + URL);
+  // TODO: for historical data, we might need to use this like in other enpoints. But at the moment no timestamp is given to the API.
+  //URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
+  logger.debug("Constructed URL for road observations metadata: " + metaURL);
+  logger.debug("Constructed URL for road observations data: " + dataURL);
 
   // fetch actual data from API
   try {
-    const responseXml = await fetch(URL).then(r => r.text());
-    if (!responseXml) {
-      throw new Error(`HTTP error: ${responseXml.status}`);
+    // fetch metadata first to get the list of stations, then fetch data for those stations. 
+    const metaResponse = await fetch(metaURL, {headers});
+    if (!metaResponse) {
+      throw new Error(`HTTP error: ${metaResponse.status}`);
     }
-    const observations = await parseFMIMultipointcoverage(responseXml, false);
-    logger.info("Parsed road observations, number of observations: " + observations.length);
+    const dataResponse = await fetch(dataURL, {headers});
+    if (!dataResponse) {
+      throw new Error(`HTTP error: ${dataResponse.status}`);
+    }
 
+    // parse the responses and return the observations
+    logger.info("Road observation metadata and data fetched successfully. Parsing responses...");
+    const observations = await parseRoadObs(metaResponse, dataResponse, UTCtimestamp);
+    
     res.set('Content-Type', 'application/json');
-    res.send(observations);
+    res.json(observations);
 
   } catch (error) {
     logger.error("Error in /api/road/obs endpoint:", error);
