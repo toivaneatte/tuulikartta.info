@@ -38,14 +38,10 @@ roadRouter.get('/obs', async (req, res) => {
   // fetch actual data from API
   try {
     // fetch metadata first to get the list of stations, then fetch data for those stations. 
-    const metaResponse = await fetch(metaURL, {headers});
-    if (!metaResponse) {
-      throw new Error(`HTTP error: ${metaResponse.status}`);
-    }
-    const dataResponse = await fetch(dataURL, {headers});
-    if (!dataResponse) {
-      throw new Error(`HTTP error: ${dataResponse.status}`);
-    }
+    const [metaResponse, dataResponse] = await Promise.all([
+      fetch(metaURL, {headers}),
+      fetch(dataURL, {headers})
+    ]);
 
     // parse the responses and return the observations
     logger.info("Road observation metadata and data fetched successfully. Parsing responses...");
