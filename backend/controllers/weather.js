@@ -261,7 +261,8 @@ weatherRouter.get('/latest', async (req, res) => {
     logger.error(`Error storing map_observations: ${err.message}`);
   }
 
-  await fetchDailyAggregates(null);
+  // Fire and forget: update daily aggregates in the background, respond immediately
+  fetchDailyAggregates(null).catch(err => logger.error(`Daily aggregates background error: ${err.message}`));
   const freshRow = getLatestMapTimestamp.get();
   const rows = getMapObsByTimestamp.all(freshRow.timestamp);
   res.send(rows.map(obsToStation));
