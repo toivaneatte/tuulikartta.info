@@ -123,7 +123,8 @@ var saa = saa || {};
       dataType: 'json',
       url: 'php/getdata.php',
       data: {
-        time: saa.Tuulikartta.timeValue
+        time: saa.Tuulikartta.timeValue,
+        favourites: window.favouritesMode ? "1" : "0"
       },
       error: function (err) {
         document.body.style.cursor = 'default'

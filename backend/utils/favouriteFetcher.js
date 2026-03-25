@@ -47,13 +47,23 @@ const insertMany = db.transaction((rows) => {
   return { inserted, updated: rows.length - inserted };
 });
 
+// Parse fetch interval in minutes from cron expression (e.g. '*/30 * * * *' -> 30)
+const parseCronIntervalMinutes = (cron) => {
+  const match = cron.match(/^\*\/(\d+)/);
+  return match ? parseInt(match[1], 10) : 10;
+};
+const fetchIntervalMinutes = parseCronIntervalMinutes(config.fetchFavouritePeriod);
+// Fetch window = interval + 2 min buffer
+const fetchWindowMinutes = fetchIntervalMinutes + 2;
+logger.info(`Fetch interval: ${fetchIntervalMinutes} min, window: ${fetchWindowMinutes} min`);
+
 logger.info('Starting favourite stations weather data fetcher...');
 nodeCron.schedule(config.fetchFavouritePeriod, async () => {
   logger.info('Favourite stations data fetcher triggered');
 
   // Build URL with explicit parameters and only enabled stations
   const startTime = new Date();
-  startTime.setMinutes(startTime.getMinutes() - 20);
+  startTime.setMinutes(startTime.getMinutes() - fetchWindowMinutes);
   const startISO = startTime.toISOString();
 
   let baseURL = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature' +

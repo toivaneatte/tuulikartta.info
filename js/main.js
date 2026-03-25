@@ -22,6 +22,7 @@ var saa = globalThis.saa;
   saa.Tuulikartta.data = []
   saa.Tuulikartta.debugvalue = false
   saa.Tuulikartta.timeValue = 'now'
+  window.favouritesMode = false
   saa.Tuulikartta.timeStamp = ''
   saa.Tuulikartta.markerGroupSynop = L.layerGroup()
   saa.Tuulikartta.markerGroupRoad = L.layerGroup()
@@ -275,6 +276,26 @@ var saa = globalThis.saa;
        }
      })
      map.addControl(new trafficCamControl());
+
+    /* favourites control */
+    var favouritesControl = L.Control.extend({
+      options: {
+        position: 'topright'
+      },
+      onAdd: function (map) {
+        var container = L.DomUtil.create(
+          'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-favourites'
+        )
+        container.title = 'Suosikit'
+        container.onclick = function () {
+          window.favouritesMode = !window.favouritesMode
+          $(this).toggleClass('active')
+          saa.Tuulikartta.requestData()
+        }
+        return container
+      }
+    })
+    map.addControl(new favouritesControl());
 //TÄHÄN ASTI KOMMENTOINTIA
     var infoControl = L.Control.extend({
       options: {

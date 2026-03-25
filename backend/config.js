@@ -63,7 +63,7 @@ const currentDataMaxAgeMinutes = 10;
 const mapObservationsWindowMinutes = 210;
 
 // fetch data for favourite stations in this period.
-const fetchFavouritePeriod = '*/30 * * * *'
+const fetchFavouritePeriod = '*/10 * * * *'
 /*
 * * * * *
 │ │ │ │ │
