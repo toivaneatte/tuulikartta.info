@@ -380,6 +380,8 @@ var saa = globalThis.saa;
       interactive: false
     })
 
+    console.log("One random data set: ", saa.Tuulikartta.data[30]) // for debugging
+    
     for (var i = 0; i < sizeofdata; i++) {
       var location = { lat: parseFloat(saa.Tuulikartta.data[i]['lat']), lng: parseFloat(saa.Tuulikartta.data[i]['lon']) }
       var time = Tuulikartta.timeTotime(saa.Tuulikartta.data[i]['epochtime'])

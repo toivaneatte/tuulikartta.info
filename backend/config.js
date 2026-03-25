@@ -21,6 +21,9 @@ const SpaceFMIURL = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.jso
 // URL for fetching external radiation data from FMI STUK API
 const STUKRadiationURL = "https://opendata.fmi.fi/wfs?request=getFeature&stationType=radiation&parameters=DR_PT10M_avg&storedquery_id=stuk::observations::external-radiation::latest::multipointcoverage&";
 
+// URL for fetching external radiation data from FMI STUK API
+const STUKRadiationGraphURL = "https://opendata.fmi.fi/wfs?request=getFeature&stationType=radiation&parameters=DR_PT10M_avg&storedquery_id=stuk::observations::external-radiation::multipointcoverage&timestep=10&";
+
 // URL for fetching nuclide data from FMI STUK API
 const STUKNuclidesURL = "https://opendata.fmi.fi/wfs?request=getFeature&storedquery_id=stuk::observations::air::radionuclide-activity-concentration::multipointcoverage&bbox=16.58,58.81,34.8,70.61,epsg::4326";
 
@@ -82,6 +85,7 @@ module.exports = {
   FMISingleStationURL,
   SpaceFMIURL,
   STUKRadiationURL,
+  STUKRadiationGraphURL,
   STUKNuclidesURL,
   roadObsURL,
   digitrafficAPIuser,

@@ -29,6 +29,7 @@ TODO:
 // GET /api/radiation/rvalue endpoint for fetching R values from space.fmi API
 // ---------------------------------------------------------
 radiationRouter.get('/rvalue', async (req, res) => {
+  logger.info("GET /api/radiation/rvalue");
   try {
     const rValues = await getRValues();
     res.set('Content-Type', 'application/json');
@@ -43,7 +44,7 @@ radiationRouter.get('/rvalue', async (req, res) => {
 // GET /api/radiation/exteral endpoint for fetching external radiation data from STUK FMI API
 // ---------------------------------------------------------
 radiationRouter.get('/external', async (req, res) => {
-  logger.info("GET request received at /api/radiation/external");
+  logger.info("GET /api/radiation/external");
   // get the URL from config
   let URL = config.STUKRadiationURL;
 
@@ -75,10 +76,46 @@ radiationRouter.get('/external', async (req, res) => {
 });
 
 // ---------------------------------------------------------
+// GET /api/radiation/exteral endpoint for fetching external radiation data for one station from STUK FMI API
+// ---------------------------------------------------------
+radiationRouter.get('/external/:stationId', async (req, res) => {
+  logger.info("GET /api/radiation/external");
+  // get the URL from config
+  let URL = `${config.STUKRadiationGraphURL}fmisid=${req.params.stationId}&`;
+
+  //start by making time stamp
+  const timestamp = req.query.time || "now";
+  
+  // add timestamp to URL
+  URL += setTimeService.setTime(timestamp, true); // isGraph = true for graph data
+  logger.debug("GET /api/radiation/external - URL: " + URL);
+
+  // fetch actual data from API
+  try {
+    const responseXml = await fetch(URL).then(r => r.text());
+    
+    if (!responseXml) {
+      throw new Error(`HTTP error: ${responseXml.status}`);
+    }
+
+    // Parse the XML response using the utility function
+    const result = await parseFMIMultipointcoverage(responseXml, 'DR_PT10M_avg,epochtime', 'radiation');
+    logger.info(`Parsed external radiation data, number of observations: ${result.length}`);
+
+    res.set('Content-Type', 'application/json');
+    res.send(result);
+
+  } catch (error) {
+    logger.error("Error in /api/radiation/external endpoint:", error);
+    res.status(500).json({ error: "Failed to fetch external radiation data" });
+  }
+});
+
+// ---------------------------------------------------------
 // GET /api/radiation/nuclides endpoint for fetching nuclide data from STUK FMI API
 // ---------------------------------------------------------
 radiationRouter.get('/nuclides', async (req, res) => {
-  logger.info("GET request received at /api/radiation/nuclides");
+  logger.info("GET /api/radiation/nuclides");
   // get the URL from config
   let URL = config.STUKNuclidesURL;
 

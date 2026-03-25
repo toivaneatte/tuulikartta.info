@@ -79,6 +79,7 @@ var saa = saa || {};
 
         } else {
           Tuulikartta.debug(`No data files found`)
+          console.log("Data not found, asking from getdata.php")
           Tuulikartta.requestData()
         }
 
