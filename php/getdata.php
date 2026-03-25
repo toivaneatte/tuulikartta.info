@@ -108,6 +108,11 @@ foreach ($nuclideData as $entry) {
 			if ($stored === null || $epochTime > $stored) {
 				$airRadioByKey[$key][$nuclide]  = $val;
 				$airRadioByKey[$key][$epochKey] = $epochTime;
+				// Update station time to reflect the most recent nuclide measurement
+				if ($epochTime !== null && ($airRadioByKey[$key]['epochtime'] === null || $epochTime > $airRadioByKey[$key]['epochtime'])) {
+					$airRadioByKey[$key]['epochtime'] = $epochTime;
+					$airRadioByKey[$key]['time']      = $timeString;
+				}
 			}
 		}
 	}
