@@ -101,7 +101,7 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 // GET /api/road/camera endpoint for fetching road camera data from Digitraffic API
 // ---------------------------------------------------------
 roadRouter.get('/cameras', async (req, res) => {
-  logger.info("GET request received at /api/road/cameras");
+  logger.info("GET /api/road/cameras");
   // get the URL from config
   let metaURL = config.roadCameraURL;
   let dataURL = metaURL + "/data";
@@ -134,7 +134,7 @@ roadRouter.get('/cameras', async (req, res) => {
 // GET /api/road/cameras/:stationId endpoint for fetching road camera data from Digitraffic API for one station
 // ---------------------------------------------------------
 roadRouter.get('/cameras/:stationId', async (req, res) => {
-  logger.info(`GET request received at /api/road/cameras/${req.params.stationId}`);
+  logger.info(`GET /api/road/cameras/${req.params.stationId}`);
   // get the URL from config
   let metaURL = `${config.roadCameraURL}/${req.params.stationId}`;
   let dataURL = metaURL + "/data";

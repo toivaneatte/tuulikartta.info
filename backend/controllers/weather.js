@@ -16,7 +16,7 @@ const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 // Functions for fetching and processing weather data from FMI API
 // ---------------------------------------------------------
 const fetchNewFMIData = async (url) => {
-  logger.info(`Fetching weather data from FMI API with URL: ${url}`);
+  //logger.debug(`Fetching weather data from FMI API with URL: ${url}`);
   const xml = await fetch(url).then(r => r.text());
   const observations = await parseFMIMultipointcoverage(xml, config.favouriteParameters);
   logger.info(`Fetched and processed ${observations.length} observations from FMI API.`);
@@ -98,7 +98,7 @@ const classifyTime = (timestamp) => {
   const ts = new Date(timestamp);
   if (isNaN(ts.getTime())) return 'current';
   const diffMs = Date.now() - ts.getTime();
-  logger.info(`Timestamp: ${timestamp}, age: ${(diffMs / 60000)} min`);
+  //logger.debug(`Timestamp: ${timestamp}, age: ${(diffMs / 60000)} min`);
   if (diffMs < 0) return 'future';
   if (diffMs <= CURRENT_WINDOW_MS) return 'current';
   return 'historical';
@@ -164,7 +164,7 @@ const computeLatestPerStation = (observations) => {
 // without timestamp: returns the latest observation for each station (from SQLite if data is fresh enough, else from FMI API)
 // ---------------------------------------------------------
 weatherRouter.get('/latest', async (req, res) => {
-  logger.info("GET request received at /api/weather/latest");
+  logger.info("GET /api/weather/latest");
   const timestamp = req.query.time;
 
   if (timestamp && timestamp !== 'now' && new Date(timestamp) > new Date()) {
@@ -259,6 +259,7 @@ weatherRouter.get('/latest', async (req, res) => {
 // GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
 // ---------------------------------------------------------
 weatherRouter.get('/xml', async (req, res) => {
+  logger.info("GET /api/weather/xml");
   const timestamp = req.query.time || 'now';
   const { fmisid, starttime, endtime, parameters } = req.query;
   const timeType = classifyTime(timestamp);
@@ -333,6 +334,7 @@ weatherRouter.get('/xml', async (req, res) => {
 // Same format as /latest
 // ---------------------------------------------------------
 weatherRouter.get('/favourites', (req, res) => {
+  logger.info("GET /api/weather/favourites");
   const time = req.query.time;
   let rows;
 
