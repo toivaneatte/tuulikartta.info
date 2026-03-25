@@ -34,7 +34,8 @@ async function parseRoadObs(stations, data, timestamp) {
     "VALLITSEVA_SÄÄ": "wawa",
     "ILMA": "t2m",
     "LUMEN_MÄÄRÄ1": "snow_aws",
-    "KASTEPISTE": "dewpoint"
+    "KASTEPISTE": "dewpoint",
+    "KASTEPISTE_ERO_ILMA": "t2mdewpoint"
   };
 
   result = [];
