@@ -66,8 +66,8 @@ async function parseRoadObs(stations, data, timestamp) {
       n_man: null,
       r_1h: null,
       snow_aws: null,
-      pressure: null,
-      dewpoint: null
+      dewpoint: null,
+      t2mdewpoint: null
     };
     
     let hasRecentSensor = false;
