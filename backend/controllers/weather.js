@@ -11,6 +11,7 @@ const redisClient = require('../utils/redisClient');
 const config = require('../config');
 const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
+const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 
 // ---------------------------------------------------------
 // Functions for fetching and processing weather data from FMI API
@@ -136,6 +137,13 @@ const obsToStation = (obs) => {
     rh:          obs.rh,
     dewpoint:    obs.dewpoint,
     t2mdewpoint,
+    wg_1d:       obs.wg_1d      ?? null,
+    ws_1d:       obs.ws_1d      ?? null,
+    tmax:        obs.tmax       ?? null,
+    tmin:        obs.tmin       ?? null,
+    rr_1d:       obs.rr_1d      ?? null,
+    wg_max_dir:  obs.wg_max_dir ?? null,
+    ws_max_dir:  obs.ws_max_dir ?? null,
   };
 };
 
@@ -202,7 +210,13 @@ weatherRouter.get('/latest', async (req, res) => {
       logger.error(`Error fetching from FMI API: ${err.message}`);
       return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
     }
-    return res.send(computeLatestPerStation(observations));
+    const dailyValues = await fetchDailyAggregates(timestamp);
+    const dailyByFmisid = {};
+    if (dailyValues) {
+      for (const d of dailyValues) dailyByFmisid[d.fmisid] = d;
+    }
+    const obsWithDaily = observations.map(obs => ({ ...obs, ...dailyByFmisid[obs.fmisid] }));
+    return res.send(computeLatestPerStation(obsWithDaily));
   }
 
 
@@ -248,6 +262,8 @@ weatherRouter.get('/latest', async (req, res) => {
     logger.error(`Error storing map_observations: ${err.message}`);
   }
 
+  // Fire and forget: update daily aggregates in the background, respond immediately
+  fetchDailyAggregates(null).catch(err => logger.error(`Daily aggregates background error: ${err.message}`));
   const freshRow = getLatestMapTimestamp.get();
   const rows = getMapObsByTimestamp.all(freshRow.timestamp);
   res.send(rows.map(obsToStation));
