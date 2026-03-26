@@ -63,8 +63,6 @@ async function parseRoadObs(stations, data, timestamp) {
       vis: null,
       wawa: null,
       t2m: null,
-      n_man: null,
-      r_1h: null,
       snow_aws: null,
       dewpoint: null,
       t2mdewpoint: null
