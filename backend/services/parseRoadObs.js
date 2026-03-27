@@ -30,7 +30,7 @@ function mergeHistoricData(stationData, historicData) {
       if (historicSensor.id === sensor.id) {
         mergedData.sensorValues.push({
           name: sensor.name,
-          value: sensor.value,
+          value: historicSensor.value,
           measuredTime: sensor.measuredTime
         });
       }
