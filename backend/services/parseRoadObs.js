@@ -8,6 +8,37 @@ Description: Service for parsing road observation data from the Digitraffic API.
 const logger = require('../utils/logger');
 const config = require('../config');
 
+// Helper function to get historic data
+function mergeHistoricData(stationData, historicData) {
+
+  const props = stationData.properties;
+  const stationId = props.id;
+
+  const mergedData = {
+    station: props.name,
+    fmisid: stationId,
+    lat: stationData.geometry.coordinates[1],
+    lon: stationData.geometry.coordinates[0],
+    type: "road",
+    time: null,
+    epochtime: null,
+    sensorValues: []
+  };
+
+  for (const sensor of stationData.sensorValues) {
+    for (const historicSensor of historicData) {
+      if (historicSensor.id === sensor.id) {
+        mergedData.sensorValues.push({
+          name: sensor.name,
+          value: sensor.value,
+          measuredTime: sensor.measuredTime
+        });
+      }
+    }
+  }
+  return mergedData;
+}
+
 /**
  *  Parse road observations from the metadata and data responses from the Digitraffic API. This is used for the /api/road/obs endpoint.
  * @param {*} stations  - the metadata response from the Digitraffic API containing the list of stations and their properties
@@ -129,5 +160,5 @@ async function parseSingleRoadObs(meta, data, timestamp) {
 };
 
 module.exports = {
-  parseRoadObs, parseSingleRoadObs
+  mergeHistoricData, parseRoadObs, parseSingleRoadObs
 };
