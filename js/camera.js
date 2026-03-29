@@ -516,12 +516,13 @@ camera.normalizeWeatherStation = function(raw) {
           const local = moment.utc(latestTime).local();
           const formatted = local.format("DD.MM.YYYY HH:mm");
           w.document.getElementById("updateTime").textContent = formatted;
-          camera.initTimeSlider(w, latestTime);
 
           // Collect presets with images
           const presets = station.properties.presets || [];
           const imagePresets = [];
-          
+
+          camera.initTimeSlider(w, presets);
+                    
           for (let i = 0; i < presets.length; i++) {
             // Don't show presets not in collection
             if (presets[i].inCollection === false) continue;
@@ -664,8 +665,7 @@ camera.normalizeWeatherStation = function(raw) {
   };
 
   // Time Slider Handler
-  camera.initTimeSlider = function(w, latestTime) {
-    w.console.log('Initializing time slider with latest time:', latestTime);
+  camera.initTimeSlider = function(w, presets) {
     const timeSlider = w.document.getElementById('timeInput');
     const timeDisplay = w.document.getElementById('timeDisplay');
     
@@ -674,35 +674,36 @@ camera.normalizeWeatherStation = function(raw) {
       return;
     }
 
-    // Set min and max values for the slider based on latest camera time
-    timeSlider.min = latestTime;
-    timeSlider.max = latestTime;
+    w.console.log('Initializing time slider with presets:', presets);
+
+    // Set min to 24 hours back and max to current moment
+    const now = new Date();
+    const minTime = new Date(now.getTime() - 24 * 3600 * 1000);
+    timeSlider.min = minTime.getTime();
+    timeSlider.max = now.getTime();
     
     // Update display when slider changes
     timeSlider.addEventListener('input', function() {
-      const minutes = parseInt(this.value);
-      selectedTimeMinutes = minutes;
-      w.console.log(`Time slider input: ${minutes} minutes`);
-      
-      // Convert minutes to HH:mm format
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      selectedTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+      const timestamp = parseInt(this.value);
+      selectedTimeMinutes = (timestamp - minTime.getTime()) / (1000 * 60);
+      selectedTime = moment(timestamp).format("HH:mm");
       
       // Update display
       timeDisplay.textContent = selectedTime;
+      const updateTime = w.document.getElementById("updateTime");
+
+      if (updateTime) {
+        updateTime.textContent = moment(timestamp).format("DD.MM.YYYY HH:mm");
+      }
       
-      console.log(`Time slider updated: ${selectedTime} (${minutes} minutes)`);
+      console.log(`Time slider updated: ${selectedTime} (${selectedTimeMinutes} minutes from min)`);
     });
-    /*
+    
     // Set initial value to current time
-    const now = new Date();
-    const initialMinutes = now.getHours() * 60 + now.getMinutes();
-    timeSlider.value = initialMinutes;
-    selectedTimeMinutes = initialMinutes;
-    selectedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    timeSlider.value = now.getTime();
+    selectedTimeMinutes = (now.getTime() - minTime.getTime()) / (1000 * 60);
+    selectedTime = moment(now).format("HH:mm");
     timeDisplay.textContent = selectedTime;
-    */
   };
   
   // Public method to get selected time
