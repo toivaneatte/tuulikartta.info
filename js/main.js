@@ -58,7 +58,7 @@ var saa = globalThis.saa;
     chunkedLoading: true,
     chunkInterval: 1000,
     maxClusterRadius: 100,
-    disableClusteringAtZoom: 9, 
+    disableClusteringAtZoom: 10, 
     iconCreateFunction: function(cluster) {
       const children = cluster.getAllChildMarkers();
       const uniqueFmisIds = new Set();
@@ -69,14 +69,20 @@ var saa = globalThis.saa;
       });
       const childCount = uniqueFmisIds.size > 0 ? uniqueFmisIds.size : cluster.getChildCount();
 
-      return L.divIcon({ 
-        html: `
-          <div style="text-align:center; width:40px; font-size:13px;">
-            <img src="${SYMBOL_PATH}weather-cluster-image.png" style="width:50px; height:50px; margin-bottom:-7px">
-            <b>${childCount}</b>
-          </div>
-        `
-      });
+      if (childCount < 2) {
+        // For single station, show the individual marker icon instead of cluster
+        return children[0].options.icon;
+      } else {
+        // For 2 or more stations, show cluster icon with count
+        return L.divIcon({
+          html: `
+            <div style="text-align:center; width:40px; font-size:13px;">
+              <img src="${SYMBOL_PATH}weather-cluster-image.png" style="width:50px; height:50px; margin-bottom:-7px">
+              <b>${childCount}</b>
+            </div>
+          `
+        });
+      }
     }
   });
 
