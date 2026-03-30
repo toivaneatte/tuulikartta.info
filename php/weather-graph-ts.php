@@ -71,6 +71,25 @@ try {
         $obs = $dataMiner->nuclideMultipointcoverage($timestamp, $settings, true);
     }
 
+    if ($type == 'magnetometer') {
+
+        $settings = array();
+        $settings["parameters"]     = "MAGNX_PT1M_AVG,MAGNY_PT1M_AVG,MAGNZ_PT1M_AVG";
+        $settings["storedquery_id"] = "fmi::observations::magnetometer::simple";
+        $settings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+        $settings["timestep"]       = "10";
+
+        $obs = $dataMiner->magnetometer($timestamp,$settings,true);
+
+        // magnetometer data can not be filtered in api call so we need to filter it here
+        foreach ($obs as $key => $data) {
+          if ($data['fmisid'] !== $fmisid) {
+            unset($obs[$key]);
+          }
+        }
+        $obs = array_values($obs); // reindex array after unsetting
+    }
+
     $combinedData = [];
     $combinedData["obs"] = $obs;
     $combinedData["for"] = [];
@@ -234,6 +253,9 @@ function formatHighChart($data, $winddirections) {
       $formattedData[$key]["pb210"] = [];
       $formattedData[$key]["be7"] = [];
       $formattedData[$key]["cs137"] = [];
+      $formattedData[$key]["magn_x"] = [];
+      $formattedData[$key]["magn_y"] = [];
+      $formattedData[$key]["magn_z"] = [];
     }
 
     foreach($data as $key => $dataArray) {
@@ -407,6 +429,43 @@ function formatHighChart($data, $winddirections) {
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, null);
           array_push($formattedData['obs']['cs137'], $tmp);
+        }
+
+        // Magnetometer X
+        if(!empty($array['X'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['X']);
+          array_push($formattedData['obs']['magn_x'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['magn_x'], $tmp);
+        }
+        // Magnetometer Y
+        if(!empty($array['Y'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['Y']);
+          array_push($formattedData['obs']['magn_y'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['magn_y'], $tmp);
+        }
+        // Magnetometer Z
+        if(!empty($array['Z'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['Z']);
+          array_push($formattedData['obs']['magn_z'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['magn_z'], $tmp);
         }
 
         $i++;

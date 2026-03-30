@@ -52,8 +52,10 @@ class DataMiner{
       return $url;
     }
 
-    // set start- and endtime slightly differently: magnetometer data doesn't
-    // need data for full day because max values are not counted
+    // if graph is false, only get the data from latest even 10 min as older data is not needed
+    // this way the newest datapoint won't have to be separately extracted, however when api
+    // hasn't been updated yet there will be no data at all
+    // intending to add fallback to previous datapoint
     private function setTimeforMagnetometer($timestamp, $graph) {
       $url = "";
       if($graph) {
@@ -513,18 +515,29 @@ class DataMiner{
             $lat = floatval($location[0]);
             $lon = floatval($location[1]);
 
-            // store stuff in nice array
+            // store data in nice array
             $dataPointKey = $lat . "," . $lon . "," . (string)$time;
+            $fmisid = $lat . "," . $lon; // no fmisid for magnetometer data, use lat,lon as key
 
             if(!isset($final[$dataPointKey])) {
                 $final[$dataPointKey] = [
                     "lat" => $lat,
                     "lon" => $lon,
                     "time" => (string)$time,
-                    "type" => "magnetometer"
+                    "epochtime" => strtotime((string)$time),
+                    "type" => "magnetometer",
+                    "fmisid" => $fmisid
                 ];
             }
-            $final[$dataPointKey][$component] = (string)$value;
+
+            $value = trim((string)$value);
+            if ($value === "" || strtolower($value) === "nan") {
+                $final[$dataPointKey][$component] = null;
+            } elseif (is_numeric($value)) {
+                $final[$dataPointKey][$component] = floatval($value);
+            } else {
+                $final[$dataPointKey][$component] = $value;
+            }
             }
             
             $final = array_values($final);
