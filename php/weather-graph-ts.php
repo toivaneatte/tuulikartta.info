@@ -363,7 +363,7 @@ function formatHighChart($data, $winddirections) {
         }
 
         // radiation (DR_PT10M_avg)
-        if(!empty($array['DR_PT10M_avg'])) {
+        if(isset($array['DR_PT10M_avg']) && $array['DR_PT10M_avg'] !== null) {
           $tmp = [];
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, $array['DR_PT10M_avg']);
