@@ -675,6 +675,7 @@ camera.normalizeWeatherStation = function(raw) {
     }
 
     w.console.log('Initializing time slider with presets:', presets);
+    
 
     // Set min to 24 hours back and max to current moment
     const now = new Date();
