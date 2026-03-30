@@ -1,0 +1,55 @@
+services:
+  tuulikartta:
+    container_name: tuulikartta
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./index.html:/var/www/html/index.html
+      - ./list.php:/var/www/html/list.php
+      - ./manifest.json:/var/www/html/manifest.json
+      - ./offline.html:/var/www/html/offline.html
+      - ./serviceWorker.js:/var/www/html/serviceWorker.js
+      - ./sitemap.fi.xml:/var/www/html/sitemap.fi.xml
+      - ./sitemap.xml:/var/www/html/sitemap.xml
+      - ./css:/var/www/html/css
+      - ./html:/var/www/html/html
+      - ./js:/var/www/html/js
+      - ./php:/var/www/html/php
+      - ./symbols:/var/www/html/symbols
+      - ./tietoa-sivustosta:/var/www/html/tietoa-sivustosta
+      - data:/var/www/html/data
+    environment:
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+
+  osm-import:
+    container_name: osm-import
+    build:
+      context: ./karttapalvelin/import
+    volumes:
+      - osm-data:/data/database/
+    environment:
+      - DOWNLOAD_PBF=https://download.geofabrik.de/europe/finland-latest.osm.pbf
+
+  osm-tile-server:
+    container_name: osm-tile-server
+    build:
+      context: ./karttapalvelin/render
+    ports:
+      - "8080:80"
+    volumes:
+      - osm-data:/data/database/
+      - osm-tiles:/data/tiles/
+    command: ["run"]
+    depends_on:
+      osm-import:
+        condition: service_completed_successfully
+    shm_size: 256m
+
+volumes:
+  data:
+  osm-data:
+  osm-tiles:

@@ -1,21 +1,29 @@
 FROM php:8.2-apache
 
-# Install Node.js and npm
+# Install Node.js, npm and development tools
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
+    apt-get update && \
+    apt-get install -y \
+        nodejs \
+        curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /var/www/html/
 
 # Enable required Apache modules
 RUN a2enmod rewrite headers
 
+# Enable PHP error display for development
+RUN echo "display_errors = On" > /usr/local/etc/php/conf.d/dev.ini && \
+    echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/dev.ini
+
 # Copy package files first for better caching
 COPY package*.json ./
 
-# Install npm dependencies as root
-RUN npm ci --omit=dev
+# Install ALL npm dependencies (including devDependencies)
+RUN npm install
 
 # Copy application files
 COPY . ./
@@ -26,10 +34,6 @@ RUN mkdir -p ./data && \
     chmod -R 755 /var/www/html && \
     chmod -R 775 ./data
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
-CMD ["/entrypoint.sh"]
-
-# Switch to non-root user
-USER www-data
+# Start Apache
+CMD ["apache2-foreground"]

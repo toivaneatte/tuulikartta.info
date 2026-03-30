@@ -52,6 +52,29 @@ class DataMiner{
       return $url;
     }
 
+        private function setTimeRange($timestamp, $graph, $rangeDays) {
+            if (!$graph) {
+                return "";
+            }
+
+            $days = is_numeric($rangeDays) ? intval($rangeDays) : 1;
+            if ($days < 1) {
+                $days = 1;
+            }
+
+            if ($timestamp === "now") {
+                $endtime = new DateTime();
+            } else {
+                $endtime = new DateTime($timestamp, new DateTimeZone('UTC'));
+            }
+
+            $end = $endtime->format('Y-m-d\TH:i:s\Z');
+            $start = $endtime->sub(new DateInterval('P'.$days.'D'));
+            $start = $start->format('Y-m-d\TH:i:s\Z');
+
+            return "&starttime={$start}&endtime={$end}";
+        }
+
     /**
     *
     * Parse observation data from WFS multipointcoverage
@@ -227,6 +250,263 @@ class DataMiner{
         return $final;
     }
 
+    public function getRoadData($timestamp, $roadSettings, $debug = false) {
+        $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
+        $user = 'Tuulen Viemät';
+        $options = [
+            'http' => [
+                'method' => "GET",
+                'header' => "Accept-Encoding: gzip\r\n" .
+                            "Accept: application/json\r\n" .
+                            "Digitraffic-User: ".$user
+            ]
+        ];
+        $context = stream_context_create($options);
+        // Load metadata
+        $metadataUrl = $WEATHER_API_BASE . "/stations";
+        $metadataJson = gzdecode(file_get_contents($metadataUrl, false, $context));
+        $stations = json_decode($metadataJson, true);
+        // Load sensor data
+        $dataUrl = $metadataUrl . "/data";
+        $stationJson = gzdecode(file_get_contents($dataUrl, false, $context));
+        $allSensorData = json_decode($stationJson, true);
+        // Index sensors by station ID
+        $indexedSensors = [];
+        if (isset($allSensorData['stations'])) {
+            foreach ($allSensorData['stations'] as $sData) {
+                $indexedSensors[$sData['id']] = $sData['sensorValues'];
+            }
+        }
+        // Map Digitraffic → Tuulikartta names
+        $roadParamMap = [
+            "SADE_INTENSITEETTI" => "ri_10min",
+            "KESKITUULI" => "ws_10min",
+            "MAKSIMITUULI" => "wg_10min",
+            "TUULENSUUNTA" => "wd_10min",
+            "NÄKYVYYS_M" => "vis",
+            "VALLITSEVA_SÄÄ" => "wawa",
+            "ILMA"   => "t2m",
+            "LUMEN_MÄÄRÄ1" => "snow_aws",
+            "KASTEPISTE" => "dewpoint"
+        ];
+        $result = [];
+        foreach ($stations['features'] as $station) {
+            $stationId = $station['properties']['id'];
+            if ($station['properties']['collectionStatus'] !== "GATHERING") {
+                continue;
+            }
+            if (!isset($indexedSensors[$stationId])) {
+                continue;
+            }
+            // Create a single entry per station
+            $entry = [
+                "station"   => $station['properties']['name'],
+                "fmisid"    => $stationId,
+                "lat"       => $station['geometry']['coordinates'][1],
+                "lon"       => $station['geometry']['coordinates'][0],
+                "type"      => "road",
+                "time"      => null,
+                "epochtime" => null,
+
+                // Default as null, filled if corresponding sensor is found
+                "ri_10min"  => null,
+                "ws_10min"  => null,
+                "wg_10min"  => null,
+                "wd_10min"  => null,
+                "vis"       => null,
+                "wawa"      => null,
+                "t2m"       => null,
+                "n_man"     => null,
+                "r_1h"      => null,
+                "snow_aws"  => null,
+                "pressure"  => null,
+                "dewpoint"  => null
+            ];
+            $hasRecentSensor = false;
+            // Add all mapped sensor values
+            foreach ($indexedSensors[$stationId] as $sensor) {
+                if (!isset($sensor['measuredTime'])) {
+                    continue;
+                }
+                $sensorTime = strtotime($sensor['measuredTime']);
+                if (time() - $sensorTime > 60 * 60 * 24) { // Only consider sensors updated within the last day
+                    continue;
+                }
+                $hasRecentSensor = true;
+                $rawName = $sensor['name'];
+                if (isset($roadParamMap[$rawName])) {
+                    $mappedName = $roadParamMap[$rawName];
+                    $entry[$mappedName] = floatval($sensor['value']);
+                    // Use the newest timestamp
+                    $entry["time"] = $sensor['measuredTime'];
+                    $entry["epochtime"] = strtotime($sensor['measuredTime']);
+                }
+            }
+            if ($hasRecentSensor) {
+                $result[] = $entry;
+            }
+        }
+        return $result;
+    }
+
+
+    /** Parse observation data about R-values from RWC
+     * @return R-values as an array
+     */
+    public function getRValues() {
+        $url = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.json";
+        $data = file_get_contents($url);
+        $result = [];
+        $json = json_decode($data, true);
+        foreach($json["data"] as $item) {
+            $tmp = [];
+            $tmp["station"] = $item["Asema"];
+            $tmp["lat"] = $item["Leveyspiiri"];
+            $tmp["lon"] = $item["Pituuspiiri"];
+            $tmp["time"] = $item["Aika"];
+            $tmp["type"] = "magnetometer";
+            $tmp   ["rVal"] = $item["R-luku"];
+            $tmp["upperLim"] = $item["Ylempi raja-arvo"];
+            $tmp["lowerLim"] = $item["Alempi raja-arvo"];
+            if ($item["Revontulten todennäköisyys"] === "Revontulet epätodennäköisiä") {
+                $tmp["rProb"] = "low";
+            } else if ($item["Revontulten todennäköisyys"] === "Revontulet mahdollisia") {
+                $tmp["rProb"] = "medium";
+            } else if ($item["Revontulten todennäköisyys"] === "Revontulet todennäköisiä") {
+                $tmp["rProb"] = "high";
+            } else {
+                $tmp["rProb"] = null;
+            }
+            array_push($result,$tmp);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Parse observation data from multipointcoverage for radionuclide data
+     * @param    timestamp timestamp or now if latest observations
+     * @param    settings array that contains required query parameters
+     * @return   graph true if graph dat request
+     */
+    public function nuclideMultipointcoverage($timestamp,$settings,$graph,$rangeDays = 150) {
+        date_default_timezone_set("UTC");
+
+        $url = "";
+        $url .= "http://opendata.fmi.fi/wfs?request=getFeature";
+
+        foreach($settings as $key => $value) {
+          $url .= "&{$key}={$value}";
+        }
+
+        $url = $url . $this->setTimeRange($timestamp, $graph, $rangeDays);
+        $ctx = stream_context_create(array('http'=>
+            array(
+                'timeout' => 240,  //1200 Seconds is 20 Minutes
+            )
+        ));
+        $xmlData = file_get_contents($url, false, $ctx);
+        if($xmlData == false) {
+            return [];
+        }
+        if($xmlData == "") {
+            return [];
+        }
+
+        $resultString = simplexml_load_string($xmlData);
+
+        $final = [];
+        $data = $resultString->children("wfs", true);
+
+        foreach ($data->member as $member) {
+            $tmp = [];
+
+            $name = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sam", true)->sampledFeature
+                            ->children("target", true)->Location
+                            ->children("gml", true)->name;
+
+            $fmisid = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sam", true)->sampledFeature
+                            ->children("target", true)->Location
+                            ->children("gml", true)->identifier;
+
+            $time = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->phenomenonTime
+                            ->children("gml", true)->TimePeriod
+                            ->children("gml", true)->endPosition;
+
+            $pos = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->featureOfInterest
+                            ->children("sams", true)->SF_SpatialSamplingFeature
+                            ->children("sams", true)->shape
+                            ->children("gml", true)->Point
+                            ->children("gml", true)->pos;
+
+            $parameters = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->result
+                            ->children("gmlcov", true)->MultiPointCoverage
+                            ->children("gmlcov", true)->rangeType
+                            ->children("swe", true)->DataRecord
+                            ->children("swe", true)->field;
+
+            $observations = $member->children("omso", true)->PointObservation
+                            ->children("om", true)->result
+                            ->children("gmlcov", true)->MultiPointCoverage
+                            ->children("gml", true)->rangeSet
+                            ->children("gml", true)->DataBlock
+                            ->children("gml", true)->doubleOrNilReasonTupleList;
+
+            $observationsText = trim((string)$observations);
+            $observationsArr = $observationsText === "" ? [] : preg_split('/\s+/', $observationsText);
+
+            $dataResults = [];
+            $i = 0;
+            foreach ($parameters as $parameter) {
+                $paramName = (string)$parameter->attributes()['name'];
+                $paramValue = isset($observationsArr[$i]) ? $observationsArr[$i] : null;
+                if ($paramValue === "" || strtolower((string)$paramValue) === "nan") {
+                    $paramValue = null;
+                } elseif (is_numeric($paramValue)) {
+                    $paramValue = floatval($paramValue);
+                }
+                $dataResults[$paramName] = $paramValue;
+                $i++;
+            }
+
+            $posText = trim((string)$pos);
+            $posParts = $posText === "" ? [] : preg_split('/\s+/', $posText);
+            $lat = null;
+            $lon = null;
+            if (count($posParts) >= 2) {
+                $lon = (float)$posParts[0];
+                $lat = (float)$posParts[1];
+                if ($lat < 40 && $lon > 40) {
+                    $swap = $lat; $lat = $lon; $lon = $swap;
+                }
+            }
+
+            $timeValue = (string)$time;
+            $epochtime = $timeValue !== "" ? strtotime($timeValue) : null;
+
+            $tmp["station"]   = (string)$name;
+            $tmp["fmisid"]    = (int)$fmisid;
+            $tmp["time"]      = $timeValue;
+            $tmp["epochtime"] = $epochtime;
+            $tmp["lat"]       = $lat;
+            $tmp["lon"]       = $lon;
+            $tmp["type"]      = "air_radio";
+            foreach ($dataResults as $k => $v) {
+                $tmp[$k] = $v;
+            }
+            array_push($final, $tmp);
+        }
+        return $final;
+    }
     /**
     *
     * Get observation data from timeseries
@@ -343,7 +623,21 @@ class DataMiner{
         $r_1d = 0;
         $tmin = 999;
         $tmax = -999;
+        $lastValidInstant = [];
+        $instantParams = ['ws_10min', 'wd_10min', 'wg_10min', 't2m', 'dewpoint', 'vis', 'rh', 'pressure', 'n_man', 'wawa', 'snow_aws', 'ri_10min'];
         for ($i = 0; $i <= count($data)-2; $i++) {
+            # track last valid instantaneous values for fallback
+            $hasAnyInstant = false;
+            foreach ($instantParams as $p) {
+                if (isset($data[$i][$p]) && $data[$i][$p] !== null && $data[$i][$p] !== "nan") {
+                    $lastValidInstant[$p] = $data[$i][$p];
+                    $hasAnyInstant = true;
+                }
+            }
+            if ($hasAnyInstant) {
+                $lastValidInstant['time'] = $data[$i]['time'];
+                $lastValidInstant['epochtime'] = $data[$i]['epochtime'];
+            }
             # check if fmisid value is the same as the next one (ie its the same station)
             if($data[$i]["fmisid"] === $data[$i+1]["fmisid"]) {
                 # check if observations are valid
@@ -379,6 +673,18 @@ class DataMiner{
                 if($wg_1d === -0.1){ $wg_1d = null; }
                 if($ws_max_dir === ""){ $ws_max_dir = null; }
                 if($wg_max_dir === ""){ $wg_max_dir = null; }
+                # fall back to last valid instantaneous values if latest entry has nulls
+                foreach ($instantParams as $p) {
+                    if (($data[$i][$p] === null || $data[$i][$p] === "nan") && isset($lastValidInstant[$p])) {
+                        $data[$i][$p] = $lastValidInstant[$p];
+                    }
+                }
+                if (isset($lastValidInstant['time']) &&
+                    ($data[$i]['ws_10min'] === null || $data[$i]['ws_10min'] === "nan") === false &&
+                    $data[$i]['time'] !== $lastValidInstant['time']) {
+                    $data[$i]['time'] = $lastValidInstant['time'];
+                    $data[$i]['epochtime'] = $lastValidInstant['epochtime'];
+                }
                 $data[$i]["ws_1d"] = $ws_1d;
                 $data[$i]["wg_1d"] = $wg_1d;
                 $data[$i]["wg_max_dir"] = $wg_max_dir;
@@ -396,6 +702,7 @@ class DataMiner{
                 $tmax = -999;
                 $wg_max_dir = "";
                 $ws_max_dir = "";
+                $lastValidInstant = [];
             }
 
         }

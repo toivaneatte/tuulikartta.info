@@ -7,32 +7,32 @@ ga('create', 'UA-105001415-1', 'auto');
 ga('send', 'pageview');
 
 var hash = window.location.hash.split('#')
-var latitude = localStorage.getItem('latitude') ? localStorage.getItem('latitude') : 65.69,
-    longitude = localStorage.getItem('longitude') ? localStorage.getItem('longitude') : 25.36,
-    zoomlevel = localStorage.getItem('zoomlevel') ? localStorage.getItem('zoomlevel') : 5,
-    selectedLanguage = localStorage.getItem('language') ? localStorage.getItem('language') : 'fi',
+window.latitude = localStorage.getItem('latitude') ? localStorage.getItem('latitude') : 65.69,
+    window.longitude = localStorage.getItem('longitude') ? localStorage.getItem('longitude') : 25.36,
+    window.zoomlevel = localStorage.getItem('zoomlevel') ? localStorage.getItem('zoomlevel') : 5,
+    window.selectedLanguage = localStorage.getItem('language') ? localStorage.getItem('language') : 'fi',
     selectedParam = 'ws_10min'
 
-if(selectedLanguage === 'fi')
+if(window.selectedLanguage === 'fi')
 $('#language-selector-value').html('EN')
-if(selectedLanguage === 'en')
+if(window.selectedLanguage === 'en')
 $('#language-selector-value').html('FI')
 
-$('#select-content-datasearch').html(translations[selectedLanguage]['dataSearch'])
-$('#select-content-now').html(translations[selectedLanguage]['dataNow'])
+$('#select-content-datasearch').html(translations[window.selectedLanguage]['dataSearch'])
+$('#select-content-now').html(translations[window.selectedLanguage]['dataNow'])
 
 /* get language from url parameter */
 hash.forEach(function(element) {
     var param = element.split('=');
     if(param[0] === 'lang') {
         if(param[1] === 'en') {
-            selectedLanguage = 'en'
+            window.selectedLanguage = 'en'
             localStorage.setItem('language', 'en')
         } else if(param[1] === 'fi') {
-            selectedLanguage = 'fi'
+            window.selectedLanguage = 'fi'
             localStorage.setItem('language', 'fi')
         } else {
-            selectedLanguage = 'fi'
+            window.selectedLanguage = 'fi'
             localStorage.setItem('language', 'fi')
         }
     }
@@ -40,7 +40,7 @@ hash.forEach(function(element) {
 
 saa.Tuulikartta.buildObservationMenu()
 saa.Tuulikartta.populateInfoContent()
-var values = ['ws_10min','wg_10min','ws_1d','wg_1d','ri_10min','rr_1h','rr_1d','t2m','tmax','tmin','vis','wawa','n_man','snow_aws','pressure','rh', 'dewpoint', 't2mdewpoint']
+var values = ['ws_10min','wg_10min','ws_1d','wg_1d','ri_10min','rr_1h','rr_1d','t2m','tmax','tmin','vis','wawa','n_man','snow_aws','pressure','rh', 'dewpoint', 't2mdewpoint', 'dose_rate', 'air_activity']
 
 /* handle other url parameters */
 hash.forEach(function(element) { 
@@ -86,4 +86,5 @@ window.onclick = function(event) {
 saa.Tuulikartta.handleUrlParams(latitude,longitude,zoomlevel,selectedParam)
 
 saa.Tuulikartta.initMap();
+saa.Tuulikartta.initEventHandlers();
 saa.Tuulikartta.updateRadarData();

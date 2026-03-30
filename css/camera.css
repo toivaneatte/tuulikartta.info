@@ -1,0 +1,122 @@
+body {
+    margin: 0;
+}
+main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+header {
+    background: linear-gradient(to bottom, #33ccff 13%, #3366ff 100%);
+    height: 4em;
+    align-content: center;
+}
+.container {
+    width: 70%;
+    margin: 0 auto;
+}
+h1 {
+    color: white;
+    margin: 0;
+    padding-left: 30px;
+}
+h2#stationName {
+    padding-left: 30px;
+    margin: 1em auto;
+}
+h3 {
+    padding-left: 30px;
+    margin: 1em auto;
+}
+#mainPic {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #b3e7ff;
+    padding: 5px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+#mainPic p {
+    text-align: center;
+    color: black;
+    font-size: 1.5em;
+    font-style: bold;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+#miniPics {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+#timeSlider {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: aliceblue;
+    border-radius: 8px;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+#noNearestStation {
+    justify-content: center;
+    background-color: dodgerblue;
+    color: white;
+    border-radius: 8px;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+#noWeatherData {
+    color: white;
+    font-size: 1.2em;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+#stationInfoView {
+    display: flex;
+    flex-direction: column;
+    background-color: aliceblue;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+#viewHeader {
+    background-color: dodgerblue;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+#viewContent {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.viewHeader {
+    margin: 0;
+    padding: 2px 6px;
+    color: white;
+}
+.groupHeader h4 {
+    margin: 0;
+    font-size: 1.5em;
+}
+.dataRow {
+    display: flex;
+    margin-bottom: 2px;
+}
+.title {
+    background-color: lavender;
+    width: 300px;
+    padding: 2px;
+}
+.value {
+    background-color: white;
+    width: 100px;
+    padding: auto;
+}
+.dataGroup {
+    list-style-type: none;
+    display: inline-block;
+    padding: 0px 20px;
+}

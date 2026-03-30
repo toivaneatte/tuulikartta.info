@@ -78,11 +78,19 @@
         <script src="node_modules/highcharts/highcharts-more.js"></script>
         <script src="node_modules/highcharts/modules/windbarb.js"></script>
 
-        <script src="js/translations.js?v=2"></script>
-        <script src="js/main.js?v=2"></script>
-        <script src="js/graph.js?v=2"></script>
-        <script src="js/lightning.js?v=2"></script>
-        <!-- <script src="js/camera.js?v=2"></script> -->
+        <!-- Tuulikartta modules - order matters! -->
+        <script src="js/translations.js?v=3"></script>
+        <script src="js/observation-data.js?v=3"></script>
+        <script src="js/color-schemes.js?v=3"></script>
+        <script src="js/ui-components.js?v=3"></script>
+        <script src="js/event-handlers.js?v=3"></script>
+        <script src="js/populate-sidebar.js?v=3"></script>
+        <script src="/env.js"></script> <!-- Tuulikartta env variables  -->
+        <script src="js/main.js?v=3"></script>
+        <script src="js/graph.js?v=3"></script>
+        <script src="js/lightning.js?v=3"></script>
+        <!--KOMMENTOI TÄMÄ ALAOSA POIS -->
+        <script src="js/camera.js?v=2"></script>
 
         <link href="css/style.css" rel="stylesheet">
         <link href="css/temperature.css" rel="stylesheet">
@@ -126,6 +134,7 @@
                         </span>
                         <button id="timepicker-progress-time" class="select-button">1h &raquo;</button>  
                     </span>
+
                 </div>
                 <span class="language-selector">
                     <button id="language-selector-value" class="select-button">FI</button>
@@ -162,6 +171,6 @@
     </body >
 
     <!-- Load auxiliary javascript ff -->
-    <script src="js/utils.js"></script>
+    <script src="js/utils.js?v=3"></script>
 
 </html>

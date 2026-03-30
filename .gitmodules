@@ -1,0 +1,3 @@
+[submodule "karttapalvelin"]
+	path = karttapalvelin
+	url = git@github.com:eemilniemi/karttapalvelin.git

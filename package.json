@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "Weather observation visualization tool",
   "main": "js/main.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --file test/setup.js"
   },
   "repository": {
     "type": "git",
@@ -36,5 +37,9 @@
     "moment": "^2.30.1",
     "owl.carousel": "^2.3.4",
     "tabulator-tables": "^4.9.3"
+  },
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.7.5"
   }
 }
