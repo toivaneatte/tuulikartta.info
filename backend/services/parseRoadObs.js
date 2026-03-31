@@ -8,6 +8,37 @@ Description: Service for parsing road observation data from the Digitraffic API.
 const logger = require('../utils/logger');
 const config = require('../config');
 
+// Helper function to get historic data
+function mergeHistoricData(stationData, historicData) {
+
+  const props = stationData.properties;
+  const stationId = props.id;
+
+  const mergedData = {
+    station: props.name,
+    fmisid: stationId,
+    lat: stationData.geometry.coordinates[1],
+    lon: stationData.geometry.coordinates[0],
+    type: "road",
+    time: null,
+    epochtime: null,
+    sensorValues: []
+  };
+
+  for (const sensor of stationData.sensorValues) {
+    for (const historicSensor of historicData) {
+      if (historicSensor.id === sensor.id) {
+        mergedData.sensorValues.push({
+          name: sensor.name,
+          value: historicSensor.value,
+          measuredTime: sensor.measuredTime
+        });
+      }
+    }
+  }
+  return mergedData;
+}
+
 /**
  *  Parse road observations from the metadata and data responses from the Digitraffic API. This is used for the /api/road/obs endpoint.
  * @param {*} stations  - the metadata response from the Digitraffic API containing the list of stations and their properties
@@ -34,7 +65,8 @@ async function parseRoadObs(stations, data, timestamp) {
     "VALLITSEVA_SÄÄ": "wawa",
     "ILMA": "t2m",
     "LUMEN_MÄÄRÄ1": "snow_aws",
-    "KASTEPISTE": "dewpoint"
+    "KASTEPISTE": "dewpoint",
+    "KASTEPISTE_ERO_ILMA": "t2mdewpoint"
   };
 
   result = [];
@@ -62,11 +94,9 @@ async function parseRoadObs(stations, data, timestamp) {
       vis: null,
       wawa: null,
       t2m: null,
-      n_man: null,
-      r_1h: null,
       snow_aws: null,
-      pressure: null,
-      dewpoint: null
+      dewpoint: null,
+      t2mdewpoint: null
     };
     
     let hasRecentSensor = false;
@@ -130,5 +160,5 @@ async function parseSingleRoadObs(meta, data, timestamp) {
 };
 
 module.exports = {
-  parseRoadObs, parseSingleRoadObs
+  mergeHistoricData, parseRoadObs, parseSingleRoadObs
 };

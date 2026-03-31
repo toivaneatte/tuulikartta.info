@@ -51,6 +51,28 @@ function setTime(timestamp, isGraph) {
 }
 
 /**
+ * setTime calculates the start and end time parameters for Digitraffic API requests based on the provided timestamp and whether the data is for graph or map.
+ * @param {*} timestamp - ISO string or "now". It defines the end of the day window.
+ * @returns {string} - A URL query string with the appropriate starttime and endtime parameters for the FMI API.
+ */
+function setTimeRoad(timestamp) {
+  let url = "";
+  
+  // We want data from the start of that day until the timestamp
+  const end = DateTime.fromISO(timestamp, { zone: "utc" });
+
+  const start = end
+    .setZone("Europe/Helsinki")
+    .startOf("day")
+    .toUTC();
+
+  url = `?from=${start.toISO({ suppressMilliseconds: true })}&to=${end.toISO({ suppressMilliseconds: true })}`;
+
+
+  return url;
+}
+
+/**
  *  setDayRange calculates the start and end time parameters for FMI API requests based on the provided timestamp, whether the data is for graph or map, and a custom day range for graph data.
  * @param {*} timestamp - ISO string or "now". For graph data, it defines the end of the window. For map data, it defines the end of the day window.
  * @param {*} isGraph  - If true, calculates a window of rangeDays ending at the timestamp. If false, calculates a window from the start of the day to the timestamp.

@@ -773,7 +773,7 @@ var saa = globalThis.saa;
             })
 
           if (saa.Tuulikartta.data[i]['type'] === 'road') {
-            marker.addTo(saa.Tuulikartta.markerGroupRoad)
+            continue
           } else {
             marker.addTo(saa.Tuulikartta.markerGroupSynop)
           }

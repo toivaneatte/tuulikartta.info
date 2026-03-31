@@ -9,7 +9,7 @@ const roadRouter = require('express').Router()
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
-const { parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
+const { mergeHistoricData, parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
 const { parseRoadCameras, parseSingleRoadCamera } = require('../services/parseRoadCameras');
 
 // ---------------------------------------------------------
@@ -28,7 +28,7 @@ roadRouter.get('/obs', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
+  const UTCtimestamp = setTimeService.setTimeRoad(timestamp);
   
   // TODO: for historical data, we might need to use this like in other enpoints. But at the moment no timestamp is given to the API.
   //URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
@@ -43,9 +43,18 @@ roadRouter.get('/obs', async (req, res) => {
       fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
+    let historicData = [];
+
+    for (const station of metaResponse.features) {
+      let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
+      const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
+      let mergedData = mergeHistoricData(dataResponse, historyResponse);
+      historicData.push(mergedData);
+    }
+
     // parse the responses and return the observations
     logger.info("Road observation metadata and data fetched successfully. Parsing responses...");
-    const observations = await parseRoadObs(metaResponse, dataResponse, UTCtimestamp);
+    const observations = await parseRoadObs(metaResponse, historicData, UTCtimestamp);
     
     res.set('Content-Type', 'application/json');
     res.json(observations);
@@ -72,7 +81,7 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
+  const UTCtimestamp = setTimeService.setTimeRoad(timestamp);
   
   //logger.debug(`Constructed URL for road observations metadata for station ${req.params.stationId}: ${metaURL}`);
   //logger.debug(`Constructed URL for road observations data for station ${req.params.stationId}: ${dataURL}`);
@@ -84,9 +93,18 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
       fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
+    let historicData = [];
+
+    for (const station of metaResponse.features) {
+      let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
+      const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
+      let mergedData = mergeHistoricData(dataResponse, historyResponse);
+      historicData.push(mergedData);
+    }
+
     // parse the responses and return the observations
     logger.info(`Road observation metadata and data for station ${req.params.stationId} fetched successfully. Parsing responses...`);
-    const observation = await parseSingleRoadObs(metaResponse, dataResponse, UTCtimestamp);
+    const observation = await parseSingleRoadObs(metaResponse, historicData, UTCtimestamp);
     
     res.set('Content-Type', 'application/json');
     res.json(observation);
