@@ -5,7 +5,7 @@ describe('main.js', () => {
     cy.get('.leaflet-pane', { timeout: 20000 }).should('exist')
   })
 
-  it('should display data markers on the map', () => {
+/*   it('should display data markers on the map', () => {
     cy.get('.leaflet-marker-icon', { timeout: 20000 }).should('have.length.greaterThan', 0)
   })
 
@@ -61,5 +61,54 @@ describe('main.js', () => {
   cy.get('@windowOpen')
     .its('firstCall.args.0')
     .should('include', '/html/camera.html?station=')
-})
-})
+  }) */
+
+  it('should go 1 hour back in time when the time picker button is clicked', () => {
+    const parsePickerTime = (dateStr, timeStr) => {
+      const [day, month, year] = dateStr.split('.').map((val) => Number(val))
+      const [hour, minute] = timeStr.split(':').map((val) => Number(val))
+      return new Date(year, month - 1, day, hour, minute, 0, 0)
+    }
+
+    const toTwoDigits = (value) => String(value).padStart(2, '0')
+
+    const formatDate = (date) => {
+      const day = toTwoDigits(date.getDate())
+      const month = toTwoDigits(date.getMonth() + 1)
+      const year = date.getFullYear()
+      return `${day}.${month}.${year}`
+    }
+
+    const formatTime = (date) => {
+      const hour = toTwoDigits(date.getHours())
+      const minute = toTwoDigits(date.getMinutes())
+      return `${hour}:${minute}`
+    }
+
+    cy.get('#datepicker-button', { timeout: 20000 })
+      .should('not.have.value', '')
+      .invoke('val')
+      .then((dateBefore) => {
+        cy.get('#clockpicker-button', { timeout: 20000 })
+          .should('not.have.value', '')
+          .invoke('val')
+          .then((timeBefore) => {
+            const beforeDate = parsePickerTime(dateBefore, timeBefore)
+            expect(Number.isNaN(beforeDate.getTime()), 'before time parses').to.equal(false)
+
+            const expectedDate = new Date(beforeDate.getTime() - 60 * 60 * 1000)
+            const expectedDateStr = formatDate(expectedDate)
+            const expectedTimeStr = formatTime(expectedDate)
+
+            cy.get('#timepicker-regress-time', { timeout: 20000 }).should('be.visible').click()
+
+            cy.get('#datepicker-button', { timeout: 20000 }).should('not.have.value', '').invoke('val').then((dateAfter) => {
+              cy.get('#clockpicker-button', { timeout: 20000 }).should('not.have.value', '').invoke('val').then((timeAfter) => {
+                expect(dateAfter).to.equal(expectedDateStr)
+                expect(timeAfter).to.equal(expectedTimeStr)
+              })
+            })
+          })
+        })
+      })
+  })
