@@ -52,7 +52,6 @@ try {
     }
 
     if ($type == 'radiation') {
-
         $settings = array();
         $settings["stationtype"]    = "radiation";
         $settings["parameters"]     = "DR_PT10M_avg";
@@ -61,6 +60,12 @@ try {
         $settings["timestep"]       = "10";
 
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+      /* this does not work yet... TODO
+        $url = "http://backend:3000/api/radiation/external/" . $fmisid . "?time=" . urlencode($timestamp);
+        $response = file_get_contents($url);
+        $obs = json_decode($response, true) ?? [];
+        error_log("Radiation Obs: " . $response);
+        */
     }
 
     if ($type == 'air_radio') {
@@ -358,7 +363,7 @@ function formatHighChart($data, $winddirections) {
         }
 
         // radiation (DR_PT10M_avg)
-        if(!empty($array['DR_PT10M_avg'])) {
+        if(isset($array['DR_PT10M_avg']) && $array['DR_PT10M_avg'] !== null) {
           $tmp = [];
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, $array['DR_PT10M_avg']);

@@ -178,11 +178,10 @@ class DataMiner{
 
             $latlons = explode("                ",(string)$latlons);
             $numberOfStations = count($latlons);
-            $i = 0;
             $timestamps = [];
             foreach ($latlons as $latlon) {
                 $tmp = [];
-                if($i>0 && $i<($numberOfStations-1)) {
+                if(trim($latlon) !== "") {
                     $latlon = explode(" ",(string)$latlon);
                     $tmp["lat"] = floatval($latlon[0]);
                     $tmp["lon"] = floatval($latlon[1]);
@@ -190,11 +189,10 @@ class DataMiner{
                     $tmp["epochtime"] = floatval($epoch);
 
                     // convert UNIX timestamp to time
-                    $tmp["time"] = date("Y-m-d\TH:i:s\Z", intval($latlon[3]));
+                    $tmp["time"] = date("Y-m-d\TH:i:s\Z", intval($epoch));
                     $tmp["type"] = $settings["stationtype"];
                     array_push($timestamps,$tmp);
                 }
-                $i++;
             }
 
             // combine station arrays as one
@@ -223,9 +221,9 @@ class DataMiner{
             $observations = explode("                ",(string)$observations);
 
             $tmp = [];
-            foreach($observations as $key => $observation) {
-                if($key > 0 and $key < (count($observations)-1))
-                $tmp[$key] = explode(" ",$observation);
+            foreach($observations as $observation) {
+                if(trim($observation) !== "")
+                    $tmp[] = explode(" ",$observation);
             }
 
             $observations = [];
@@ -250,45 +248,7 @@ class DataMiner{
         return $final;
     }
 
-    /** Parse observation data about R-values from RWC
-     * @return R-values as an array
-     */
-    public function getRValues() {
-        $url = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.json";
-        $data = file_get_contents($url);
-        $result = [];
-        $json = json_decode($data, true);
-        foreach($json["data"] as $item) {
-            $tmp = [];
-            $tmp["station"] = $item["Asema"];
-            $tmp["lat"] = $item["Leveyspiiri"];
-            $tmp["lon"] = $item["Pituuspiiri"];
-            $tmp["time"] = $item["Aika"];
-            $tmp["type"] = "magnetometer";
-            $tmp   ["rVal"] = $item["R-luku"];
-            $tmp["upperLim"] = $item["Ylempi raja-arvo"];
-            $tmp["lowerLim"] = $item["Alempi raja-arvo"];
-            if ($item["Revontulten todennäköisyys"] === "Revontulet epätodennäköisiä") {
-                $tmp["rProb"] = "low";
-            } else if ($item["Revontulten todennäköisyys"] === "Revontulet mahdollisia") {
-                $tmp["rProb"] = "medium";
-            } else if ($item["Revontulten todennäköisyys"] === "Revontulet todennäköisiä") {
-                $tmp["rProb"] = "high";
-            } else {
-                $tmp["rProb"] = null;
-            }
-            array_push($result,$tmp);
-        }
 
-        return $result;
-    }
-
-    /**
-     * Parse observation data from multipointcoverage for radionuclide data
-     * @param    timestamp timestamp or now if latest observations
-     * @param    settings array that contains required query parameters
-     * @return   graph true if graph dat request
-     */
     public function nuclideMultipointcoverage($timestamp,$settings,$graph,$rangeDays = 150) {
         date_default_timezone_set("UTC");
 
@@ -415,7 +375,6 @@ class DataMiner{
     * @return   graph true if graph dat request
     *
     */
-
     public function timeseries($timestamp,$settings) {
       $url =  "http://opendata.fmi.fi/timeseries?";
       $url .= "format=json";
@@ -439,7 +398,6 @@ class DataMiner{
     * @return   data as an array
     *
     */
-
     public function smhiOpenData() {
         date_default_timezone_set('GMT');
         $parameters = ["vis"=>12,"t2m"=>1,"wd_10min"=>3,"ws_10min"=>4,"wg_10min"=>21,"rh"=>6,"rr_1h"=>7,"n_man"=>16];

@@ -79,6 +79,7 @@ var saa = saa || {};
 
         } else {
           Tuulikartta.debug(`No data files found`)
+          console.log("Data not found, asking from getdata.php")
           Tuulikartta.requestData()
         }
 
@@ -125,8 +126,11 @@ var saa = saa || {};
       data: {
         time: saa.Tuulikartta.timeValue
       },
-      error: function () {
+      error: function (err) {
         document.body.style.cursor = 'default'
+        saa.Tuulikartta.dataLoader(false)
+        saa.Tuulikartta.map.spin(false)
+        console.log("Tuulikartta data error!!", err)
       },
       success: function (data) {
         saa.Tuulikartta.dataLoader(false)

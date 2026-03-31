@@ -10,8 +10,8 @@ var saa = saa || {};
   'use strict';
 
   // Constants
-  const API_BASE = 'https://tie.digitraffic.fi/api/weathercam/v1';
-  const WEATHER_API_BASE = 'https://tie.digitraffic.fi/api/weather/v1';
+  const API_BASE = '/api/road/cameras'; // points to backend endpoint
+  const WEATHER_API_BASE = '/api/road/obs'; // points to backend endpoint
   const SYMBOL_PATH = '../symbols/';
   const MAX_CAMERA_AGE_MINUTES = 24 * 60;
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -33,6 +33,10 @@ var saa = saa || {};
   let imageWidth = IMAGE_CONFIG.desktop.width;
   let maxWidth = IMAGE_CONFIG.desktop.maxWidth;
   let isLoading = false;
+  
+  // Time Slider - store selected time value
+  let selectedTime = null; // Stores time in HH:mm format (e.g., "14:30")
+  let selectedTimeMinutes = 0; // Stores time as minutes since midnight (0-1440)
 
   // Cache with TTL
   const stationCache = {
@@ -211,38 +215,12 @@ camera.normalizeWeatherStation = function(raw) {
       return;
     }
     
-    const metadataUrl = `${API_BASE}/stations/${encodeURIComponent(stationId)}`;
-    const dataUrl = `${API_BASE}/stations/${encodeURIComponent(stationId)}/data`;
-    
+    const backendSingleCameraUrl = `${API_BASE}/${encodeURIComponent(stationId)}`;
     $.when(
-      fetchWithTimeout(metadataUrl),
-      fetchWithTimeout(dataUrl)
-    ).done(function(metadataResponse, dataResponse) {
-      const metadata = metadataResponse[0];
-      const freshData = dataResponse[0];
-      
-      // Merge metadata with fresh data
-      if (metadata && metadata.properties && metadata.properties.presets && 
-          freshData && freshData.presets) {
-        
-        for (let i = 0; i < metadata.properties.presets.length; i++) {
-          const metaPreset = metadata.properties.presets[i];
-          
-          for (let j = 0; j < freshData.presets.length; j++) {
-            if (freshData.presets[j].id === metaPreset.id) {
-              metaPreset.measuredTime = freshData.presets[j].measuredTime;
-              break;
-            }
-          }
-        }
-        
-        if (freshData.dataUpdatedTime) {
-          metadata.properties.dataUpdatedTime = freshData.dataUpdatedTime;
-        }
-      }
-      
-      stationCache.set(stationId, metadata);
-      callback(metadata, null);
+      fetchWithTimeout(backendSingleCameraUrl)
+    ).done(function(backendResponse) {
+      stationCache.set(stationId, backendResponse);
+      callback(backendResponse, null);
       
     }).fail(function(xhr, status, error) {
       const errorMsg = `API error: ${status} - ${error}`;
@@ -304,42 +282,16 @@ camera.normalizeWeatherStation = function(raw) {
       return;
     }
 
-    const metadataUrl = `${WEATHER_API_BASE}/stations/${encodeURIComponent(stationId)}`;
-    const dataUrl = `${WEATHER_API_BASE}/stations/${encodeURIComponent(stationId)}/data`;
+    const backendUrl = `${WEATHER_API_BASE}/${encodeURIComponent(stationId)}`;
 
+    // fetch data from backend handle it fowrard
      $.when(
-      fetchWithTimeout(metadataUrl),
-      fetchWithTimeout(dataUrl)
-    ).done(function(metadataResponse, dataResponse) {
-      const metadata = metadataResponse[0];
-      const freshData = dataResponse[0];
-      
-      // Merge metadata with fresh data
-      if (metadata && metadata.properties && metadata.properties.sensors && 
-          freshData && freshData.sensorValues) {
-        
-        for (let i = 0; i < metadata.properties.sensors.length; i++) {
-          const metaSensor = metadata.properties.sensors[i];
-          
-          for (let j = 0; j < freshData.sensorValues.length; j++) {
-            if (freshData.sensorValues[j].id === metaSensor.id) {
-              metaSensor.measuredTime = freshData.sensorValues[j].measuredTime;
-              break;
-            }
-          }
-        }
-        
-        if (freshData.dataUpdatedTime) {
-          metadata.properties.dataUpdatedTime = freshData.dataUpdatedTime;
-        }
-
-        metadata.properties.sensorValues = freshData.sensorValues;
-      }
-      
-      weatherCache.set(stationId, metadata);
-      callback(metadata, null);
-      
-    }).fail(function(xhr, status, error) {
+      fetchWithTimeout(backendUrl),
+      ).done(function(obsResponse) {
+      // after successful fetch, store in cache and return
+      weatherCache.set(stationId, obsResponse);
+      callback(obsResponse, null);
+      }).fail(function(xhr, status, error) {
       const errorMsg = `API error: ${status} - ${error}`;
       console.error('Failed to load station details:', errorMsg);
       callback(null, errorMsg);
@@ -390,20 +342,12 @@ camera.normalizeWeatherStation = function(raw) {
       color: '#b1b1b1'
     });
     
-    const metadataUrl = `${API_BASE}/stations`;
-    const dataUrl = `${API_BASE}/stations/data`;
-    
+    const backendCameraUrl = `${API_BASE}`;
     $.when(
-      fetchWithTimeout(metadataUrl),
-      fetchWithTimeout(dataUrl)
-    ).done(function(metadataResponse, dataResponse) {
-      const metadata = metadataResponse[0];
-      const cameraData = dataResponse[0];
-      const mergedData = camera.mergeMetadataAndData(metadata, cameraData);
-      
-      camera.draw(mergedData);
-      
-    }).fail(function(xhr, status, error) {
+      fetchWithTimeout(backendCameraUrl)
+    ).done(function(backendResponse) {
+      camera.draw(backendResponse);
+      }).fail(function(xhr, status, error) {
       console.error('Camera API initialization failed:', status, error);
       alert(`Kamerakerroksen lataus epäonnistui: ${status}. Yritä päivittää sivu.`);
       
@@ -512,6 +456,7 @@ camera.normalizeWeatherStation = function(raw) {
           const local = moment.utc(latestTime).local();
           const formatted = local.format("DD.MM.YYYY HH:mm");
           w.document.getElementById("updateTime").textContent = formatted;
+          camera.initTimeSlider(w, latestTime);
 
           // Collect presets with images
           const presets = station.properties.presets || [];
@@ -520,11 +465,14 @@ camera.normalizeWeatherStation = function(raw) {
           for (let i = 0; i < presets.length; i++) {
             // Don't show presets not in collection
             if (presets[i].inCollection === false) continue;
+            // Skip if over a month old
+            if (moment().diff(presets[i].measuredTime, 'months') > 1) {
+              continue;
+            }
 
             const presetUrl = camera.resolvePresetImageUrl(presets[i]);
             if (presetUrl) {
               imagePresets.push({ preset: presets[i], url: presetUrl });
-
             }
           } 
 
@@ -653,6 +601,58 @@ camera.normalizeWeatherStation = function(raw) {
     stationCache.clear();
     weatherCache.clear();
     console.log('Camera cache cleared');
+  };
+
+  // Time Slider Handler
+  camera.initTimeSlider = function(w, latestTime) {
+    w.console.log('Initializing time slider with latest time:', latestTime);
+    const timeSlider = w.document.getElementById('timeInput');
+    const timeDisplay = w.document.getElementById('timeDisplay');
+    
+    if (!timeSlider || !timeDisplay) {
+      w.console.warn('Time slider elements not found in DOM');
+      return;
+    }
+
+    // Set min and max values for the slider based on latest camera time
+    timeSlider.min = latestTime;
+    timeSlider.max = latestTime;
+    
+    // Update display when slider changes
+    timeSlider.addEventListener('input', function() {
+      const minutes = parseInt(this.value);
+      selectedTimeMinutes = minutes;
+      w.console.log(`Time slider input: ${minutes} minutes`);
+      
+      // Convert minutes to HH:mm format
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      selectedTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+      
+      // Update display
+      timeDisplay.textContent = selectedTime;
+      
+      console.log(`Time slider updated: ${selectedTime} (${minutes} minutes)`);
+    });
+    /*
+    // Set initial value to current time
+    const now = new Date();
+    const initialMinutes = now.getHours() * 60 + now.getMinutes();
+    timeSlider.value = initialMinutes;
+    selectedTimeMinutes = initialMinutes;
+    selectedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    timeDisplay.textContent = selectedTime;
+    */
+  };
+  
+  // Public method to get selected time
+  camera.getSelectedTime = function() {
+    return selectedTime;
+  };
+  
+  // Public method to get selected time in minutes
+  camera.getSelectedTimeMinutes = function() {
+    return selectedTimeMinutes;
   };
 
 }(saa.camera = saa.camera || {}));

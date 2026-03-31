@@ -26,7 +26,7 @@ var saa = globalThis.saa;
   saa.Tuulikartta.markerGroupSynop = L.layerGroup()
   saa.Tuulikartta.markerGroupRoad = L.layerGroup()
   var emptymarker = []
-  var showForeignObservations = localStorage.getItem('foreignObservations') ? localStorage.getItem('foreigObservations') : false
+  var showForeignObservations = localStorage.getItem('foreignObservations') ? localStorage.getItem('foreignObservations') : false
 
   saa.Tuulikartta.graphIds = ""
 
@@ -353,11 +353,13 @@ var saa = globalThis.saa;
 
   Tuulikartta.drawData = function (param) {
 
-    if(!saa.Tuulikartta.showStationObservations) return false
+    if(!saa.Tuulikartta.showStationObservations && !saa.Tuulikartta.showRoadObservations) return false
     Tuulikartta.clearMarkers()
 
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
-    saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    if (saa.Tuulikartta.showStationObservations) { 
+      saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    }
     if (saa.Tuulikartta.showRoadObservations) {
       saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
     }
@@ -378,6 +380,8 @@ var saa = globalThis.saa;
       interactive: false
     })
 
+    console.log("One random data set: ", saa.Tuulikartta.data[30]) // for debugging
+    
     for (var i = 0; i < sizeofdata; i++) {
       var location = { lat: parseFloat(saa.Tuulikartta.data[i]['lat']), lng: parseFloat(saa.Tuulikartta.data[i]['lon']) }
       var time = Tuulikartta.timeTotime(saa.Tuulikartta.data[i]['epochtime'])
@@ -966,8 +970,11 @@ var saa = globalThis.saa;
                 keyboard: false,
                 icon: Tuulikartta.createLabelIcon(hex, parseFloat(saa.Tuulikartta.data[i][param]).toFixed(1))
               })
-
-            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+            }
             marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
             saa.Tuulikartta.data[i]['fmisid']),{
               maxWidth: maxWidth
@@ -984,7 +991,11 @@ var saa = globalThis.saa;
               keyboard: false,
               icon: Tuulikartta.createLabelIcon('textLabelclass', '–')
             })
-          marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+          }
           marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
           saa.Tuulikartta.data[i]['fmisid']),{
             maxWidth: maxWidth
