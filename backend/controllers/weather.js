@@ -1,10 +1,16 @@
+/*
+Author: Kasper Kivistö
+Description: This file contains the controller for handling weather-related API endpoints. It includes functions for fetching weather station data from the FMI Open Data API, caching it in Redis, and returning it as JSON or XML responses. The controller also includes a function for showing Redis memory usage information.
+*/
+
 const weatherRouter = require('express').Router()
 const { request } = require('express')
-const xml2js = require('xml2js');
 
-const csvReader = require('../utils/csvReader');
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
+const config = require('../config');
+const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation } = require('../utils/db');
+const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 
 // ---------------------------------------------------------
 // Functions for fetching and processing weather data from FMI API
@@ -296,95 +302,71 @@ weatherRouter.get('/xml', async (req, res) => {
 
   const xmlData = await fetch(url)
     .then(r => r.text())
-    .then(xmlString => xmlParser.parseStringPromise(xmlString))
-  
-  result1 = []; // this has [{ name: 'Helsinki-Vantaa', fmisid: 100971 }]
-  // all the weather stations are in this array
-  result2 = []; // this has [{ name: 'Helsinki-Vantaa', coordinates: [24.963, 60.317] }]
-  const members = parsedData['wfs:FeatureCollection']['wfs:member'] 
-  
-  //Start the iteration of members
-  members.forEach(member => {
-    // station names and fmisids
-    const stations =
-      member['omso:GridSeriesObservation'][0]
-        ['om:featureOfInterest'][0]
-        ['sams:SF_SpatialSamplingFeature'][0]
-        ['sam:sampledFeature'][0]
-        ['target:LocationCollection'][0]
-        ['target:member'];
-    
-    stations.forEach(station => {
-      const location = station['target:Location'][0];
-      const name = location['gml:name'][0]._;
-      const fmisid = parseInt(location['gml:identifier'][0]._, 10);
-      result1.push({
-        name: name,
-        fmisid: fmisid
-      });
-    })
-
-    // station names and coordinates
-    const stationLocations =
-      member['omso:GridSeriesObservation'][0]
-        ['om:featureOfInterest'][0]
-        ['sams:SF_SpatialSamplingFeature'][0]
-        ['sams:shape'][0]
-        ['gml:MultiPoint'][0];
-    const pointMembers = stationLocations['gml:pointMember'];
-
-    pointMembers.forEach(station => {
-      const point = station['gml:Point'][0];
-      //logger.info(`Processing station: ${JSON.stringify(point)}`);
-
-      const name = point['gml:name']?.[0] ?? null;
-      const pos = point['gml:pos']?.[0] ?? null;
-      //logger.info(`Station name: ${name}, Coordinates: ${pos}`);
-
-      result2.push({
-        name: name,
-        pos: pos   // e.g. "23.761 61.498"
-      });
+    .catch(err => {
+      logger.error(`Error fetching weather data from FMI API: ${err.message}`);
+      return null;
     });
-  })
-  
-  // The final array of stations with both fmisid and coordinates
-  const final = result1.map((station, index) => ({
-    ...station,
-    ...result2[index]
-  }));
 
-  logger.info(`Fetched and processed ${final.length} weather stations from FMI API.`);
-  return final;
+  if (!xmlData) {
+    return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
+  }
+
+  // Cache current data (per-station key when fmisid is present)
+  if (useCache && redisClient.isOpen) {
+    try {
+      await redisClient.set(cacheKey, xmlData, { EX: 1800 });
+      logger.info(`Cached XML in Redis 30 min (key: ${cacheKey})`);
+      redisMemoryInfo();
+    } catch (err) {
+      logger.error(`Error caching data in Redis: ${err.message}`);
+    }
+  }
+
+  res.set('Content-Type', 'application/xml');
+  res.send(xmlData);
 })
 
 // ---------------------------------------------------------
-// GET /api/weather endpoint for fetching weather station data from FMI API
+// GET /api/weather/favourites - returns latest observation for all favourite stations
+// Optional query param: ?time=2026-02-25T14:30:00Z
+// Without time: returns the most recent observation per station
+// With time: returns the closest observation per station to the given timestamp
+// Same format as /latest
 // ---------------------------------------------------------
-weatherRouter.get('/favourites', async (req, res) => {
+weatherRouter.get('/favourites', (req, res) => {
   logger.info("GET /api/weather/favourites");
   const time = req.query.time;
   let rows;
 
-  if (cached) {
-    logger.info('Returning cached weather station data');
-    return res.send(JSON.parse(cached));
+  try {
+    // if time is given and it is not "now", return the closest observations to that time, if they are within 5 minutes of the requested time.
+    if (time && time !== 'now') {
+      const reqMs = new Date(time).getTime();
+      rows = getClosestFavouritePerStation.all(time).filter(row =>
+        Math.abs(new Date(row.timestamp).getTime() - reqMs) <= 5 * 60 * 1000
+      );
+    } else {
+      // otherwise return the latest observations per station
+      rows = getLatestFavouritePerStation.all();
+    }
+  } catch (err) {
+    logger.error(`Error querying favourite_observations: ${err.message}`);
+    return res.status(500).send({ error: 'Internal error' });
   }
 
-  const url = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature&storedquery_id=fmi::observations::weather::multipointcoverage&place=tampere&place=helsinki&'
-  
-  // get data from FMI API
-  const stations = await fetchNewFMIData(url);
+  if (!rows || rows.length === 0) {
+    return res.status(404).send({ error: 'No data found' });
+  }
 
-  // cache the data in Redis for 1 hour
-  await redisClient.set(
-    'weather:stations',
-    JSON.stringify(stations),
-    { EX: 3600 }
-  );
-  logger.info('Cached weather station data in Redis for 1 hour');
-  // return that data
-  res.send(stations);
+  logger.info(`Returning ${rows.length} favourite station observations`);
+  res.send(rows.map(obsToStation));
+})
+
+// ---------------------------------------------------------
+// Other endpoints return 404 Not Found
+// ---------------------------------------------------------
+weatherRouter.get('/', (req, res) => {
+  return res.status(404).send({ error: 'Not found' });
 })
 
 module.exports = weatherRouter

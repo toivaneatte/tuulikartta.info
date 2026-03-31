@@ -11,15 +11,18 @@ A small Node.js / Express backend that fetches weather observation data from the
 - Extracts weather station names, FMIS IDs, and coordinates
 - Returns normalized JSON
 - Simple Express API
+- Configuration of backend in 'config.js'
 
 ## Tech Stack
 
 - Node.js
 - Express
 - node-fetch
+- node-cron
 - xml2js
 - Redis
 
+![Diagram](diagram.png)
 
 ## Getting Started
 
