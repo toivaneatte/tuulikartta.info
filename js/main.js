@@ -623,8 +623,8 @@ var saa = globalThis.saa;
       }
 
       if (param === 'rVal') {
-        // Handle R-values - only for magnetometer stations
-        if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
+        // Handle R-values - only for R stations
+        if (saa.Tuulikartta.data[i]['type'] === 'R') {
           var paramValue = saa.Tuulikartta.data[i]['rVal']
           if (paramValue !== null && paramValue !== undefined) {
             var fillColor = Tuulikartta.resolveRProbability(saa.Tuulikartta.data[i]['rProb'])
@@ -643,11 +643,53 @@ var saa = globalThis.saa;
             saa.Tuulikartta.data[i]['fmisid']),{
               maxWidth: maxWidth
             })
-            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            // missing fmisid required for graph call
           }
         }
       }
+
+      if(param === 'magnetism') {
+        // Handle magnetic field - only for magnetometer stations
+        if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
+          var paramValues = saa.Tuulikartta.data[i]
+          var X = paramValues['X']
+          var Y = paramValues['Y']
+          var Z = paramValues['Z']
+
+          var labelHtml = ''
+          if (X!== null && X !== undefined) {
+            labelHtml += '<div>X: ' + parseFloat(X) + '</div>'
+          }
+          if (Y !== null && Y !== undefined) {
+            labelHtml += '<div>Y: ' + parseFloat(Y) + '</div>'
+          }
+          if (Z !== null && Z !== undefined) {
+            labelHtml += '<div>Z: ' + parseFloat(Z) + '</div>'
+          }
+          if (labelHtml === '') continue
+
+          var icon = L.divIcon({
+            iconSize: null,
+            className: 'air-radio-label',
+            iconAnchor: [10, 22],
+            html: labelHtml
+          })
+
+          var marker = L.marker(
+            [saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']],
+            { icon: icon, interactive: true, keyboard: true }
+          )
+
+            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+            saa.Tuulikartta.data[i]['fmisid']),{
+              maxWidth: maxWidth
+            })
+            marker.type = 'magnetometer'
+            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+          }
+        }
 
       if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
 
@@ -1079,6 +1121,8 @@ var saa = globalThis.saa;
     return 4
     else if(value === 'air_activity')
     return 5
+    else if(value === 'magnetism')
+    return 6
     else
     return 1
   }

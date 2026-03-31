@@ -105,6 +105,7 @@ var saa = saa || {};
         html += '<div id="weather-chart-' + fmisid + '_alt2" style="width:100%; height:400px;"></div>';
         html += '<div id="weather-chart-' + fmisid + '_radiation" style="width:100%; height:400px;"></div>';
         html += '<div id="weather-chart-' + fmisid + '_air_radio" style="width:100%; height:400px;"></div>';
+        html += '<div id="weather-chart-' + fmisid + '_magnetometer" style="width:100%; height:400px;"></div>';
         html += '</div>';
 
         $('#graph-box').html(html);
@@ -913,6 +914,142 @@ var chart5 = Highcharts.chart(`weather-chart-${fmisid}_air_radio`, {
         connectNulls: true,
         tooltip: {
             valueSuffix: ' µBq/m³'
+        },
+    }],
+    responsive: {
+        rules: [{
+            condition: {
+                maxHeight: 150
+            },
+            chartOptions: {
+                legend: {
+                    enabled: true
+                }
+            }
+        }]
+    },
+    plotOptions: {
+        line: {
+            marker: {
+                enabled: true,
+                radius: 2
+            }
+        }
+    }
+});
+// Magnetometer chart
+var chart6 = Highcharts.chart(`weather-chart-${fmisid}_magnetometer`, {
+    chart: {
+        spacingTop: 0,
+        spacingBottom: 0,
+        spacingLeft: 0,
+        marginLeft: 40,
+        marginBottom: 30,
+        height: '300px'
+    },
+    title: {
+        text: null
+    },
+    time: {
+        timezoneOffset: weatherGraph.getTimeZoneDirrerence()
+    },
+    rangeSelector: {
+        selected: 1
+    },
+    subtitle: {
+        text: translations[window.selectedLanguage]['magnetism'],
+        style: {
+            color: 'black',
+            font: '12px Roboto, sans-serif'
+        }
+    },
+    xAxis: {
+        type: 'datetime',
+        labels: {
+            formatter: function () {
+                var date    = new Date(this.value),
+                    hours   = weatherGraph.formatTimeLabel(date.getHours()),
+                    minutes = weatherGraph.formatTimeLabel(date.getMinutes()),
+                    day     = weatherGraph.resolveWeekDay(date.getDay());
+
+                if( hours !== "00" ) {
+                    return hours + ":" + minutes;
+                }
+                else {
+                    return day; 
+                }
+            }
+        },
+        style: {
+            color: 'black',
+            font: '12px Roboto, sans-serif'
+        },
+        minorTickInterval: 'auto',
+        minorTickColor: '#f2f2f2'
+    },
+    yAxis: {
+        title: {
+            align: 'high',
+            offset: 0,
+            text: 'pT',
+            rotation: 0,
+            y: -14,
+            x: -10
+        },
+        labels: {
+            style: {
+                color: 'black',
+                font: '12px Roboto, sans-serif'
+            }
+        },
+        minorTickInterval: 'auto',
+        minorTickColor: '#f2f2f2'
+    },
+    tooltip: {
+        crosshairs: true,
+        shared: true,
+        labels: {
+            style: {
+                color: 'black',
+                font: '12px Roboto, sans-serif'
+            }
+        }
+    },
+    exporting: {
+        enabled: false
+    },
+
+    legend: {
+        enabled: true
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        type: 'line',
+        name: 'X',
+        color: '#FF6B6B',
+        data: data.obs.magn_x,
+        tooltip: {
+            valueSuffix: ' pT'
+        },
+    },
+    {
+        type: 'line',
+        name: 'Y',
+        color: '#4ECDC4',
+        data: data.obs.magn_y,
+        tooltip: {
+            valueSuffix: ' pT'
+        },
+    },
+    {
+        type: 'line',
+        name: 'Z',
+        color: '#95E1D3',
+        data: data.obs.magn_z,
+        tooltip: {
+            valueSuffix: ' pT'
         },
     }],
     responsive: {

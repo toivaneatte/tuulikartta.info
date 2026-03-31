@@ -52,6 +52,50 @@ class DataMiner{
       return $url;
     }
 
+    // if graph is false, only get the data from latest even 10 min as older data is not needed
+    // this way the newest datapoint won't have to be separately extracted, however when api
+    // hasn't been updated yet there will be no data at all
+    // intending to add fallback to previous datapoint
+    private function setTimeforMagnetometer($timestamp, $graph) {
+      $url = "";
+      if($graph) {
+        if ( $timestamp === "now" ) {
+          $endtime = new DateTime();
+          $end     = $endtime->format('Y-m-d\TH:i:s\Z');
+          $start   = $endtime->sub(new DateInterval('PT24H'));
+          $start   = $start->format('Y-m-d\TH:i:s\Z');
+          
+          $url     = "&starttime={$start}&endtime={$end}";
+        } else {
+          $endtime = new DateTime($timestamp);
+          $end     = $endtime->format('Y-m-d\TH:i:s\Z');
+          $start   = $endtime->sub(new DateInterval('PT24H'));
+          $start   = $start->format('Y-m-d\TH:i:s\Z');
+
+          $url     = "&starttime={$start}&endtime={$end}";
+        }
+    // set start and endtime as the same to get only one timestamp's data
+      } else {
+        if ( $timestamp === "now" ) {
+          $start  = new DateTime();
+        } 
+        else {
+          $start = new DateTime($timestamp);
+        }
+        // round down to nearest 10 min, otherwise API returns nothing?
+        $start->setTime(
+        (int)$start->format('H'),
+        floor($start->format('i') / 10) * 10,
+        0
+        );
+          $start->setTimezone(new DateTimeZone('UTC'));
+          $start  = $start->format('Y-m-d\TH:i:s\Z');
+          $end    = $start;
+          $url     = "&starttime={$start}&endtime={$end}";
+      }
+      return $url;
+    }
+
         private function setTimeRange($timestamp, $graph, $rangeDays) {
             if (!$graph) {
                 return "";
@@ -248,7 +292,37 @@ class DataMiner{
         return $final;
     }
 
-
+    /** Parse observation data about R-values from RWC
+     * @return R-values as an array
+     */
+    public function getRValues() {
+        $url = "https://space.fmi.fi/MIRACLE/RWC/data/r_index_latest_fi.json";
+        $data = file_get_contents($url);
+        $result = [];
+        $json = json_decode($data, true);
+        foreach($json["data"] as $item) {
+            $tmp = [];
+            $tmp["station"] = $item["Asema"];
+            $tmp["lat"] = $item["Leveyspiiri"];
+            $tmp["lon"] = $item["Pituuspiiri"];
+            $tmp["time"] = $item["Aika"];
+            $tmp["type"] = "R";
+            $tmp   ["rVal"] = $item["R-luku"];
+            $tmp["upperLim"] = $item["Ylempi raja-arvo"];
+            $tmp["lowerLim"] = $item["Alempi raja-arvo"];
+            if ($item["Revontulten todennäköisyys"] === "Revontulet epätodennäköisiä") {
+                $tmp["rProb"] = "low";
+            } else if ($item["Revontulten todennäköisyys"] === "Revontulet mahdollisia") {
+                $tmp["rProb"] = "medium";
+            } else if ($item["Revontulten todennäköisyys"] === "Revontulet todennäköisiä") {
+                $tmp["rProb"] = "high";
+            } else {
+                $tmp["rProb"] = null;
+            }
+            array_push($result,$tmp);
+        }
+    }
+    
     public function nuclideMultipointcoverage($timestamp,$settings,$graph,$rangeDays = 150) {
         date_default_timezone_set("UTC");
 
@@ -367,6 +441,99 @@ class DataMiner{
         }
         return $final;
     }
+
+    /**
+     * Get magnetometer data from FMI open data
+     * @param    timestamp timestamp or now if latest observations
+     * @param    settings array that contains required query parameters
+     * @return   data as an array
+     */
+    public function magnetometer($timestamp,$magnSettings,$graph) {
+        date_default_timezone_set("UTC");
+
+        $url = "";
+        $url .= "http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature";
+
+        foreach($magnSettings as $key => $value) {
+          $url .= "&{$key}={$value}";
+        }
+
+        $url = $url . $this->setTimeforMagnetometer($timestamp, $graph);
+        $ctx = stream_context_create(array('http'=>
+            array(
+                'timeout' => 240,  //1200 Seconds is 20 Minutes, 
+            )
+        ));
+
+        $xmlData = file_get_contents($url, false, $ctx);
+        if($xmlData == false) {
+            return [];
+        }
+        if($xmlData == "") {
+            return [];
+        }
+
+        $resultString = simplexml_load_string($xmlData);
+
+        // extract wanted stuff from xml data
+        $data = $resultString->children("wfs", true);
+        $final = [];
+
+        foreach($data as $member) {
+            $tmp = [];
+            $member = $member->children("BsWfs", true)->BsWfsElement;
+
+            $location = $member->children("BsWfs", true)->Location
+                            ->children("gml", true)->Point
+                            ->children("gml", true)->pos;
+
+            $time = $member->children("BsWfs", true)->Time;
+
+            $component = $member->children("BsWfs", true)->ParameterName;
+
+            if($component == "MAGNZ_PT1M_AVG") {
+                $component = "Z";
+            } elseif ($component == "MAGNY_PT1M_AVG") {
+                $component = "Y";
+            } elseif ($component == "MAGNX_PT1M_AVG") {
+                $component = "X";
+            };
+
+            $value = $member->children("BsWfs", true)->ParameterValue;
+
+            $location = explode(" ", (string)$location);
+            $lat = floatval($location[0]);
+            $lon = floatval($location[1]);
+
+            // store data in nice array
+            $dataPointKey = $lat . "," . $lon . "," . (string)$time;
+            $fmisid = $lat . "," . $lon; // no fmisid for magnetometer data, use lat,lon as key
+
+            if(!isset($final[$dataPointKey])) {
+                $final[$dataPointKey] = [
+                    "lat" => $lat,
+                    "lon" => $lon,
+                    "time" => (string)$time,
+                    "epochtime" => strtotime((string)$time),
+                    "type" => "magnetometer",
+                    "fmisid" => $fmisid
+                ];
+            }
+
+            $value = trim((string)$value);
+            if ($value === "" || strtolower($value) === "nan") {
+                $final[$dataPointKey][$component] = null;
+            } elseif (is_numeric($value)) {
+                $final[$dataPointKey][$component] = floatval($value);
+            } else {
+                $final[$dataPointKey][$component] = $value;
+            }
+            }
+            
+            $final = array_values($final);
+            return $final;
+        }
+
     /**
     *
     * Get observation data from timeseries
