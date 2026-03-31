@@ -178,11 +178,10 @@ class DataMiner{
 
             $latlons = explode("                ",(string)$latlons);
             $numberOfStations = count($latlons);
-            $i = 0;
             $timestamps = [];
             foreach ($latlons as $latlon) {
                 $tmp = [];
-                if($i>0 && $i<($numberOfStations-1)) {
+                if(trim($latlon) !== "") {
                     $latlon = explode(" ",(string)$latlon);
                     $tmp["lat"] = floatval($latlon[0]);
                     $tmp["lon"] = floatval($latlon[1]);
@@ -190,11 +189,10 @@ class DataMiner{
                     $tmp["epochtime"] = floatval($epoch);
 
                     // convert UNIX timestamp to time
-                    $tmp["time"] = date("Y-m-d\TH:i:s\Z", intval($latlon[3]));
+                    $tmp["time"] = date("Y-m-d\TH:i:s\Z", intval($epoch));
                     $tmp["type"] = $settings["stationtype"];
                     array_push($timestamps,$tmp);
                 }
-                $i++;
             }
 
             // combine station arrays as one
@@ -223,9 +221,9 @@ class DataMiner{
             $observations = explode("                ",(string)$observations);
 
             $tmp = [];
-            foreach($observations as $key => $observation) {
-                if($key > 0 and $key < (count($observations)-1))
-                $tmp[$key] = explode(" ",$observation);
+            foreach($observations as $observation) {
+                if(trim($observation) !== "")
+                    $tmp[] = explode(" ",$observation);
             }
 
             $observations = [];

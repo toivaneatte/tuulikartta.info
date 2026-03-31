@@ -91,11 +91,12 @@ const parseFMIMultipointcoverage = async (xmlString, parameters, type = null) =>
         measurements[param] = isNaN(v) ? null : v;
       });
 
-      // return station name, fmisid, lat, lon, timestamp, measurements and type (if provided)
+      // return station name, fmisid, lat, lon, timestamp, epochtime, measurements and type (if provided)
       results.push({
         fmisid: station.fmisid,
         station: station.name,
         timestamp,
+        epochtime: epoch,
         lat,
         lon,
         type,
