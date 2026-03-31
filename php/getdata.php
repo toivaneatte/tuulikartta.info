@@ -22,6 +22,10 @@ if ($timestamp && $timestamp !== "now") {
 	$backendUrlRoadObs .= "?time=" . urlencode($timestamp);
 }
 
+// Create an instance of DataMiner to fetch magnetometer data
+// TODO: Refactor to use backend
+$dataMiner = new DataMiner();
+
 // Utility function to fetch multiple URLs in parallel using cURL multihandles
 function fetchMultiple($urls) {
 	error_log("Fetching multiple URLs in parallel...");
@@ -73,6 +77,16 @@ $responses = fetchMultiple([
 ]);
 error_log("Responses fetched");
 
+// Earth's magnetic field
+// TODO: Refactor to use backend
+$magnSettings = array();
+$magnSettings["parameters"]     = "MAGNX_PT1M_AVG,MAGNY_PT1M_AVG,MAGNZ_PT1M_AVG";
+$magnSettings["storedquery_id"] = "fmi::observations::magnetometer::simple";
+$magnSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+$magnSettings["timestep"]       = "10";
+$magnData = $dataMiner->magnetometer($timestamp, $magnSettings, false) ?? [];
+error_log("magnetometer data handled");
+
 // Decode JSON responses into associative arrays, handling nulls
 $synopArray = json_decode($responses["synop"], true) ?? [];
 $rValuesArray = json_decode($responses["rvalues"], true) ?? [];
@@ -81,16 +95,8 @@ $nuclidesArray = json_decode($responses["nuclides"], true) ?? [];
 $roadArray = json_decode($responses["roadobs"], true) ?? [];
 error_log("Responses decoded");
 
-// Earth's magnetic field
-$magnSettings = array();
-$magnSettings["parameters"]     = "MAGNX_PT1M_AVG,MAGNY_PT1M_AVG,MAGNZ_PT1M_AVG";
-$magnSettings["storedquery_id"] = "fmi::observations::magnetometer::simple";
-$magnSettings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
-$magnSettings["timestep"]       = "10";
-$magnData = $dataMiner->magnetometer($timestamp, $magnSettings, false);
-error_log("magnetometer data handled");
-
 // error_log("synop data: " . $responses["synop"]); // debugging logs
+// error_log("R value data: " . $responses["rvalues"]); // debugging logs
 // error_log("External radiation data: " . $responses["radiation"]); // debugging logs
 // error_log("Nuclide data: " . $responses["nuclides"]); // debugging logs
 

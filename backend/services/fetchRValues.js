@@ -20,7 +20,6 @@ async function getRValues() {
     }
 
     const json = await response.json();
-    logger.info("Fetched R values from space.fmi API");
     //logger.info("Raw R value data: " + JSON.stringify(json));
 
     // convert the API response into an array of objects with the desired structure
@@ -33,7 +32,7 @@ async function getRValues() {
         lat: item["Leveyspiiri"],
         lon: item["Pituuspiiri"],
         time: item["Aika"],
-        type: "magnetometer",
+        type: "R",
         rVal: item["R-luku"],
         upperLim: item["Ylempi raja-arvo"],
         lowerLim: item["Alempi raja-arvo"],

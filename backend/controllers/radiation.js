@@ -32,6 +32,8 @@ radiationRouter.get('/rvalue', async (req, res) => {
   logger.info("GET /api/radiation/rvalue");
   try {
     const rValues = await getRValues();
+    logger.info(`Fetched R values, number of observations: ${rValues.length}`);
+
     res.set('Content-Type', 'application/json');
     res.send(rValues);
   } catch (error) {
