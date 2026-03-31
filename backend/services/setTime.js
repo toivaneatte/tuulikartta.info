@@ -99,5 +99,6 @@ const setDayRange = (timestamp, isGraph, rangeDays) => {
 
 module.exports = {
   setTime,
-  setDayRange
+  setDayRange,
+  setTimeRoad
 };

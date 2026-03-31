@@ -215,7 +215,7 @@ camera.normalizeWeatherStation = function(raw) {
       return;
     }
     
-    const backendSingleCameraUrl = `${API_BASE}/${encodeURIComponent(stationId)}`;
+    const backendSingleCameraUrl = `${API_BASE}/${stationId}`;
     $.when(
       fetchWithTimeout(backendSingleCameraUrl)
     ).done(function(backendResponse) {
