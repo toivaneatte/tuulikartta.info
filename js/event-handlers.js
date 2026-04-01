@@ -17,11 +17,11 @@ var saa = saa || {};
 
     // Select weather parameter
     $('#select-wind-parameter').change(function () {
-      Tuulikartta.clearMarkers()
-      Tuulikartta.drawData($(this).val())
-
       window.selectedParameter = $(this).val()
       window.startPosition = window.resolveGraphStartposition(window.selectedParameter)
+
+      Tuulikartta.clearMarkers()
+      Tuulikartta.drawData(window.selectedParameter)
 
       var lat = saa.Tuulikartta.map.getCenter().lat
       var lon = saa.Tuulikartta.map.getCenter().lng
@@ -31,6 +31,12 @@ var saa = saa || {};
 
     // Popup open handler
     saa.Tuulikartta.map.on('popupopen', function(e) {
+      var currentParameter = $('#select-wind-parameter').val()
+      if (currentParameter) {
+        window.selectedParameter = currentParameter
+        window.startPosition = window.resolveGraphStartposition(currentParameter)
+      }
+
       var fmisid = e.popup._source.fmisid
       var type = e.popup._source.type
       if(type === 'Synop-asema') type = 'synop'
@@ -42,7 +48,7 @@ var saa = saa || {};
         paginationSpeed: 400,
         items: 1,
         pagination: false,
-        startPosition: startPosition
+        startPosition: window.startPosition
       });
     })
 

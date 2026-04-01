@@ -1,7 +1,10 @@
 <?php
+ob_start();
+error_reporting(0);
+set_time_limit(300);
 require_once("dataMiner.php");
-header('Content-Type: application/json');
 
+$output = '';
 try {
     $latlon      = filter_input(INPUT_GET, 'latlon', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $fmisid      = filter_input(INPUT_GET, 'fmisid', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -49,6 +52,17 @@ try {
         $settings["fmisid"]         = $fmisid;
 
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+
+        $snowSettings = array();
+        $snowSettings["parameters"]     = "snow";
+        $snowSettings["storedquery_id"] = "fmi::observations::weather::daily::multipointcoverage";
+        $snowSettings["fmisid"]         = $fmisid;
+
+        try {
+            $snowObs = $dataMiner->multipointcoverage($timestamp,$snowSettings,true,21);
+        } catch (Exception $e) {
+            $snowObs = [];
+        }
     }
 
     if ($type == 'radiation') {
@@ -106,10 +120,28 @@ try {
         $hasWindData = isset($combinedData["obs"][0]['ws_10min']) || isset($combinedData["obs"][0]['wd_10min']);
     }
     $winddirections = $hasWindData ? resolveWindDirection($combinedData) : [];
-    print json_encode(formatHighChart($combinedData, $winddirections));
+    $result = formatHighChart($combinedData, $winddirections);
+
+    if (!empty($snowObs)) {
+        $result['obs']['snow_aws'] = [];
+        foreach ($snowObs as $obs) {
+            $val = isset($obs['snow_aws']) ? $obs['snow_aws'] : (isset($obs['snow']) ? $obs['snow'] : null);
+            if ($val !== null && $val > 0) {
+                $result['obs']['snow_aws'][] = [$obs['epochtime'] * 1000, floatval($val)];
+            } else {
+                $result['obs']['snow_aws'][] = [$obs['epochtime'] * 1000, null];
+            }
+        }
+    }
+
+    $output = json_encode($result);
 } catch (Exception $e) {
-    print json_encode(array('error' => $e->getMessage()));
+    $output = json_encode(array('error' => $e->getMessage()));
 }
+
+ob_end_clean();
+header('Content-Type: application/json');
+echo $output;
 
 /**
  *
@@ -261,6 +293,7 @@ function formatHighChart($data, $winddirections) {
       $formattedData[$key]["magn_x"] = [];
       $formattedData[$key]["magn_y"] = [];
       $formattedData[$key]["magn_z"] = [];
+      $formattedData[$key]["snow_aws"] = [];
     }
 
     foreach($data as $key => $dataArray) {
@@ -382,6 +415,19 @@ function formatHighChart($data, $winddirections) {
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, null);
           array_push($formattedData['obs']['rr1h_calc'], $tmp);
+        }
+
+        // snow_aws
+        if(isset($array['snow_aws']) && $array['snow_aws'] !== null && $array['snow_aws'] !== '') {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, floatval($array['snow_aws']));
+          array_push($formattedData['obs']['snow_aws'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['snow_aws'], $tmp);
         }
 
         // radiation (DR_PT10M_avg)

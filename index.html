@@ -108,6 +108,10 @@
                 defaultDate: new Date()
             });
             cal.datepicker("setDate",'now');
+            var now = new Date();
+            var hh = ('0' + now.getHours()).slice(-2);
+            var mm = ('0' + now.getMinutes()).slice(-2);
+            document.getElementById('clockpicker-button').value = hh + ':' + mm;
         })
         </script>
 

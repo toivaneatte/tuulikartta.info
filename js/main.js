@@ -75,6 +75,7 @@ var saa = globalThis.saa;
     window.longitude = lon
     window.zoomlevel = zoom
     window.selectedParameter = initParam
+    window.startPosition = window.resolveGraphStartposition(initParam)
   }
 
   // ---------------------------------------------------------
@@ -1145,6 +1146,8 @@ var saa = globalThis.saa;
     return 5
     else if(value === 'magnetism')
     return 6
+    else if(value === 'snow_aws')
+    return 7
     else
     return 1
   }

@@ -128,7 +128,7 @@ class DataMiner{
     *
     */
 
-    public function multipointcoverage($timestamp,$settings,$graph) {
+    public function multipointcoverage($timestamp,$settings,$graph,$rangeDays = null) {
         date_default_timezone_set("UTC");
 
         $url = "";
@@ -138,14 +138,24 @@ class DataMiner{
           $url .= "&{$key}={$value}";
         }
 
-        $url = $url . $this->setTime($timestamp, $graph);
+        if ($rangeDays !== null) {
+            $url = $url . $this->setTimeRange($timestamp, $graph, $rangeDays);
+        } else {
+            $url = $url . $this->setTime($timestamp, $graph);
+        }
         $ctx = stream_context_create(array('http'=>
             array(
                 'timeout' => 240,  //1200 Seconds is 20 Minutes
+                'ignore_errors' => true
             )
         ));
         $xmlData = file_get_contents($url, false, $ctx);
-        if($xmlData == false) {
+         if($xmlData == false || $xmlData == "") {
+            error_log("file_get_contents failed for URL: $url");
+            return [];
+        }
+        if ($rangeDays !== null && strpos($xmlData, 'ExceptionReport') !== false) {
+            error_log("FMI ExceptionReport: " . substr($xmlData, 0, 500));
             return [];
         }
         if($xmlData == "") {
@@ -153,6 +163,9 @@ class DataMiner{
         }
 
         $resultString = simplexml_load_string($xmlData);
+        if ($resultString === false) {
+            return [];
+        }
 
         $result = array();
         $tmp = array();
