@@ -405,6 +405,8 @@ var saa = globalThis.saa;
     console.log("One random data set: ", saa.Tuulikartta.data[30]) // for debugging
     
     for (var i = 0; i < sizeofdata; i++) {
+      if (!saa.Tuulikartta.data[i]) continue
+
       var location = { lat: parseFloat(saa.Tuulikartta.data[i]['lat']), lng: parseFloat(saa.Tuulikartta.data[i]['lon']) }
       var time = Tuulikartta.timeTotime(saa.Tuulikartta.data[i]['epochtime'])
       var latlon = saa.Tuulikartta.data[i]['lat'] + ',' + saa.Tuulikartta.data[i]['lon']
