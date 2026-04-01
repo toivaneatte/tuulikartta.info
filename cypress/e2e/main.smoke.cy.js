@@ -1,6 +1,6 @@
 describe('main.js (smoke)', () => {
   beforeEach(() => {
-    cy.visit('http://localhost:80')
+    cy.visit('/')
     cy.get('#map', { timeout: 20000 }).should('be.visible')
     cy.get('.leaflet-pane', { timeout: 20000 }).should('exist')
   })

@@ -1,4 +1,13 @@
 const stubObservationData = () => {
+  cy.intercept('GET', '**/php/dataparser.php*', {
+    statusCode: 200,
+    headers: { 'content-type': 'application/json' },
+    body: {
+      name: 'suomi_dbz_eureffin',
+      dimension: '2026-04-01T10:00:00.000Z/2026-04-01T11:00:00.000Z/PT5M'
+    }
+  }).as('radarParser')
+
   cy.intercept('GET', '**/list.php', {
     statusCode: 200,
     headers: { 'content-type': 'application/json' },
@@ -57,9 +66,10 @@ describe('main.js (stubbed)', () => {
     stubObservationData()
     stubCameraData()
 
-    cy.visit('http://localhost:80')
-    cy.wait('@listFiles')
-    cy.wait('@getData')
+    cy.visit('/')
+    cy.wait('@radarParser', { timeout: 20000 })
+    cy.wait('@listFiles', { timeout: 20000 })
+    cy.wait('@getData', { timeout: 20000 })
 
     cy.get('#map', { timeout: 20000 }).should('be.visible')
     cy.get('.leaflet-pane', { timeout: 20000 }).should('exist')
@@ -178,7 +188,7 @@ describe('performance (stubbed)', () => {
     stubObservationData()
     stubCameraData()
 
-    cy.visit('http://localhost:80', {
+    cy.visit('/', {
       onBeforeLoad(win) {
         win.__mapStart = win.performance ? win.performance.now() : Date.now()
       }

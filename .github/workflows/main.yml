@@ -52,13 +52,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and start app with Docker Compose
-        run: docker compose -f docker-compose.dev.yml up --build -d tuulikartta
+      - name: Start static web server
+        run: python3 -m http.server 8080 --directory . > /tmp/http-server.log 2>&1 &
 
       - name: Wait for app to be ready
         run: |
           for i in {1..60}; do
-            if curl -fsS http://localhost:80/ > /dev/null; then
+            if curl -fsS http://localhost:8080/ > /dev/null; then
               exit 0
             fi
             sleep 2
@@ -67,12 +67,8 @@ jobs:
           exit 1
 
       - name: Run Cypress stubbed tests
-        run: npx cypress run --browser ${{ matrix.browser }} --spec cypress/e2e/main.stubbed.cy.js
+        run: CYPRESS_baseUrl=http://localhost:8080 npx cypress run --browser ${{ matrix.browser }} --spec cypress/e2e/main.stubbed.cy.js
 
-      - name: Dump container logs on failure
+      - name: Dump web server log on failure
         if: failure()
-        run: docker compose -f docker-compose.dev.yml logs --tail=200 tuulikartta
-
-      - name: Stop containers
-        if: always()
-        run: docker compose -f docker-compose.dev.yml down
+        run: tail -n 200 /tmp/http-server.log || true
