@@ -9,16 +9,16 @@ const logger = require('../utils/logger');
 const config = require('../config');
 
 // Helper function to get historic data
-function mergeHistoricData(stationData, historicData) {
+function mergeHistoricData(metaData, stationData, historicData) {
 
-  const props = stationData.properties;
+  const props = metaData.properties;
   const stationId = props.id;
 
   const mergedData = {
     station: props.name,
     fmisid: stationId,
-    lat: stationData.geometry.coordinates[1],
-    lon: stationData.geometry.coordinates[0],
+    lat: metaData.geometry.coordinates[1],
+    lon: metaData.geometry.coordinates[0],
     type: "road",
     time: null,
     epochtime: null,
@@ -26,7 +26,7 @@ function mergeHistoricData(stationData, historicData) {
   };
 
   for (const sensor of stationData.sensorValues) {
-    for (const historicSensor of historicData) {
+    for (const historicSensor of historicData.values) {
       if (historicSensor.id === sensor.id) {
         mergedData.sensorValues.push({
           name: sensor.name,

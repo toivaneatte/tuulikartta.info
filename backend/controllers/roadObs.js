@@ -46,9 +46,10 @@ roadRouter.get('/obs', async (req, res) => {
     let historicData = [];
 
     for (const station of metaResponse.features) {
+      let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
       let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
       const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
-      let mergedData = mergeHistoricData(dataResponse, historyResponse);
+      let mergedData = mergeHistoricData(station, stationData, historyResponse);
       historicData.push(mergedData);
     }
 
@@ -96,9 +97,10 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
     let historicData = [];
 
     for (const station of metaResponse.features) {
+      let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
       let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
       const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
-      let mergedData = mergeHistoricData(dataResponse, historyResponse);
+      let mergedData = mergeHistoricData(station, stationData, historyResponse);
       historicData.push(mergedData);
     }
 
