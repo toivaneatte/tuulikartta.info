@@ -46,7 +46,7 @@ roadRouter.get('/obs', async (req, res) => {
     let historicData = [];
 
     let first = true;
-    
+
     for (const station of metaResponse.features) {
       let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
       let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
@@ -105,7 +105,7 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
     let historicData = [];
 
 let first = true;
-    
+
     for (const station of metaResponse.features) {
       let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
       let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
@@ -145,12 +145,17 @@ roadRouter.get('/cameras', async (req, res) => {
   //start by making time stamp
   const timestamp = req.query.time || "now";
   const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
-  
+
+  const headers = {
+    "Accept": "application/json",
+    "User-Agent": config.digitrafficAPIuser
+  };
+
   try {
     // fetch actual data from API
     const [metaResponse, dataResponse] = await Promise.all([
-      fetch(metaURL).then(r => r.json()),
-      fetch(dataURL).then(r => r.json())
+      fetch(metaURL, { headers }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+      fetch(dataURL, { headers }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     ]);
 
     // parse the responses and return the camera data
@@ -178,12 +183,17 @@ roadRouter.get('/cameras/:stationId', async (req, res) => {
   //start by making time stamp
   const timestamp = req.query.time || "now";
   const UTCtimestamp = setTimeService.setTime(timestamp, false); // isGraph = false for map data
-  
+
+  const headers = {
+    "Accept": "application/json",
+    "User-Agent": config.digitrafficAPIuser
+  };
+
   try {
     // fetch actual data from API
     const [metaResponse, dataResponse] = await Promise.all([
-      fetch(metaURL).then(r => r.json()),
-      fetch(dataURL).then(r => r.json())
+      fetch(metaURL, { headers }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+      fetch(dataURL, { headers }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     ]);
 
     // parse the responses and return the camera data
