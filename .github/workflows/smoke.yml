@@ -9,6 +9,9 @@ on:
 jobs:
   cypress-smoke:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +40,7 @@ jobs:
           exit 1
 
       - name: Run Cypress smoke tests
-        run: npx cypress run --spec cypress/e2e/main.smoke.cy.js
+        run: npx cypress run --browser ${{ matrix.browser }} --spec cypress/e2e/main.smoke.cy.js
 
       - name: Dump container logs on failure
         if: failure()

@@ -39,6 +39,9 @@ jobs:
 
   cypress-stubbed:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +70,7 @@ jobs:
           exit 1
 
       - name: Run Cypress stubbed tests
-        run: npx cypress run --spec cypress/e2e/main.stubbed.cy.js
+        run: npx cypress run --browser ${{ matrix.browser }} --spec cypress/e2e/main.stubbed.cy.js
 
       - name: Dump container logs on failure
         if: failure()
