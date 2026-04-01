@@ -56,20 +56,20 @@ function setTime(timestamp, isGraph) {
  * @returns {string} - A URL query string with the appropriate starttime and endtime parameters for the FMI API.
  */
 function setTimeRoad(timestamp) {
-  let url = "";
-  
-  // We want data from the start of that day until the timestamp
-  const end = DateTime.fromISO(timestamp, { zone: "utc" });
+  let end;
+
+  if (timestamp === "now") {
+    end = DateTime.utc();
+  } else {
+    end = DateTime.fromISO(timestamp, { zone: "utc" });
+  }
 
   const start = end
     .setZone("Europe/Helsinki")
     .startOf("day")
     .toUTC();
 
-  url = `?from=${start.toISO({ suppressMilliseconds: true })}&to=${end.toISO({ suppressMilliseconds: true })}`;
-
-
-  return url;
+  return `?from=${start.toISO({ suppressMilliseconds: true })}&to=${end.toISO({ suppressMilliseconds: true })}`;
 }
 
 /**
