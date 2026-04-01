@@ -9,7 +9,7 @@ const { updateMapObsDailyValues } = require('./db');
 const logger = require('./logger');
 
 // Returns a Date object representing midnight Helsinki time (in UTC) for the given date.
-const getMidnightHelsinki = (date) => {
+const getMidnight = (date) => {
   const datePart = date.toLocaleDateString('en-CA', { timeZone: 'Europe/Helsinki' });
   const noonUTC = new Date(`${datePart}T12:00:00Z`);
   const helsinkiHour = parseInt(
@@ -27,7 +27,7 @@ const getMidnightHelsinki = (date) => {
 //   - ISO string:    does NOT store, returns aggregates at that specific timestamp per station
 const fetchDailyAggregates = async (endTimestamp) => {
   const end = endTimestamp ? new Date(endTimestamp) : new Date();
-  const start = getMidnightHelsinki(end);
+  const start = getMidnight(end);
 
   const baseURL = config.FMIWeatherURL.replace(
     /parameters=[^&]+/,

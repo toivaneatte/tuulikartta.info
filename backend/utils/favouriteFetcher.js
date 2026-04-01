@@ -11,6 +11,7 @@ const logger = require('./logger');
 const config = require('../config');
 const { parseFMIMultipointcoverage } = require('./fmiParser');
 const { db, deleteOldObservations } = require('./db');
+const { calculateFavouriteDailyAggregates } = require('./favouriteDailyAggregates');
 
 const insertObs = db.prepare(`
   INSERT INTO favourite_observations
@@ -38,6 +39,9 @@ const insertObs = db.prepare(`
 `);
 
 const countRows = db.prepare('SELECT COUNT(*) as c FROM favourite_observations');
+const countRecentRows = db.prepare(
+  `SELECT COUNT(*) as c FROM favourite_observations WHERE timestamp >= @since`
+);
 
 const insertMany = db.transaction((rows) => {
   const before = countRows.get().c;
@@ -53,7 +57,7 @@ const parseCronIntervalMinutes = (cron) => {
   return match ? parseInt(match[1], 10) : 10;
 };
 const fetchIntervalMinutes = parseCronIntervalMinutes(config.fetchFavouritePeriod);
-// Fetch window = interval + 2 min buffer
+// Fetch window = interval + 2 min overlap, so it updates observations that might have been missed in the previous fetch.
 const fetchWindowMinutes = fetchIntervalMinutes + 2;
 logger.info(`Fetch interval: ${fetchIntervalMinutes} min, window: ${fetchWindowMinutes} min`);
 
@@ -61,9 +65,16 @@ logger.info('Starting favourite stations weather data fetcher...');
 nodeCron.schedule(config.fetchFavouritePeriod, async () => {
   logger.info('Favourite stations data fetcher triggered');
 
+  // If DB has no recent data (e.g. fresh start), backfill 24h; otherwise use normal window
+  const since10min = new Date();
+  since10min.setMinutes(since10min.getMinutes() - 10);
+  const hasRecentData = countRecentRows.get({ since: since10min.toISOString() }).c > 0;
+  const windowMinutes = hasRecentData ? fetchWindowMinutes : 24 * 60;
+  if (!hasRecentData) logger.info('No recent data found — fetching 24h backfill');
+
   // Build URL with explicit parameters and only enabled stations
   const startTime = new Date();
-  startTime.setMinutes(startTime.getMinutes() - fetchWindowMinutes);
+  startTime.setMinutes(startTime.getMinutes() - windowMinutes);
   const startISO = startTime.toISOString();
 
   let baseURL = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature' +
@@ -107,6 +118,8 @@ nodeCron.schedule(config.fetchFavouritePeriod, async () => {
     logger.error(`Error inserting observations into SQLite: ${err.message}`);
     return;
   }
+
+  calculateFavouriteDailyAggregates();
 
   // Clean up rows older than configured retention period
   const deleted = deleteOldObservations(config.favouriteRetentionDays);

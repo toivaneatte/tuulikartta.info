@@ -131,7 +131,7 @@ const obsToStation = (obs) => {
     wawa:        obs.wawa,
     t2m:         obs.t2m,
     n_man:       obs.n_man,
-    r_1h:        obs.r_1h,
+    rr_1h:       obs.r_1h,
     snow_aws:    obs.snow_aws,
     pressure:    obs.pressure,
     rh:          obs.rh,
@@ -191,7 +191,7 @@ weatherRouter.get('/latest', async (req, res) => {
       ? Math.abs(new Date(timestamp).getTime() - new Date(closest.timestamp).getTime())
       : Infinity;
 
-    if (closest && diffMs <= 5 * 60 * 1000) {
+    if (closest && diffMs <= 10 * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(closest.timestamp);
       logger.info(`SQLite hit for time=${timestamp}, snapshot at ${closest.timestamp} (diff: ${Math.round(diffMs / 60000)} min, ${rows.length} stations)`);
       return res.send(rows.map(obsToStation));
@@ -199,8 +199,9 @@ weatherRouter.get('/latest', async (req, res) => {
 
     // Not in SQLite, fetch the observations for the requested timestamp from FMI API.
     // Is not stored in sql since this is a historical request.
-    logger.info(`No SQLite data within 5 min of ${timestamp}, fetching from FMI API`);
-    const endTime = new Date(timestamp);
+    // Use endtime = timestamp - 2min to avoid requesting data not yet published by FMI.
+    logger.info(`No SQLite data within 10 min of ${timestamp}, fetching from FMI API`);
+    const endTime = new Date(new Date(timestamp).getTime() - 2 * 60 * 1000);
     const startTime = new Date(endTime.getTime() - 10 * 60 * 1000);
     const url = `${config.FMIWeatherURL}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
     let observations;
@@ -262,8 +263,7 @@ weatherRouter.get('/latest', async (req, res) => {
     logger.error(`Error storing map_observations: ${err.message}`);
   }
 
-  // Fire and forget: update daily aggregates in the background, respond immediately
-  fetchDailyAggregates(null).catch(err => logger.error(`Daily aggregates background error: ${err.message}`));
+  await fetchDailyAggregates(null);
   const freshRow = getLatestMapTimestamp.get();
   const rows = getMapObsByTimestamp.all(freshRow.timestamp);
   res.send(rows.map(obsToStation));

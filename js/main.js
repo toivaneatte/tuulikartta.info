@@ -527,6 +527,7 @@ var saa = globalThis.saa;
       if (param === 'rr_1h' || param === 'ri_10min' || param === 'rr_1d' ) {
         if(parseFloat(saa.Tuulikartta.data[i][param]) > 0) {
           var fillColor = Tuulikartta.resolvePrecipitationAmount(saa.Tuulikartta.data[i][param])
+          if (!fillColor) continue
           var hex = fillColor.substr(1)
           hex = 'hex' + hex
           if (saa.Tuulikartta.data[i][param] !== null && parseFloat(saa.Tuulikartta.data[i][param]) > 0) {
