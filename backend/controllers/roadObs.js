@@ -45,12 +45,20 @@ roadRouter.get('/obs', async (req, res) => {
 
     let historicData = [];
 
+    let first = true;
+    
     for (const station of metaResponse.features) {
       let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
       let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
+      if (first) {
+        logger.debug("FIRST STATION HISTORY URL:", historicURL);
+      }
       const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
       let mergedData = mergeHistoricData(station, stationData, historyResponse);
       historicData.push(mergedData);
+      if (first) {
+        first = false;
+      }
     }
 
     // parse the responses and return the observations
@@ -96,12 +104,20 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
     let historicData = [];
 
+let first = true;
+    
     for (const station of metaResponse.features) {
       let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
       let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
+      if (first) {
+        logger.debug("FIRST STATION HISTORY URL:", historicURL);
+      }
       const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
       let mergedData = mergeHistoricData(station, stationData, historyResponse);
       historicData.push(mergedData);
+      if (first) {
+        first = false;
+      }
     }
 
     // parse the responses and return the observations
