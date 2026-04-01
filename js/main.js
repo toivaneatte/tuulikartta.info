@@ -22,11 +22,12 @@ var saa = globalThis.saa;
   saa.Tuulikartta.data = []
   saa.Tuulikartta.debugvalue = false
   saa.Tuulikartta.timeValue = 'now'
+  window.favouritesMode = false
   saa.Tuulikartta.timeStamp = ''
   saa.Tuulikartta.markerGroupSynop = L.layerGroup()
   saa.Tuulikartta.markerGroupRoad = L.layerGroup()
   var emptymarker = []
-  var showForeignObservations = localStorage.getItem('foreignObservations') ? localStorage.getItem('foreigObservations') : false
+  var showForeignObservations = localStorage.getItem('foreignObservations') ? localStorage.getItem('foreignObservations') : false
 
   saa.Tuulikartta.graphIds = ""
 
@@ -74,6 +75,7 @@ var saa = globalThis.saa;
     window.longitude = lon
     window.zoomlevel = zoom
     window.selectedParameter = initParam
+    window.startPosition = window.resolveGraphStartposition(initParam)
   }
 
   // ---------------------------------------------------------
@@ -275,6 +277,26 @@ var saa = globalThis.saa;
        }
      })
      map.addControl(new trafficCamControl());
+
+    /* favourites control */
+    var favouritesControl = L.Control.extend({
+      options: {
+        position: 'topright'
+      },
+      onAdd: function (map) {
+        var container = L.DomUtil.create(
+          'div', 'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-favourites'
+        )
+        container.title = 'Suosikit'
+        container.onclick = function () {
+          window.favouritesMode = !window.favouritesMode
+          $(this).toggleClass('active')
+          saa.Tuulikartta.requestData()
+        }
+        return container
+      }
+    })
+    map.addControl(new favouritesControl());
 //TÄHÄN ASTI KOMMENTOINTIA
     var infoControl = L.Control.extend({
       options: {
@@ -353,11 +375,13 @@ var saa = globalThis.saa;
 
   Tuulikartta.drawData = function (param) {
 
-    if(!saa.Tuulikartta.showStationObservations) return false
+    if(!saa.Tuulikartta.showStationObservations && !saa.Tuulikartta.showRoadObservations) return false
     Tuulikartta.clearMarkers()
 
     var sizeofdata = parseInt(Object.keys(saa.Tuulikartta.data).length)
-    saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    if (saa.Tuulikartta.showStationObservations) { 
+      saa.Tuulikartta.markerGroupSynop.addTo(saa.Tuulikartta.map)
+    }
     if (saa.Tuulikartta.showRoadObservations) {
       saa.Tuulikartta.markerGroupRoad.addTo(saa.Tuulikartta.map)
     }
@@ -378,7 +402,11 @@ var saa = globalThis.saa;
       interactive: false
     })
 
+    console.log("One random data set: ", saa.Tuulikartta.data[30]) // for debugging
+    
     for (var i = 0; i < sizeofdata; i++) {
+      if (!saa.Tuulikartta.data[i]) continue
+
       var location = { lat: parseFloat(saa.Tuulikartta.data[i]['lat']), lng: parseFloat(saa.Tuulikartta.data[i]['lon']) }
       var time = Tuulikartta.timeTotime(saa.Tuulikartta.data[i]['epochtime'])
       var latlon = saa.Tuulikartta.data[i]['lat'] + ',' + saa.Tuulikartta.data[i]['lon']
@@ -504,6 +532,7 @@ var saa = globalThis.saa;
       if (param === 'rr_1h' || param === 'ri_10min' || param === 'rr_1d' ) {
         if(parseFloat(saa.Tuulikartta.data[i][param]) > 0) {
           var fillColor = Tuulikartta.resolvePrecipitationAmount(saa.Tuulikartta.data[i][param])
+          if (!fillColor) continue
           var hex = fillColor.substr(1)
           hex = 'hex' + hex
           if (saa.Tuulikartta.data[i][param] !== null && parseFloat(saa.Tuulikartta.data[i][param]) > 0) {
@@ -619,8 +648,8 @@ var saa = globalThis.saa;
       }
 
       if (param === 'rVal') {
-        // Handle R-values - only for magnetometer stations
-        if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
+        // Handle R-values - only for R stations
+        if (saa.Tuulikartta.data[i]['type'] === 'R') {
           var paramValue = saa.Tuulikartta.data[i]['rVal']
           if (paramValue !== null && paramValue !== undefined) {
             var fillColor = Tuulikartta.resolveRProbability(saa.Tuulikartta.data[i]['rProb'])
@@ -639,11 +668,53 @@ var saa = globalThis.saa;
             saa.Tuulikartta.data[i]['fmisid']),{
               maxWidth: maxWidth
             })
-            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
             marker.type = saa.Tuulikartta.data[i]['type']
+            // missing fmisid required for graph call
           }
         }
       }
+
+      if(param === 'magnetism') {
+        // Handle magnetic field - only for magnetometer stations
+        if (saa.Tuulikartta.data[i]['type'] === 'magnetometer') {
+          var paramValues = saa.Tuulikartta.data[i]
+          var X = paramValues['X']
+          var Y = paramValues['Y']
+          var Z = paramValues['Z']
+
+          var labelHtml = ''
+          if (X!== null && X !== undefined) {
+            labelHtml += '<div>X: ' + parseFloat(X) + '</div>'
+          }
+          if (Y !== null && Y !== undefined) {
+            labelHtml += '<div>Y: ' + parseFloat(Y) + '</div>'
+          }
+          if (Z !== null && Z !== undefined) {
+            labelHtml += '<div>Z: ' + parseFloat(Z) + '</div>'
+          }
+          if (labelHtml === '') continue
+
+          var icon = L.divIcon({
+            iconSize: null,
+            className: 'air-radio-label',
+            iconAnchor: [10, 22],
+            html: labelHtml
+          })
+
+          var marker = L.marker(
+            [saa.Tuulikartta.data[i]['lat'], saa.Tuulikartta.data[i]['lon']],
+            { icon: icon, interactive: true, keyboard: true }
+          )
+
+            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
+            saa.Tuulikartta.data[i]['fmisid']),{
+              maxWidth: maxWidth
+            })
+            marker.type = 'magnetometer'
+            marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+          }
+        }
 
       if (param === 'dewpoint'|| param === 't2m'|| param === 'tmin' || param === 'tmax') {
 
@@ -727,7 +798,7 @@ var saa = globalThis.saa;
             })
 
           if (saa.Tuulikartta.data[i]['type'] === 'road') {
-            marker.addTo(saa.Tuulikartta.markerGroupRoad)
+            continue
           } else {
             marker.addTo(saa.Tuulikartta.markerGroupSynop)
           }
@@ -966,8 +1037,11 @@ var saa = globalThis.saa;
                 keyboard: false,
                 icon: Tuulikartta.createLabelIcon(hex, parseFloat(saa.Tuulikartta.data[i][param]).toFixed(1))
               })
-
-            marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+            } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+            }
             marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
             saa.Tuulikartta.data[i]['fmisid']),{
               maxWidth: maxWidth
@@ -984,7 +1058,11 @@ var saa = globalThis.saa;
               keyboard: false,
               icon: Tuulikartta.createLabelIcon('textLabelclass', '–')
             })
-          marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          if (saa.Tuulikartta.data[i]['type'] === 'synop') {
+              marker.addTo(saa.Tuulikartta.markerGroupSynop)
+          } else {
+              marker.addTo(saa.Tuulikartta.markerGroupRoad)
+          }
           marker.bindPopup(saa.Tuulikartta.populateInfoWindow(saa.Tuulikartta.data[i],
           saa.Tuulikartta.data[i]['fmisid']),{
             maxWidth: maxWidth
@@ -1068,6 +1146,10 @@ var saa = globalThis.saa;
     return 4
     else if(value === 'air_activity')
     return 5
+    else if(value === 'magnetism')
+    return 6
+    else if(value === 'snow_aws')
+    return 7
     else
     return 1
   }

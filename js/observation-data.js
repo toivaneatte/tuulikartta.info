@@ -60,6 +60,8 @@ var saa = saa || {};
               data: {},
               error: function () {
                 document.body.style.cursor = 'default'
+                saa.Tuulikartta.dataLoader(false)
+                saa.Tuulikartta.map.spin(false)
               },
               success: function (data) {
                 saa.Tuulikartta.dataLoader(false)
@@ -79,6 +81,7 @@ var saa = saa || {};
 
         } else {
           Tuulikartta.debug(`No data files found`)
+          console.log("Data not found, asking from getdata.php")
           Tuulikartta.requestData()
         }
 
@@ -93,6 +96,8 @@ var saa = saa || {};
           data: {},
           error: function () {
             document.body.style.cursor = 'default'
+            saa.Tuulikartta.dataLoader(false)
+            saa.Tuulikartta.map.spin(false)
           },
           success: function (data) {
             saa.Tuulikartta.dataLoader(false)
@@ -123,10 +128,14 @@ var saa = saa || {};
       dataType: 'json',
       url: 'php/getdata.php',
       data: {
-        time: saa.Tuulikartta.timeValue
+        time: saa.Tuulikartta.timeValue,
+        favourites: window.favouritesMode ? "1" : "0"
       },
-      error: function () {
+      error: function (err) {
         document.body.style.cursor = 'default'
+        saa.Tuulikartta.dataLoader(false)
+        saa.Tuulikartta.map.spin(false)
+        console.log("Tuulikartta data error!!", err)
       },
       success: function (data) {
         saa.Tuulikartta.dataLoader(false)
@@ -159,6 +168,7 @@ var saa = saa || {};
         },
         success: function (data) {
           var timeString = data['dimension']
+          if (!timeString) { Tuulikartta.callData(); return; }
           var timeArray = timeString.split('/')
           var endTime = moment.utc(timeArray[1]).toISOString()
           saa.Tuulikartta.timeStamp = endTime

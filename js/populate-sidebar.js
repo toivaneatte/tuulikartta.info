@@ -7,7 +7,7 @@ var saa = saa || {};
     html += '<h1>'+translations[window.selectedLanguage]['settings']+'</h1>'
     html += '<input id="show-observations" type="checkbox" checked> '+translations[window.selectedLanguage]['showObservations'] 
     html += '<br/>'
-    html += '<input id="road-observations" type="checkbox" checked> '+translations[window.selectedLanguage]['roadObs']
+    html += '<input id="road-observations" type="checkbox"> '+translations[window.selectedLanguage]['roadObs']
     html += '<br/>'
     html += '<br/>'
     html += '<span><b>'+translations[window.selectedLanguage]['layerOpacity']+'</b></span>'
@@ -94,6 +94,8 @@ var saa = saa || {};
     output += `<div id="weather-chart-${fmisid}_alt2"></div>`
     output += `<div id="weather-chart-${fmisid}_radiation"></div>`
     output += `<div id="weather-chart-${fmisid}_air_radio"></div>`
+    output += `<div id="weather-chart-${fmisid}_magnetometer"></div>`
+    output += `<div id="weather-chart-${fmisid}_snow"></div>`
     output += '</div>'
     output += `</div>`
 

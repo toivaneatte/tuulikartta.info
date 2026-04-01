@@ -1,7 +1,10 @@
 <?php
+ob_start();
+error_reporting(0);
+set_time_limit(300);
 require_once("dataMiner.php");
-header('Content-Type: application/json');
 
+$output = '';
 try {
     $latlon      = filter_input(INPUT_GET, 'latlon', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $fmisid      = filter_input(INPUT_GET, 'fmisid', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -49,10 +52,20 @@ try {
         $settings["fmisid"]         = $fmisid;
 
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+
+        $snowSettings = array();
+        $snowSettings["parameters"]     = "snow";
+        $snowSettings["storedquery_id"] = "fmi::observations::weather::daily::multipointcoverage";
+        $snowSettings["fmisid"]         = $fmisid;
+
+        try {
+            $snowObs = $dataMiner->multipointcoverage($timestamp,$snowSettings,true,21);
+        } catch (Exception $e) {
+            $snowObs = [];
+        }
     }
 
     if ($type == 'radiation') {
-
         $settings = array();
         $settings["stationtype"]    = "radiation";
         $settings["parameters"]     = "DR_PT10M_avg";
@@ -61,6 +74,12 @@ try {
         $settings["timestep"]       = "10";
 
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+      /* this does not work yet... TODO
+        $url = "http://backend:3000/api/radiation/external/" . $fmisid . "?time=" . urlencode($timestamp);
+        $response = file_get_contents($url);
+        $obs = json_decode($response, true) ?? [];
+        error_log("Radiation Obs: " . $response);
+        */
     }
 
     if ($type == 'air_radio') {
@@ -69,6 +88,25 @@ try {
         $settings["fmisid"] = $fmisid;
 
         $obs = $dataMiner->nuclideMultipointcoverage($timestamp, $settings, true);
+    }
+
+    if ($type == 'magnetometer') {
+
+        $settings = array();
+        $settings["parameters"]     = "MAGNX_PT1M_AVG,MAGNY_PT1M_AVG,MAGNZ_PT1M_AVG";
+        $settings["storedquery_id"] = "fmi::observations::magnetometer::simple";
+        $settings["bbox"]           = "16.58,58.81,34.8,70.61,epsg::4326";
+        $settings["timestep"]       = "10";
+
+        $obs = $dataMiner->magnetometer($timestamp,$settings,true);
+
+        // magnetometer data can not be filtered in api call so we need to filter it here
+        foreach ($obs as $key => $data) {
+          if ($data['fmisid'] !== $fmisid) {
+            unset($obs[$key]);
+          }
+        }
+        $obs = array_values($obs); // reindex array after unsetting
     }
 
     $combinedData = [];
@@ -82,10 +120,28 @@ try {
         $hasWindData = isset($combinedData["obs"][0]['ws_10min']) || isset($combinedData["obs"][0]['wd_10min']);
     }
     $winddirections = $hasWindData ? resolveWindDirection($combinedData) : [];
-    print json_encode(formatHighChart($combinedData, $winddirections));
+    $result = formatHighChart($combinedData, $winddirections);
+
+    if (!empty($snowObs)) {
+        $result['obs']['snow_aws'] = [];
+        foreach ($snowObs as $obs) {
+            $val = isset($obs['snow_aws']) ? $obs['snow_aws'] : (isset($obs['snow']) ? $obs['snow'] : null);
+            if ($val !== null && $val > 0) {
+                $result['obs']['snow_aws'][] = [$obs['epochtime'] * 1000, floatval($val)];
+            } else {
+                $result['obs']['snow_aws'][] = [$obs['epochtime'] * 1000, null];
+            }
+        }
+    }
+
+    $output = json_encode($result);
 } catch (Exception $e) {
-    print json_encode(array('error' => $e->getMessage()));
+    $output = json_encode(array('error' => $e->getMessage()));
 }
+
+ob_end_clean();
+header('Content-Type: application/json');
+echo $output;
 
 /**
  *
@@ -234,6 +290,10 @@ function formatHighChart($data, $winddirections) {
       $formattedData[$key]["pb210"] = [];
       $formattedData[$key]["be7"] = [];
       $formattedData[$key]["cs137"] = [];
+      $formattedData[$key]["magn_x"] = [];
+      $formattedData[$key]["magn_y"] = [];
+      $formattedData[$key]["magn_z"] = [];
+      $formattedData[$key]["snow_aws"] = [];
     }
 
     foreach($data as $key => $dataArray) {
@@ -357,8 +417,21 @@ function formatHighChart($data, $winddirections) {
           array_push($formattedData['obs']['rr1h_calc'], $tmp);
         }
 
+        // snow_aws
+        if(isset($array['snow_aws']) && $array['snow_aws'] !== null && $array['snow_aws'] !== '') {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, floatval($array['snow_aws']));
+          array_push($formattedData['obs']['snow_aws'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['snow_aws'], $tmp);
+        }
+
         // radiation (DR_PT10M_avg)
-        if(!empty($array['DR_PT10M_avg'])) {
+        if(isset($array['DR_PT10M_avg']) && $array['DR_PT10M_avg'] !== null) {
           $tmp = [];
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, $array['DR_PT10M_avg']);
@@ -392,6 +465,43 @@ function formatHighChart($data, $winddirections) {
           array_push($tmp, $array['epochtime']*1000);
           array_push($tmp, $cs137Value);
           array_push($formattedData['obs']['cs137'], $tmp);
+        }
+
+        // Magnetometer X
+        if(!empty($array['X'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['X']);
+          array_push($formattedData['obs']['magn_x'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['magn_x'], $tmp);
+        }
+        // Magnetometer Y
+        if(!empty($array['Y'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['Y']);
+          array_push($formattedData['obs']['magn_y'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['magn_y'], $tmp);
+        }
+        // Magnetometer Z
+        if(!empty($array['Z'])) {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, $array['Z']);
+          array_push($formattedData['obs']['magn_z'], $tmp);
+        } else {
+          $tmp = [];
+          array_push($tmp, $array['epochtime']*1000);
+          array_push($tmp, null);
+          array_push($formattedData['obs']['magn_z'], $tmp);
         }
 
         $i++;

@@ -8,8 +8,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 
 WORKDIR /var/www/html/
 
+# Copy apache configuration 
+COPY apache-proxy.conf /etc/apache2/sites-available/000-default.conf
 # Enable required Apache modules
-RUN a2enmod rewrite headers
+RUN a2enmod rewrite headers proxy proxy_http
 
 # Copy package files first for better caching
 COPY package*.json ./
