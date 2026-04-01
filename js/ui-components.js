@@ -321,10 +321,11 @@ var saa = saa || {};
       ],
     });
     // Show synop stations first, then air_radio stations, then radiation stations, then magnetometer stations
-    var synopData = saa.Tuulikartta.data.filter(function(s) { return s.type === 'synop'; });
-    var airRadioData = saa.Tuulikartta.data.filter(function(s) { return s.type === 'air_radio'; });
-    var radiationData = saa.Tuulikartta.data.filter(function(s) { return s.type === 'radiation'; });
-    var magnetometerData = saa.Tuulikartta.data.filter(function(s) { return s.type === 'magnetometer'; });
+    var allData = Array.isArray(saa.Tuulikartta.data) ? saa.Tuulikartta.data : Object.values(saa.Tuulikartta.data || {})
+    var synopData = allData.filter(function(s) { return s.type === 'synop'; });
+    var airRadioData = allData.filter(function(s) { return s.type === 'air_radio'; });
+    var radiationData = allData.filter(function(s) { return s.type === 'radiation'; });
+    var magnetometerData = allData.filter(function(s) { return s.type === 'magnetometer'; });
     table.setData(synopData.concat(airRadioData).concat(radiationData).concat(magnetometerData))
   }
 
