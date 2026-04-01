@@ -4,8 +4,9 @@ date_default_timezone_set('Europe/Helsinki');
 header('Content-Type: application/json');
 
 // URLs for backend API endpoints: weather, radioation and cameras.
-$backendUrlWeather = "http://backend:3000/api/weather/latest";
-//$backendUrlWeather = "http://backend:3000/api/weather/favourites";
+$backendUrlWeather = isset($_GET["favourites"]) && $_GET["favourites"] === "1"
+  ? "http://backend:3000/api/weather/favourites"
+  : "http://backend:3000/api/weather/latest";
 $backendUrlRValues = "http://backend:3000/api/radiation/rvalue";
 $backendUrlExternalRadiation = "http://backend:3000/api/radiation/external";
 $backendUrlNuclides = "http://backend:3000/api/radiation/nuclides";

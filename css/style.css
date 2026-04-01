@@ -658,6 +658,21 @@ input[type=range]:focus::-ms-fill-upper {
 .leaflet-control-select-flash:hover, .leaflet-control-select-flash.active {
   background-image: url(../symbols/flash_blue.png);
 }
+.leaflet-control-select-favourites {
+  background-image: url(../symbols/favourites.png);
+  background-repeat: no-repeat;
+  background-size: 70%;
+  background-position: center;
+  background-color: white;
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.leaflet-control-select-favourites:hover,
+.leaflet-control-select-favourites.active {
+  background-image: url(../symbols/favourites_active.png);
+}
 .leaflet-div-icon {
   background: rgba(0,0,0,0);
   border: 1px solid rgba(0,0,0,0);
