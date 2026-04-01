@@ -9,10 +9,47 @@ const stubObservationData = () => {
 }
 
 const stubCameraData = () => {
-  cy.intercept('GET', '**/api/weathercam/v1/stations', { fixture: 'camera-stations.json' }).as('cameraStations')
-  cy.intercept('GET', '**/api/weathercam/v1/stations/data', { fixture: 'camera-stations-data.json' }).as('cameraStationsData')
-  cy.intercept('GET', '**/api/weathercam/v1/stations/*/data', { fixture: 'camera-station-detail-data.json' }).as('cameraStationData')
-  cy.intercept('GET', '**/api/weathercam/v1/stations/*', { fixture: 'camera-station-detail.json' }).as('cameraStation')
+  const nowIso = new Date().toISOString()
+
+  cy.fixture('camera-stations.json').then((stationsBody) => {
+    stationsBody.features.forEach((feature) => {
+      feature.properties.dataUpdatedTime = nowIso
+      feature.properties.presets.forEach((preset) => {
+        preset.measuredTime = nowIso
+      })
+    })
+
+    cy.intercept('GET', /\/api\/weathercam\/v1\/stations(?:\?.*)?$/, stationsBody).as('cameraStations')
+  })
+
+  cy.fixture('camera-stations-data.json').then((stationsDataBody) => {
+    stationsDataBody.stations.forEach((station) => {
+      station.dataUpdatedTime = nowIso
+      station.presets.forEach((preset) => {
+        preset.measuredTime = nowIso
+      })
+    })
+
+    cy.intercept('GET', /\/api\/weathercam\/v1\/stations\/data(?:\?.*)?$/, stationsDataBody).as('cameraStationsData')
+  })
+
+  cy.fixture('camera-station-detail.json').then((stationDetailBody) => {
+    stationDetailBody.properties.dataUpdatedTime = nowIso
+    stationDetailBody.properties.presets.forEach((preset) => {
+      preset.measuredTime = nowIso
+    })
+
+    cy.intercept('GET', /\/api\/weathercam\/v1\/stations\/[^/]+(?:\?.*)?$/, stationDetailBody).as('cameraStation')
+  })
+
+  cy.fixture('camera-station-detail-data.json').then((stationDetailDataBody) => {
+    stationDetailDataBody.dataUpdatedTime = nowIso
+    stationDetailDataBody.presets.forEach((preset) => {
+      preset.measuredTime = nowIso
+    })
+
+    cy.intercept('GET', /\/api\/weathercam\/v1\/stations\/[^/]+\/data(?:\?.*)?$/, stationDetailDataBody).as('cameraStationData')
+  })
 }
 
 describe('main.js (stubbed)', () => {
@@ -46,6 +83,8 @@ describe('main.js (stubbed)', () => {
       .should('be.visible')
       .click()
 
+    cy.wait('@cameraStations')
+
     cy.get('#map .leaflet-control-select-cam').should('have.class', 'active')
 
     cy.window({ timeout: 30000 }).should((win) => {
@@ -75,6 +114,8 @@ describe('main.js (stubbed)', () => {
       .should('be.visible')
       .click()
 
+    cy.wait('@cameraStations')
+
     cy.window({ timeout: 30000 }).should((win) => {
       expect(win.saa.camera.markers.getLayers().length).to.be.greaterThan(0)
     })
@@ -91,64 +132,30 @@ describe('main.js (stubbed)', () => {
   })
 
   it('should go 1 hour back in time when the time picker button is clicked', () => {
-    const parsePickerTime = (dateStr, timeStr) => {
-      const [day, month, year] = dateStr.split('.').map((val) => Number(val))
-      const [hour, minute] = timeStr.split(':').map((val) => Number(val))
-      return new Date(year, month - 1, day, hour, minute, 0, 0)
-    }
-
-    const toTwoDigits = (value) => String(value).padStart(2, '0')
-
-    const formatDate = (date) => {
-      const day = toTwoDigits(date.getDate())
-      const month = toTwoDigits(date.getMonth() + 1)
-      const year = date.getFullYear()
-      return `${day}.${month}.${year}`
-    }
-
-    const formatTime = (date) => {
-      const hour = toTwoDigits(date.getHours())
-      const minute = toTwoDigits(date.getMinutes())
-      return `${hour}:${minute}`
-    }
+    // set a specific data and time to avoid flaky default values
+    const seededDate = '01-04-2026'
+    const seededTime = '12:30'
 
     cy.get('#datepicker-button', { timeout: 20000 })
-      .should('not.have.value', '')
-      .invoke('val')
-      .then((dateBefore) => {
-        cy.get('#clockpicker-button', { timeout: 20000 })
-          .should('not.have.value', '')
-          .invoke('val')
-          .then((timeBefore) => {
-            const beforeDate = parsePickerTime(dateBefore, timeBefore)
-            expect(Number.isNaN(beforeDate.getTime()), 'before time parses').to.equal(false)
+      .clear({ force: true })
+      .type(seededDate, { force: true })
 
-            const expectedDate = new Date(beforeDate.getTime() - 60 * 60 * 1000)
-            const expectedDateStr = formatDate(expectedDate)
-            const expectedTimeStr = formatTime(expectedDate)
+    cy.get('#clockpicker-button', { timeout: 20000 })
+      .clear({ force: true })
+      .type(seededTime, { force: true })
 
-            cy.get('#timepicker-regress-time', { timeout: 20000 }).should('be.visible').click()
+    cy.get('#timepicker-regress-time', { timeout: 20000 }).should('be.visible').click()
 
-            cy.get('#datepicker-button', { timeout: 20000 })
-              .should('not.have.value', '')
-              .invoke('val')
-              .then((dateAfter) => {
-                cy.get('#clockpicker-button', { timeout: 20000 })
-                  .should('not.have.value', '')
-                  .invoke('val')
-                  .then((timeAfter) => {
-                    expect(dateAfter).to.equal(expectedDateStr)
-                    expect(timeAfter).to.equal(expectedTimeStr)
-                  })
-              })
-          })
-      })
+    cy.get('#datepicker-button', { timeout: 20000 }).should('have.value', '01.04.2026')
+    cy.get('#clockpicker-button', { timeout: 20000 }).should('have.value', '11:30')
   })
 
   it('should remove camera markers when the camera toggle is disabled', () => {
     cy.get('#map .leaflet-control-select-cam', { timeout: 20000 })
       .should('be.visible')
       .click()
+
+    cy.wait('@cameraStations')
 
     cy.window({ timeout: 30000 }).should((win) => {
       expect(win.saa.Tuulikartta.map.hasLayer(win.saa.camera.markers)).to.equal(true)
