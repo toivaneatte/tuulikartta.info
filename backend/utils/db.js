@@ -66,6 +66,13 @@ db.exec(`
 
 logger.info('SQLite schema ready');
 
+// Add daily aggregate columns to map_observations and favourite_observations if they don't exist yet
+const dailyColumns = ['wg_1d', 'ws_1d', 'tmax', 'tmin', 'rr_1d', 'wg_max_dir', 'ws_max_dir'];
+for (const col of dailyColumns) {
+  try { db.exec(`ALTER TABLE map_observations ADD COLUMN ${col} REAL`); } catch (e) {}
+  try { db.exec(`ALTER TABLE favourite_observations ADD COLUMN ${col} REAL`); } catch (e) {}
+}
+
 // Delete observations older than retentionDays. Returns number of deleted rows.
 const deleteOldObservations = (retentionDays) => {
   const cutoff = new Date();
@@ -128,6 +135,27 @@ const getClosestFavouritePerStation = db.prepare(`
   )
 `);
 
+// Updates daily aggregate columns for a specific fmisid + timestamp row
+const updateMapObsDailyValues = db.prepare(`
+  UPDATE map_observations
+  SET wg_1d=@wg_1d, ws_1d=@ws_1d, tmax=@tmax, tmin=@tmin, rr_1d=@rr_1d,
+      wg_max_dir=@wg_max_dir, ws_max_dir=@ws_max_dir
+  WHERE fmisid=@fmisid AND timestamp=@timestamp
+`);
+
+// Updates daily aggregate columns for a specific fmisid + timestamp in favourite_observations
+const updateFavouriteDailyValues = db.prepare(`
+  UPDATE favourite_observations
+  SET wg_1d=@wg_1d, ws_1d=@ws_1d, tmax=@tmax, tmin=@tmin, rr_1d=@rr_1d,
+      wg_max_dir=@wg_max_dir, ws_max_dir=@ws_max_dir
+  WHERE fmisid=@fmisid AND timestamp=@timestamp
+`);
+
+// Returns all favourite_observations rows from the given timestamp onwards, ordered for aggregate calc
+const getFavouriteObsSince = db.prepare(`
+  SELECT * FROM favourite_observations WHERE timestamp >= ? ORDER BY fmisid ASC, timestamp ASC
+`);
+
 // Delete map_observations older than retentionMinutes
 const deleteOldMapObservations = (retentionMinutes) => {
   const cutoff = new Date(Date.now() - retentionMinutes * 60 * 1000);
@@ -145,6 +173,9 @@ module.exports = {
   getClosestMapTimestamp,
   getMapObsByTimestamp,
   deleteOldMapObservations,
+  updateMapObsDailyValues,
   getLatestFavouritePerStation,
   getClosestFavouritePerStation,
+  updateFavouriteDailyValues,
+  getFavouriteObsSince,
 };

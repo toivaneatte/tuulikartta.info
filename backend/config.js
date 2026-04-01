@@ -38,6 +38,9 @@ const roadCameraURL = "https://tie.digitraffic.fi/api/weathercam/v1/stations";
 // Parameters to fetch for favourite stations (same as all stations)
 const favouriteParameters = 'ri_10min,ws_10min,wg_10min,wd_10min,vis,wawa,t2m,n_man,r_1h,snow_aws,pressure,rh,dewpoint';
 
+// Lightweight parameters for daily aggregate fetch (max gust, max wind, temp, precipitation)
+const dailyAggregateParameters = 'wg_10min,ws_10min,t2m,r_1h,wd_10min';
+
 // Favourite weather stations for the application. The names can be whatever, fmisid is the important part.
 const favouriteStations = [
   { name: 'Tampere-pirkkala lentoasema', fmisid: 101118, onOff: 1 },
@@ -63,7 +66,7 @@ const currentDataMaxAgeMinutes = 10;
 const mapObservationsWindowMinutes = 210;
 
 // fetch data for favourite stations in this period.
-const fetchFavouritePeriod = '*/30 * * * *'
+const fetchFavouritePeriod = '*/10 * * * *'
 /*
 * * * * *
 │ │ │ │ │
@@ -96,4 +99,5 @@ module.exports = {
   favouriteParameters,
   currentDataMaxAgeMinutes,
   mapObservationsWindowMinutes,
+  dailyAggregateParameters,
 };
