@@ -9,7 +9,7 @@ const roadRouter = require('express').Router()
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
-const { mergeHistoricData, parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
+const { parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
 const { parseRoadCameras, parseSingleRoadCamera } = require('../services/parseRoadCameras');
 
 // ---------------------------------------------------------
@@ -43,27 +43,10 @@ roadRouter.get('/obs', async (req, res) => {
       fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
-    let historicData = [];
-
-    let first = true;
-
-    for (const station of metaResponse.features) {
-      let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
-      let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
-      if (first) {
-        logger.debug("FIRST STATION HISTORY URL:", historicURL);
-      }
-      const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
-      let mergedData = mergeHistoricData(station, stationData, historyResponse);
-      historicData.push(mergedData);
-      if (first) {
-        first = false;
-      }
-    }
 
     // parse the responses and return the observations
     logger.info("Road observation metadata and data fetched successfully. Parsing responses...");
-    const observations = await parseRoadObs(metaResponse, historicData, UTCtimestamp);
+    const observations = await parseRoadObs(metaResponse, dataResponse, UTCtimestamp);
     
     res.set('Content-Type', 'application/json');
     res.json(observations);
@@ -102,27 +85,11 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
       fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
-    let historicData = [];
-
-let first = true;
-
-    for (const station of metaResponse.features) {
-      let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
-      let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
-      if (first) {
-        logger.debug("FIRST STATION HISTORY URL:", historicURL);
-      }
-      const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
-      let mergedData = mergeHistoricData(station, stationData, historyResponse);
-      historicData.push(mergedData);
-      if (first) {
-        first = false;
-      }
-    }
+    
 
     // parse the responses and return the observations
     logger.info(`Road observation metadata and data for station ${req.params.stationId} fetched successfully. Parsing responses...`);
-    const observation = await parseSingleRoadObs(metaResponse, historicData, UTCtimestamp);
+    const observation = await parseSingleRoadObs(metaResponse, dataResponse, UTCtimestamp);
     
     res.set('Content-Type', 'application/json');
     res.json(observation);
