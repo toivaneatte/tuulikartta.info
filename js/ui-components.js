@@ -73,7 +73,8 @@ var saa = saa || {};
       'synop': translations[lang]['synop'],
       'air_radio': translations[lang]['air_activity'],
       'radiation': translations[lang]['dose_rate'],
-      'magnetometer': translations[lang]['rVal'],
+      'magnetometer': translations[lang]['magnetism'],
+      'R': translations[lang]['rVal'],
     }
     var table = new Tabulator("#observation-table", {
       layout:"fitDataStretch",
@@ -320,13 +321,14 @@ var saa = saa || {};
         ]},
       ],
     });
-    // Show synop stations first, then air_radio stations, then radiation stations, then magnetometer stations
+    // Show synop stations first, then air_radio stations, then radiation stations, then magnetometer stations, then R-value stations
     var allData = Array.isArray(saa.Tuulikartta.data) ? saa.Tuulikartta.data : Object.values(saa.Tuulikartta.data || {})
     var synopData = allData.filter(function(s) { return s.type === 'synop'; });
     var airRadioData = allData.filter(function(s) { return s.type === 'air_radio'; });
     var radiationData = allData.filter(function(s) { return s.type === 'radiation'; });
     var magnetometerData = allData.filter(function(s) { return s.type === 'magnetometer'; });
-    table.setData(synopData.concat(airRadioData).concat(radiationData).concat(magnetometerData))
+    var rValueData = allData.filter(function(s) { return s.type === 'R'; });
+    table.setData(synopData.concat(airRadioData).concat(radiationData).concat(magnetometerData).concat(rValueData))
   }
 
 }(saa.Tuulikartta = saa.Tuulikartta || {}))

@@ -413,7 +413,8 @@ var saa = globalThis.saa;
 
       if (saa.Tuulikartta.data[i]['type'] === 'air_radio' && param !== 'air_activity') continue
       if (saa.Tuulikartta.data[i]['type'] === 'radiation' && param !== 'dose_rate') continue
-      if (saa.Tuulikartta.data[i]['type'] === 'magnetometer' && param !== 'rVal') continue
+      if (saa.Tuulikartta.data[i]['type'] === 'magnetometer' && param !== 'magnetism') continue
+      if (saa.Tuulikartta.data[i]['type'] === 'R' && param !== 'rVal') continue
 
       if (param == 'ws_10min' || param === 'wg_10min') {
         // Only show wind data for synop and road stations that have wind data
@@ -471,7 +472,7 @@ var saa = globalThis.saa;
       if (param === 'ws_1d' || param === 'wg_1d') {
         // Only show daily wind data for synop and road stations that have wind data
         if (saa.Tuulikartta.data[i]['type'] !== 'radiation' &&
-            saa.Tuulikartta.data[i]['ws_1d'] !== null && saa.Tuulikartta.data[i]['ws_max_dir'] !== null && saa.Tuulikartta.data[i]['wg_max_dir'] !== null &&  saa.Tuulikartta.data[i]['wg_1d'] !== null) {
+            saa.Tuulikartta.data[i]['ws_1d'] != null && saa.Tuulikartta.data[i]['ws_max_dir'] != null && saa.Tuulikartta.data[i]['wg_max_dir'] != null &&  saa.Tuulikartta.data[i]['wg_1d'] != null) {
 
           if (saa.Tuulikartta.data[i][param] < 10) { var iconAnchor = [30, 28] }
           if (saa.Tuulikartta.data[i][param] >= 10) { var iconAnchor = [25, 28] }
