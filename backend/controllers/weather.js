@@ -18,7 +18,7 @@ const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 // ---------------------------------------------------------
 const fetchNewFMIData = async (url) => {
   //logger.debug(`Fetching weather data from FMI API with URL: ${url}`);
-  const xml = await fetch(url).then(r => r.text());
+  const xml = await fetch(url, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
   const observations = await parseFMIMultipointcoverage(xml, config.favouriteParameters);
   logger.info(`Fetched and processed ${observations.length} observations from FMI API.`);
   return observations;
