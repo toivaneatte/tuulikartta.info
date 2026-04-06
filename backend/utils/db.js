@@ -156,6 +156,26 @@ const getFavouriteObsSince = db.prepare(`
   SELECT * FROM favourite_observations WHERE timestamp >= ? ORDER BY fmisid ASC, timestamp ASC
 `);
 
+// Most recent non-null r_1h per station in map_observations at or before a given timestamp
+const getLatestR1hMapObs = db.prepare(`
+  SELECT fmisid, r_1h FROM map_observations
+  WHERE (fmisid, timestamp) IN (
+    SELECT fmisid, MAX(timestamp) FROM map_observations
+    WHERE r_1h IS NOT NULL AND timestamp <= ?
+    GROUP BY fmisid
+  )
+`);
+
+// Most recent non-null r_1h per station in favourite_observations at or before a given timestamp
+const getLatestR1hFavObs = db.prepare(`
+  SELECT fmisid, r_1h FROM favourite_observations
+  WHERE (fmisid, timestamp) IN (
+    SELECT fmisid, MAX(timestamp) FROM favourite_observations
+    WHERE r_1h IS NOT NULL AND timestamp <= ?
+    GROUP BY fmisid
+  )
+`);
+
 // Delete map_observations older than retentionMinutes
 const deleteOldMapObservations = (retentionMinutes) => {
   const cutoff = new Date(Date.now() - retentionMinutes * 60 * 1000);
@@ -178,4 +198,6 @@ module.exports = {
   getClosestFavouritePerStation,
   updateFavouriteDailyValues,
   getFavouriteObsSince,
+  getLatestR1hMapObs,
+  getLatestR1hFavObs,
 };

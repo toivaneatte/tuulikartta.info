@@ -60,9 +60,11 @@ const favouriteRetentionDays = 3;
 
 // How many minutes the latest observation data is considered fresh before re-fetching from FMI
 const currentDataMaxAgeMinutes = 10;
-const fmiApiTimeoutMs = 10000;
 
-// In minutes. For how long the observations are kept in the database.
+// Timeout for FMI API requests (in milliseconds)
+const fmiApiTimeoutMs = 15 * 1000; // 15 seconds
+
+// In minutes. For how long all of the observations are kept in the database.
 // observations older than this are fetched straight from fmi api.
 const mapObservationsWindowMinutes = 210;
 
