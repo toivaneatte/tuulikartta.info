@@ -156,12 +156,12 @@ const getFavouriteObsSince = db.prepare(`
   SELECT * FROM favourite_observations WHERE timestamp >= ? ORDER BY fmisid ASC, timestamp ASC
 `);
 
-// Most recent non-null r_1h per station in map_observations at or before a given timestamp
+// Most recent non-null r_1h per station in map_observations (no timestamp filter, for current data)
 const getLatestR1hMapObs = db.prepare(`
   SELECT fmisid, r_1h FROM map_observations
   WHERE (fmisid, timestamp) IN (
     SELECT fmisid, MAX(timestamp) FROM map_observations
-    WHERE r_1h IS NOT NULL AND timestamp <= ?
+    WHERE r_1h IS NOT NULL
     GROUP BY fmisid
   )
 `);

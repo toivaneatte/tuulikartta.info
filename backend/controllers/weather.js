@@ -211,7 +211,12 @@ weatherRouter.get('/latest', async (req, res) => {
     if (closest && diffMs <= 10 * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(closest.timestamp);
       logger.info(`SQLite hit for time=${timestamp}, snapshot at ${closest.timestamp} (diff: ${Math.round(diffMs / 60000)} min, ${rows.length} stations)`);
-      const r1hMap = buildR1hMap(getLatestR1hMapObs.all(closest.timestamp));
+      let r1hMap = {};
+      try {
+        r1hMap = buildR1hMap(await fetchR1hObservations(new Date(closest.timestamp)));
+      } catch (err) {
+        logger.warn(`Could not fetch r_1h carry-forward: ${err.message}`);
+      }
       return res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
     }
 
@@ -257,7 +262,7 @@ weatherRouter.get('/latest', async (req, res) => {
     if (dataAgeMs < (config.currentDataMaxAgeMinutes + fetchDelayMinutes) * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(latestRow.timestamp);
       logger.info(`SQLite data fresh (age: ${Math.round(dataAgeMs / 1000)}s), returning ${rows.length} stations`);
-      const r1hMap = buildR1hMap(getLatestR1hMapObs.all(latestRow.timestamp));
+      const r1hMap = buildR1hMap(getLatestR1hMapObs.all());
       return res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
     }
   }
@@ -291,7 +296,7 @@ weatherRouter.get('/latest', async (req, res) => {
   await fetchDailyAggregates(null);
   const freshRow = getLatestMapTimestamp.get();
   const rows = getMapObsByTimestamp.all(freshRow.timestamp);
-  const r1hMap = buildR1hMap(getLatestR1hMapObs.all(freshRow.timestamp));
+  const r1hMap = buildR1hMap(getLatestR1hMapObs.all());
   res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
 });
 
