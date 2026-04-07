@@ -28,18 +28,7 @@ const stubCameraData = () => {
       })
     })
 
-    cy.intercept('GET', /\/api\/weathercam\/v1\/stations(?:\?.*)?$/, stationsBody).as('cameraStations')
-  })
-
-  cy.fixture('camera-stations-data.json').then((stationsDataBody) => {
-    stationsDataBody.stations.forEach((station) => {
-      station.dataUpdatedTime = nowIso
-      station.presets.forEach((preset) => {
-        preset.measuredTime = nowIso
-      })
-    })
-
-    cy.intercept('GET', /\/api\/weathercam\/v1\/stations\/data(?:\?.*)?$/, stationsDataBody).as('cameraStationsData')
+    cy.intercept('GET', /\/api\/road\/cameras(?:\?.*)?$/, stationsBody).as('cameraStations')
   })
 
   cy.fixture('camera-station-detail.json').then((stationDetailBody) => {
@@ -48,7 +37,7 @@ const stubCameraData = () => {
       preset.measuredTime = nowIso
     })
 
-    cy.intercept('GET', /\/api\/weathercam\/v1\/stations\/[^/]+(?:\?.*)?$/, stationDetailBody).as('cameraStation')
+    cy.intercept('GET', /\/api\/road\/cameras\/[^/]+(?:\?.*)?$/, stationDetailBody).as('cameraStation')
   })
 
   cy.fixture('camera-station-detail-data.json').then((stationDetailDataBody) => {
@@ -57,7 +46,7 @@ const stubCameraData = () => {
       preset.measuredTime = nowIso
     })
 
-    cy.intercept('GET', /\/api\/weathercam\/v1\/stations\/[^/]+\/data(?:\?.*)?$/, stationDetailDataBody).as('cameraStationData')
+    cy.intercept('GET', /\/api\/road\/cameras\/[^/]+\/history(?:\?.*)?$/, stationDetailDataBody).as('cameraStationData')
   })
 }
 
@@ -92,8 +81,6 @@ describe('main.js (stubbed)', () => {
     cy.get('#map .leaflet-control-select-cam', { timeout: 20000 })
       .should('be.visible')
       .click()
-
-    cy.wait('@cameraStations')
 
     cy.get('#map .leaflet-control-select-cam').should('have.class', 'active')
 
