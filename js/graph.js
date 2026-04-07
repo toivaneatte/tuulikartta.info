@@ -49,7 +49,7 @@ var saa = saa || {};
         document.getElementById("graph-container").className = "expanded";
         weatherGraph.constructWeatherGraph("graph-container", fmisid);
         var latlon = lat + ',' + lon;
-        weatherGraph.getObservationGraph(fmisid, type, null);
+        weatherGraph.getObservationGraph(fmisid, type, null, latlon);
     }
 
 
@@ -59,7 +59,7 @@ var saa = saa || {};
     // Get data for wind graph
     // ---------------------------------------------------------
 
-    weatherGraph.getObservationGraph = function(fmisid,type,timestamp) {
+    weatherGraph.getObservationGraph = function(fmisid,type,timestamp,latlon) {
         if(fmisid !== undefined) {
           saa.Tuulikartta.debug('Getting data for graph... ');
           $('#graph-box-loader').html("<span align=center>"+translations[window.selectedLanguage]['loadObservations']+"... <img src='symbols/default.gif' style='width:20px;'></img></span>");
@@ -70,7 +70,8 @@ var saa = saa || {};
               data: {
                   fmisid: fmisid,
                   type: type,
-                  timestamp: timestamp
+                  timestamp: timestamp,
+                  latlon: latlon
               },
               error: function () {
                   saa.Tuulikartta.debug('An error has occurred');
