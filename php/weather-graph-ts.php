@@ -15,45 +15,22 @@ try {
     $data = [];
     if ($type == 'road') {
         $settings = array();
+        $settings["stationtype"]    = "road";
         $settings["parameters"]     = "ws,wg,wd,vis,prst1,ta,pri";
         $settings["storedquery_id"] = "livi::observations::road::default::multipointcoverage";
-
-        // Road stations use Digitraffic IDs which differ from FMI fmisids.
-        // Use a tight bbox around the station coordinates to find the correct FMI station.
-        if (!empty($latlon)) {
-            $parts = explode(',', $latlon);
-            if (count($parts) == 2) {
-                $lat = floatval($parts[0]);
-                $lon = floatval($parts[1]);
-                $delta = 0.02;
-                $minLon = $lon - $delta;
-                $minLat = $lat - $delta;
-                $maxLon = $lon + $delta;
-                $maxLat = $lat + $delta;
-                $settings["bbox"] = "{$minLon},{$minLat},{$maxLon},{$maxLat},epsg::4326";
-            }
-        }
+        $settings["fmisid"]         = $fmisid;
 
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
-
-        // If bbox returned multiple stations, keep only the first one
-        $firstFmisid = null;
-        $filteredObs = [];
-        foreach ($obs as $observation) {
-            if ($firstFmisid === null) $firstFmisid = $observation['fmisid'];
-            if ($observation['fmisid'] === $firstFmisid) $filteredObs[] = $observation;
-        }
-        $obs = $filteredObs;
-
         $observationData = [];
-        foreach ( $obs as $observation ) {
+        foreach ( $obs as $key => $observation ) {
+
             $tmp = $observation;
             $tmp["datatype"] = "observation";
-            $tmp["station"] = "road";
-            $tmp["ws_10min"] = isset($observation['ws']) ? $observation['ws'] : null;
-            $tmp["wg_10min"] = isset($observation['wg']) ? $observation['wg'] : null;
-            $tmp["wd_10min"] = isset($observation['wd']) ? $observation['wd'] : null;
-            $tmp["t2m"] = isset($observation['ta']) ? $observation['ta'] : null;
+            $tmp["station"] = "synop";
+            $tmp["ws_10min"] = $observation['ws'];
+            $tmp["wg_10min"] = $observation['wg'];
+            $tmp["wd_10min"] = $observation['wd'];
+            $tmp["t2m"] = $observation['ta'];
             unset($tmp["ws"]);
             unset($tmp["wg"]);
             unset($tmp["wd"]);

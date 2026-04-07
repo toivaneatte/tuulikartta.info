@@ -39,11 +39,8 @@ var saa = saa || {};
 
       var fmisid = e.popup._source.fmisid
       var type = e.popup._source.type
-      var markerLatLng = e.popup._source.getLatLng ? e.popup._source.getLatLng() : null
-      var latlon = markerLatLng ? markerLatLng.lat + ',' + markerLatLng.lng : null
       if(type === 'Synop-asema') type = 'synop'
-      if(type === 'Tiesääasema') type = 'road'
-      saa.weatherGraph.getObservationGraph(fmisid,type,saa.Tuulikartta.timeValue,latlon)
+      saa.weatherGraph.getObservationGraph(fmisid,type,saa.Tuulikartta.timeValue)
       $(".owl-carousel").owlCarousel({
         navigation: true,
         slideSpeed: 300,
