@@ -37,6 +37,9 @@ var saa = saa || {};
   // Time Slider - store selected time value
   let selectedTime = null; // Stores time in HH:mm format (e.g., "14:30")
   let selectedTimeMinutes = 0; // Stores time as minutes since midnight (0-1440)
+  let historyByPreset = {}; // { presetId: [{time: UnixMs, url: string}] }
+  let currentPresetId = null; // currently active preset in mainPic
+  let currentSliderTime = null; // currently selected slider time (Unix ms), null = live
 
   // Cache with TTL
   const stationCache = {
@@ -456,12 +459,16 @@ camera.normalizeWeatherStation = function(raw) {
           const local = moment.utc(latestTime).local();
           const formatted = local.format("DD.MM.YYYY HH:mm");
           w.document.getElementById("updateTime").textContent = formatted;
-          camera.initTimeSlider(w, latestTime);
+
+          // Reset history state for this popup
+          historyByPreset = {};
+          currentPresetId = null;
+          currentSliderTime = null;
 
           // Collect presets with images
           const presets = station.properties.presets || [];
           const imagePresets = [];
-          
+
           for (let i = 0; i < presets.length; i++) {
             // Don't show presets not in collection
             if (presets[i].inCollection === false) continue;
@@ -474,15 +481,17 @@ camera.normalizeWeatherStation = function(raw) {
             if (presetUrl) {
               imagePresets.push({ preset: presets[i], url: presetUrl });
             }
-          } 
+          }
 
           // Go trough image presets
           for (let i = 0; i < imagePresets.length; i++) {
             const preset = imagePresets[i].preset;
             const presetTitle = camera.resolvePresetTitle(preset);
             const cleanPresetTitle = presetTitle.replaceAll("_", " ");
-            // Make the HTML image output and insert it into the popup window 
+            // Make the HTML image output and insert it into the popup window
             if (i == 0) {
+              // Track the first (main) preset as current
+              currentPresetId = preset.id;
               // Build the HTML for the image and insert it into the main picture container
               let mainOutput = `<img src="${imagePresets[i].url}"
                                 style="width:97%;
@@ -494,6 +503,7 @@ camera.normalizeWeatherStation = function(raw) {
             } else {
               // Build the HTML for the image and insert it into the thumbnail container
               let output = `<button type="button"
+                            data-preset-id="${preset.id}"
                             onclick="(function(mini){
                               var doc=(mini&&mini.ownerDocument)?mini.ownerDocument:document;
                               var main=doc.getElementById('mainPic');
@@ -513,7 +523,9 @@ camera.normalizeWeatherStation = function(raw) {
                               }
                               var tmpAlt=mainImg.alt;
                               mainImg.alt=miniImg.alt||'';
-                              miniImg.alt=tmpAlt||'';})(this)"
+                              miniImg.alt=tmpAlt||'';
+                              var opener=doc.defaultView&&doc.defaultView.opener;
+                              if(opener&&opener.saa&&opener.saa.camera)opener.saa.camera.setCurrentPreset(mini.dataset.presetId,doc.defaultView||window);})(this)"
                             style="background-color: #ccefff;
                             border-radius: 5px;
                             border: none;
@@ -527,12 +539,18 @@ camera.normalizeWeatherStation = function(raw) {
                             padding: 3px;
                             margin-bottom: 3px;"
                             alt="${cleanPresetTitle}">
-                            <span style="text-align:center; color: black; 
+                            <span style="text-align:center; color: black;
                             padding: 2px;">${cleanPresetTitle}</span>
                             </button>`;
               w.document.getElementById("miniPics").innerHTML += output;
             }
           }
+
+          // Fetch history and initialize slider
+          camera.loadStationHistory(stationId, function(history) {
+            historyByPreset = history;
+            camera.initTimeSlider(w, latestTime, history);
+          });
           // Collect weather data from nearest station, if available
           let nearest = station.properties.nearestWeatherStationId;
           if (nearest != null) { 
@@ -603,46 +621,97 @@ camera.normalizeWeatherStation = function(raw) {
     console.log('Camera cache cleared');
   };
 
+  // Fetch station camera history from backend
+  camera.loadStationHistory = function(stationId, callback) {
+    if (!stationId) { callback({}); return; }
+    const url = `${API_BASE}/${stationId}/history`;
+    $.when(fetchWithTimeout(url))
+      .done(function(data) {
+        const result = {};
+        if (data && data.presets) {
+          for (let i = 0; i < data.presets.length; i++) {
+            const preset = data.presets[i];
+            if (!preset.history || preset.history.length === 0) continue;
+            result[preset.id] = preset.history
+              .map(function(e) { return { time: new Date(e.lastModified).getTime(), url: e.imageUrl }; })
+              .sort(function(a, b) { return a.time - b.time; });
+          }
+        }
+        callback(result);
+      })
+      .fail(function() {
+        console.warn('Failed to load camera history for station:', stationId);
+        callback({});
+      });
+  };
+
+  // Update mainPic to the image closest to the given Unix ms timestamp for the active preset
+  camera.updateImagesForTime = function(w, timestamp) {
+    if (!currentPresetId || !historyByPreset[currentPresetId]) return;
+    const entries = historyByPreset[currentPresetId];
+    if (entries.length === 0) return;
+    const closest = entries.reduce(function(best, e) {
+      return Math.abs(e.time - timestamp) < Math.abs(best.time - timestamp) ? e : best;
+    });
+    const mainPic = w.document.getElementById('mainPic');
+    if (!mainPic) return;
+    const img = mainPic.querySelector('img');
+    if (img) img.src = closest.url;
+  };
+
+  // Update active preset and refresh mainPic for current slider time (called from thumbnail onclick)
+  camera.setCurrentPreset = function(presetId, w) {
+    currentPresetId = presetId;
+    if (currentSliderTime !== null) {
+      camera.updateImagesForTime(w, currentSliderTime);
+    }
+  };
+
   // Time Slider Handler
-  camera.initTimeSlider = function(w, latestTime) {
-    w.console.log('Initializing time slider with latest time:', latestTime);
+  camera.initTimeSlider = function(w, latestTime, history) {
     const timeSlider = w.document.getElementById('timeInput');
     const timeDisplay = w.document.getElementById('timeDisplay');
-    
+
     if (!timeSlider || !timeDisplay) {
       w.console.warn('Time slider elements not found in DOM');
       return;
     }
 
-    // Set min and max values for the slider based on latest camera time
-    timeSlider.min = latestTime;
-    timeSlider.max = latestTime;
-    
-    // Update display when slider changes
+    // Collect all timestamps from history across all presets
+    const allTimes = [];
+    const presetIds = Object.keys(history || {});
+    for (let i = 0; i < presetIds.length; i++) {
+      const entries = history[presetIds[i]];
+      for (let j = 0; j < entries.length; j++) {
+        allTimes.push(entries[j].time);
+      }
+    }
+
+    if (allTimes.length === 0) {
+      // No history available, hide the slider
+      const sliderContainer = w.document.getElementById('timeSlider');
+      if (sliderContainer) sliderContainer.style.display = 'none';
+      return;
+    }
+
+    const minTime = Math.min.apply(null, allTimes);
+    const maxTime = Math.max.apply(null, allTimes);
+
+    timeSlider.min = minTime;
+    timeSlider.max = maxTime;
+    timeSlider.value = maxTime;
+    timeSlider.step = 60 * 1000; // 1 minute in ms
+
+    // Show current time in display
+    timeDisplay.textContent = moment(maxTime).local().format('HH:mm');
+    currentSliderTime = null; // at max = live view
+
     timeSlider.addEventListener('input', function() {
-      const minutes = parseInt(this.value);
-      selectedTimeMinutes = minutes;
-      w.console.log(`Time slider input: ${minutes} minutes`);
-      
-      // Convert minutes to HH:mm format
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      selectedTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-      
-      // Update display
-      timeDisplay.textContent = selectedTime;
-      
-      console.log(`Time slider updated: ${selectedTime} (${minutes} minutes)`);
+      const selected = parseInt(this.value);
+      timeDisplay.textContent = moment(selected).local().format('HH:mm');
+      currentSliderTime = (selected === maxTime) ? null : selected;
+      camera.updateImagesForTime(w, selected);
     });
-    /*
-    // Set initial value to current time
-    const now = new Date();
-    const initialMinutes = now.getHours() * 60 + now.getMinutes();
-    timeSlider.value = initialMinutes;
-    selectedTimeMinutes = initialMinutes;
-    selectedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    timeDisplay.textContent = selectedTime;
-    */
   };
   
   // Public method to get selected time
