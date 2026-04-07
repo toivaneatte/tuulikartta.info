@@ -75,7 +75,21 @@ globalThis.L = {
   layerGroup: function () {
     return {
       clearLayers: function () {},
-      addTo: function () {},
+      addTo: function () { return this; },
+      addLayer: function () { return this; },
+      removeLayer: function () {},
+      getLayers: function () { return []; },
+      hasLayer: function () { return false; },
+    };
+  },
+  markerClusterGroup: function () {
+    return {
+      clearLayers: function () {},
+      addTo: function () { return this; },
+      addLayer: function () { return this; },
+      removeLayer: function () {},
+      getLayers: function () { return []; },
+      hasLayer: function () { return false; },
     };
   },
   Browser: {

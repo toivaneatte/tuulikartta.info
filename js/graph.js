@@ -48,7 +48,6 @@ var saa = saa || {};
         //document.getElementById("weather-chart").innerHTML = '';
         document.getElementById("graph-container").className = "expanded";
         weatherGraph.constructWeatherGraph("graph-container", fmisid);
-        var latlon = lat + ',' + lon;
         weatherGraph.getObservationGraph(fmisid, type, null);
     }
 

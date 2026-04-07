@@ -730,3 +730,23 @@ input[type=range]:focus::-ms-fill-upper {
   text-decoration: none;
   cursor: pointer;
 }
+
+#tuulikartta-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #c0392b;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 9999;
+  white-space: nowrap;
+}
+#tuulikartta-toast.show {
+  opacity: 1;
+}

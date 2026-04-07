@@ -9,6 +9,23 @@ var saa = saa || {};
   'use strict'
 
   // ---------------------------------------------------------
+  // Show a temporary error toast notification
+  // ---------------------------------------------------------
+
+  Tuulikartta.showError = function (message) {
+    var toast = document.getElementById('tuulikartta-toast')
+    if (!toast) {
+      toast = document.createElement('div')
+      toast.id = 'tuulikartta-toast'
+      document.body.appendChild(toast)
+    }
+    toast.textContent = message
+    toast.classList.add('show')
+    clearTimeout(toast._hideTimer)
+    toast._hideTimer = setTimeout(function () { toast.classList.remove('show') }, 5000)
+  }
+
+  // ---------------------------------------------------------
   // Check data validity (< 18 minutes old)
   // ---------------------------------------------------------
 
@@ -131,11 +148,13 @@ var saa = saa || {};
         time: saa.Tuulikartta.timeValue,
         favourites: window.favouritesMode ? "1" : "0"
       },
-      error: function (err) {
+      error: function (xhr) {
         document.body.style.cursor = 'default'
         saa.Tuulikartta.dataLoader(false)
         saa.Tuulikartta.map.spin(false)
-        console.log("Tuulikartta data error!!", err)
+        var msg = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Tietojen haku epäonnistui'
+        Tuulikartta.showError(msg)
+        console.log("Tuulikartta data error!!", xhr)
       },
       success: function (data) {
         saa.Tuulikartta.dataLoader(false)

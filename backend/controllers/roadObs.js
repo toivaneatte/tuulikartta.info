@@ -9,7 +9,7 @@ const roadRouter = require('express').Router()
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
-const { mergeHistoricData, parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
+const { parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
 const { parseRoadCameras, parseSingleRoadCamera } = require('../services/parseRoadCameras');
 
 // ---------------------------------------------------------
@@ -43,27 +43,10 @@ roadRouter.get('/obs', async (req, res) => {
       fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
-    let historicData = [];
-
-    let first = true;
-
-    for (const station of metaResponse.features) {
-      let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
-      let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
-      if (first) {
-        logger.debug("FIRST STATION HISTORY URL:", historicURL);
-      }
-      const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
-      let mergedData = mergeHistoricData(station, stationData, historyResponse);
-      historicData.push(mergedData);
-      if (first) {
-        first = false;
-      }
-    }
 
     // parse the responses and return the observations
     logger.info("Road observation metadata and data fetched successfully. Parsing responses...");
-    const observations = await parseRoadObs(metaResponse, historicData, UTCtimestamp);
+    const observations = await parseRoadObs(metaResponse, dataResponse, UTCtimestamp);
     
     res.set('Content-Type', 'application/json');
     res.json(observations);
@@ -102,27 +85,11 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
       fetch(dataURL, {headers}).then(r => r.json())
     ]);
 
-    let historicData = [];
-
-let first = true;
-
-    for (const station of metaResponse.features) {
-      let stationData = dataResponse.stations.find(s => s.id === station.properties.id);
-      let historicURL = `${config.roadObsURL}/${station.properties.id}/data/history${UTCtimestamp}`;
-      if (first) {
-        logger.debug("FIRST STATION HISTORY URL:", historicURL);
-      }
-      const historyResponse = await fetch(historicURL, {headers}).then(r => r.json());
-      let mergedData = mergeHistoricData(station, stationData, historyResponse);
-      historicData.push(mergedData);
-      if (first) {
-        first = false;
-      }
-    }
+    
 
     // parse the responses and return the observations
     logger.info(`Road observation metadata and data for station ${req.params.stationId} fetched successfully. Parsing responses...`);
-    const observation = await parseSingleRoadObs(metaResponse, historicData, UTCtimestamp);
+    const observation = await parseSingleRoadObs(metaResponse, dataResponse, UTCtimestamp);
     
     res.set('Content-Type', 'application/json');
     res.json(observation);
@@ -168,6 +135,27 @@ roadRouter.get('/cameras', async (req, res) => {
     logger.error("Error in /api/road/cameras endpoint:", error);
     res.status(500).json({ error: "Failed to fetch road camera data" });
     return;
+  }
+});
+
+// ---------------------------------------------------------
+// GET /api/road/cameras/:stationId/history endpoint for fetching camera history from Digitraffic API
+// ---------------------------------------------------------
+roadRouter.get('/cameras/:stationId/history', async (req, res) => {
+  logger.info(`GET /api/road/cameras/${req.params.stationId}/history`);
+  const historyURL = `${config.roadCameraURL}/${req.params.stationId}/history`;
+  const headers = {
+    "Accept": "application/json",
+    "User-Agent": config.digitrafficAPIuser
+  };
+  try {
+    const response = await fetch(historyURL, { headers });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    logger.error("Error in /api/road/cameras/:stationId/history:", error);
+    res.status(500).json({ error: "Failed to fetch camera history" });
   }
 });
 

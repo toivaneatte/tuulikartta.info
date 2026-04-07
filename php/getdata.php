@@ -89,7 +89,13 @@ $magnData = $dataMiner->magnetometer($timestamp, $magnSettings, false) ?? [];
 error_log("magnetometer data handled");
 
 // Decode JSON responses into associative arrays, handling nulls
-$synopArray = json_decode($responses["synop"], true) ?? [];
+$synopDecoded = json_decode($responses["synop"], true);
+if ($synopDecoded && isset($synopDecoded['error'])) {
+	http_response_code(502);
+	echo json_encode(['error' => $synopDecoded['error']]);
+	exit;
+}
+$synopArray = $synopDecoded ?? [];
 $rValuesArray = json_decode($responses["rvalues"], true) ?? [];
 $externalRadiationArray = json_decode($responses["radiation"], true) ?? [];
 $nuclidesArray = json_decode($responses["nuclides"], true) ?? [];

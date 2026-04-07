@@ -20,7 +20,6 @@ try {
         $settings["storedquery_id"] = "livi::observations::road::default::multipointcoverage";
         $settings["fmisid"]         = $fmisid;
 
-
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
         $observationData = [];
         foreach ( $obs as $key => $observation ) {

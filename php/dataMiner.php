@@ -472,9 +472,13 @@ class DataMiner{
         }
 
         $url = $url . $this->setTimeforMagnetometer($timestamp, $graph);
+        error_log("magn url: $url");
         $ctx = stream_context_create(array('http'=>
             array(
-                'timeout' => 240,  //1200 Seconds is 20 Minutes, 
+                'timeout' => 60,
+                'header' => "Cache-Control: no-cache, no-store, must-revalidate\r\n" .
+                   "Pragma: no-cache\r\n" .
+                   "Expires: 0\r\n"
             )
         ));
 
@@ -490,6 +494,8 @@ class DataMiner{
 
         // extract wanted stuff from xml data
         $data = $resultString->children("wfs", true);
+        $datalength = count($data->member);
+        error_log("Number of magnetometer data points: $datalength");
         $final = [];
 
         foreach($data as $member) {

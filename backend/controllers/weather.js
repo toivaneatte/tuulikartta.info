@@ -9,7 +9,7 @@ const { request } = require('express')
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
-const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation } = require('../utils/db');
+const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation, getLatestR1hMapObs, getLatestR1hFavObs } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 
@@ -18,11 +18,28 @@ const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 // ---------------------------------------------------------
 const fetchNewFMIData = async (url) => {
   //logger.debug(`Fetching weather data from FMI API with URL: ${url}`);
-  const xml = await fetch(url).then(r => r.text());
+  const xml = await fetch(url, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
   const observations = await parseFMIMultipointcoverage(xml, config.favouriteParameters);
   logger.info(`Fetched and processed ${observations.length} observations from FMI API.`);
   return observations;
 }
+
+// Build r_1h carry-forward map from rows [{fmisid, r_1h}, ...]
+const buildR1hMap = (rows) => {
+  const map = {};
+  for (const row of rows) {
+    if (row.r_1h !== null && row.r_1h !== undefined) map[row.fmisid] = row.r_1h;
+  }
+  return map;
+};
+
+// Fetch only r_1h from FMI for a 70-min window ending at endTime (for historical carry-forward)
+const fetchR1hObservations = async (endTime) => {
+  const startTime = new Date(endTime.getTime() - 70 * 60 * 1000);
+  const url = `${config.FMIWeatherURL.replace(/parameters=[^&]+/, 'parameters=r_1h')}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
+  const xml = await fetch(url, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
+  return parseFMIMultipointcoverage(xml, 'r_1h');
+};
 
 
 // ---------------------------------------------------------
@@ -194,7 +211,13 @@ weatherRouter.get('/latest', async (req, res) => {
     if (closest && diffMs <= 10 * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(closest.timestamp);
       logger.info(`SQLite hit for time=${timestamp}, snapshot at ${closest.timestamp} (diff: ${Math.round(diffMs / 60000)} min, ${rows.length} stations)`);
-      return res.send(rows.map(obsToStation));
+      let r1hMap = {};
+      try {
+        r1hMap = buildR1hMap(await fetchR1hObservations(new Date(closest.timestamp)));
+      } catch (err) {
+        logger.warn(`Could not fetch r_1h carry-forward: ${err.message}`);
+      }
+      return res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
     }
 
     // Not in SQLite, fetch the observations for the requested timestamp from FMI API.
@@ -216,7 +239,13 @@ weatherRouter.get('/latest', async (req, res) => {
     if (dailyValues) {
       for (const d of dailyValues) dailyByFmisid[d.fmisid] = d;
     }
-    const obsWithDaily = observations.map(obs => ({ ...obs, ...dailyByFmisid[obs.fmisid] }));
+    let r1hMap = {};
+    try {
+      r1hMap = buildR1hMap(await fetchR1hObservations(endTime));
+    } catch (err) {
+      logger.warn(`Could not fetch r_1h carry-forward: ${err.message}`);
+    }
+    const obsWithDaily = observations.map(obs => ({ ...obs, ...dailyByFmisid[obs.fmisid], r_1h: obs.r_1h ?? r1hMap[obs.fmisid] ?? null }));
     return res.send(computeLatestPerStation(obsWithDaily));
   }
 
@@ -233,7 +262,8 @@ weatherRouter.get('/latest', async (req, res) => {
     if (dataAgeMs < (config.currentDataMaxAgeMinutes + fetchDelayMinutes) * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(latestRow.timestamp);
       logger.info(`SQLite data fresh (age: ${Math.round(dataAgeMs / 1000)}s), returning ${rows.length} stations`);
-      return res.send(rows.map(obsToStation));
+      const r1hMap = buildR1hMap(getLatestR1hMapObs.all());
+      return res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
     }
   }
 
@@ -266,7 +296,8 @@ weatherRouter.get('/latest', async (req, res) => {
   await fetchDailyAggregates(null);
   const freshRow = getLatestMapTimestamp.get();
   const rows = getMapObsByTimestamp.all(freshRow.timestamp);
-  res.send(rows.map(obsToStation));
+  const r1hMap = buildR1hMap(getLatestR1hMapObs.all());
+  res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
 });
 
 
@@ -374,8 +405,10 @@ weatherRouter.get('/favourites', (req, res) => {
     return res.status(404).send({ error: 'No data found' });
   }
 
+  const r1hTimestamp = (time && time !== 'now') ? time : new Date().toISOString();
+  const r1hMap = buildR1hMap(getLatestR1hFavObs.all(r1hTimestamp));
   logger.info(`Returning ${rows.length} favourite station observations`);
-  res.send(rows.map(obsToStation));
+  res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
 })
 
 // ---------------------------------------------------------
