@@ -10,8 +10,8 @@ var saa = saa || {};
   'use strict';
 
   // Constants
-  const API_BASE = 'https://tie.digitraffic.fi/api/weathercam/v1';
-  const WEATHER_API_BASE = 'https://tie.digitraffic.fi/api/weather/v1';
+  const API_BASE = '/api/road/cameras'; // points to backend endpoint
+  const WEATHER_API_BASE = '/api/road/obs'; // points to backend endpoint
   const SYMBOL_PATH = '../symbols/';
   const MAX_CAMERA_AGE_MINUTES = 24 * 60;
   const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -215,38 +215,12 @@ camera.normalizeWeatherStation = function(raw) {
       return;
     }
     
-    const metadataUrl = `${API_BASE}/stations/${encodeURIComponent(stationId)}`;
-    const dataUrl = `${API_BASE}/stations/${encodeURIComponent(stationId)}/data`;
-    
+    const backendSingleCameraUrl = `${API_BASE}/${stationId}`;
     $.when(
-      fetchWithTimeout(metadataUrl),
-      fetchWithTimeout(dataUrl)
-    ).done(function(metadataResponse, dataResponse) {
-      const metadata = metadataResponse[0];
-      const freshData = dataResponse[0];
-      
-      // Merge metadata with fresh data
-      if (metadata && metadata.properties && metadata.properties.presets && 
-          freshData && freshData.presets) {
-        
-        for (let i = 0; i < metadata.properties.presets.length; i++) {
-          const metaPreset = metadata.properties.presets[i];
-          
-          for (let j = 0; j < freshData.presets.length; j++) {
-            if (freshData.presets[j].id === metaPreset.id) {
-              metaPreset.measuredTime = freshData.presets[j].measuredTime;
-              break;
-            }
-          }
-        }
-        
-        if (freshData.dataUpdatedTime) {
-          metadata.properties.dataUpdatedTime = freshData.dataUpdatedTime;
-        }
-      }
-      
-      stationCache.set(stationId, metadata);
-      callback(metadata, null);
+      fetchWithTimeout(backendSingleCameraUrl)
+    ).done(function(backendResponse) {
+      stationCache.set(stationId, backendResponse);
+      callback(backendResponse, null);
       
     }).fail(function(xhr, status, error) {
       const errorMsg = `API error: ${status} - ${error}`;
@@ -308,42 +282,16 @@ camera.normalizeWeatherStation = function(raw) {
       return;
     }
 
-    const metadataUrl = `${WEATHER_API_BASE}/stations/${encodeURIComponent(stationId)}`;
-    const dataUrl = `${WEATHER_API_BASE}/stations/${encodeURIComponent(stationId)}/data`;
+    const backendUrl = `${WEATHER_API_BASE}/${encodeURIComponent(stationId)}`;
 
+    // fetch data from backend handle it fowrard
      $.when(
-      fetchWithTimeout(metadataUrl),
-      fetchWithTimeout(dataUrl)
-    ).done(function(metadataResponse, dataResponse) {
-      const metadata = metadataResponse[0];
-      const freshData = dataResponse[0];
-      
-      // Merge metadata with fresh data
-      if (metadata && metadata.properties && metadata.properties.sensors && 
-          freshData && freshData.sensorValues) {
-        
-        for (let i = 0; i < metadata.properties.sensors.length; i++) {
-          const metaSensor = metadata.properties.sensors[i];
-          
-          for (let j = 0; j < freshData.sensorValues.length; j++) {
-            if (freshData.sensorValues[j].id === metaSensor.id) {
-              metaSensor.measuredTime = freshData.sensorValues[j].measuredTime;
-              break;
-            }
-          }
-        }
-        
-        if (freshData.dataUpdatedTime) {
-          metadata.properties.dataUpdatedTime = freshData.dataUpdatedTime;
-        }
-
-        metadata.properties.sensorValues = freshData.sensorValues;
-      }
-      
-      weatherCache.set(stationId, metadata);
-      callback(metadata, null);
-      
-    }).fail(function(xhr, status, error) {
+      fetchWithTimeout(backendUrl),
+      ).done(function(obsResponse) {
+      // after successful fetch, store in cache and return
+      weatherCache.set(stationId, obsResponse);
+      callback(obsResponse, null);
+      }).fail(function(xhr, status, error) {
       const errorMsg = `API error: ${status} - ${error}`;
       console.error('Failed to load station details:', errorMsg);
       callback(null, errorMsg);
@@ -394,20 +342,12 @@ camera.normalizeWeatherStation = function(raw) {
       color: '#b1b1b1'
     });
     
-    const metadataUrl = `${API_BASE}/stations`;
-    const dataUrl = `${API_BASE}/stations/data`;
-    
+    const backendCameraUrl = `${API_BASE}`;
     $.when(
-      fetchWithTimeout(metadataUrl),
-      fetchWithTimeout(dataUrl)
-    ).done(function(metadataResponse, dataResponse) {
-      const metadata = metadataResponse[0];
-      const cameraData = dataResponse[0];
-      const mergedData = camera.mergeMetadataAndData(metadata, cameraData);
-      
-      camera.draw(mergedData);
-      
-    }).fail(function(xhr, status, error) {
+      fetchWithTimeout(backendCameraUrl)
+    ).done(function(backendResponse) {
+      camera.draw(backendResponse);
+      }).fail(function(xhr, status, error) {
       console.error('Camera API initialization failed:', status, error);
       alert(`Kamerakerroksen lataus epäonnistui: ${status}. Yritä päivittää sivu.`);
       

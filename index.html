@@ -80,13 +80,13 @@
 
         <!-- Tuulikartta modules - order matters! -->
         <script src="js/translations.js?v=3"></script>
-        <script src="js/observation-data.js?v=3"></script>
+        <script src="js/observation-data.js?v=4"></script>
         <script src="js/color-schemes.js?v=3"></script>
         <script src="js/ui-components.js?v=3"></script>
         <script src="js/event-handlers.js?v=3"></script>
         <script src="js/populate-sidebar.js?v=3"></script>
         <script src="/env.js"></script> <!-- Tuulikartta env variables  -->
-        <script src="js/main.js?v=3"></script>
+        <script src="js/main.js?v=7"></script>
         <script src="js/graph.js?v=3"></script>
         <script src="js/lightning.js?v=3"></script>
         <!--KOMMENTOI TÄMÄ ALAOSA POIS -->
@@ -108,6 +108,10 @@
                 defaultDate: new Date()
             });
             cal.datepicker("setDate",'now');
+            var now = new Date();
+            var hh = ('0' + now.getHours()).slice(-2);
+            var mm = ('0' + now.getMinutes()).slice(-2);
+            document.getElementById('clockpicker-button').value = hh + ':' + mm;
         })
         </script>
 

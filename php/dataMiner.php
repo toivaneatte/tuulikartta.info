@@ -52,6 +52,50 @@ class DataMiner{
       return $url;
     }
 
+    // if graph is false, only get the data from latest even 10 min as older data is not needed
+    // this way the newest datapoint won't have to be separately extracted, however when api
+    // hasn't been updated yet there will be no data at all
+    // intending to add fallback to previous datapoint
+    private function setTimeforMagnetometer($timestamp, $graph) {
+      $url = "";
+      if($graph) {
+        if ( $timestamp === "now" ) {
+          $endtime = new DateTime();
+          $end     = $endtime->format('Y-m-d\TH:i:s\Z');
+          $start   = $endtime->sub(new DateInterval('PT24H'));
+          $start   = $start->format('Y-m-d\TH:i:s\Z');
+          
+          $url     = "&starttime={$start}&endtime={$end}";
+        } else {
+          $endtime = new DateTime($timestamp);
+          $end     = $endtime->format('Y-m-d\TH:i:s\Z');
+          $start   = $endtime->sub(new DateInterval('PT24H'));
+          $start   = $start->format('Y-m-d\TH:i:s\Z');
+
+          $url     = "&starttime={$start}&endtime={$end}";
+        }
+    // set start and endtime as the same to get only one timestamp's data
+      } else {
+        if ( $timestamp === "now" ) {
+          $start  = new DateTime();
+        } 
+        else {
+          $start = new DateTime($timestamp);
+        }
+        // round down to nearest 10 min, otherwise API returns nothing?
+        $start->setTime(
+        (int)$start->format('H'),
+        floor($start->format('i') / 10) * 10,
+        0
+        );
+          $start->setTimezone(new DateTimeZone('UTC'));
+          $start  = $start->format('Y-m-d\TH:i:s\Z');
+          $end    = $start;
+          $url     = "&starttime={$start}&endtime={$end}";
+      }
+      return $url;
+    }
+
         private function setTimeRange($timestamp, $graph, $rangeDays) {
             if (!$graph) {
                 return "";
@@ -84,7 +128,7 @@ class DataMiner{
     *
     */
 
-    public function multipointcoverage($timestamp,$settings,$graph) {
+    public function multipointcoverage($timestamp,$settings,$graph,$rangeDays = null) {
         date_default_timezone_set("UTC");
 
         $url = "";
@@ -94,14 +138,24 @@ class DataMiner{
           $url .= "&{$key}={$value}";
         }
 
-        $url = $url . $this->setTime($timestamp, $graph);
+        if ($rangeDays !== null) {
+            $url = $url . $this->setTimeRange($timestamp, $graph, $rangeDays);
+        } else {
+            $url = $url . $this->setTime($timestamp, $graph);
+        }
         $ctx = stream_context_create(array('http'=>
             array(
                 'timeout' => 240,  //1200 Seconds is 20 Minutes
+                'ignore_errors' => true
             )
         ));
         $xmlData = file_get_contents($url, false, $ctx);
-        if($xmlData == false) {
+         if($xmlData == false || $xmlData == "") {
+            error_log("file_get_contents failed for URL: $url");
+            return [];
+        }
+        if ($rangeDays !== null && strpos($xmlData, 'ExceptionReport') !== false) {
+            error_log("FMI ExceptionReport: " . substr($xmlData, 0, 500));
             return [];
         }
         if($xmlData == "") {
@@ -109,6 +163,9 @@ class DataMiner{
         }
 
         $resultString = simplexml_load_string($xmlData);
+        if ($resultString === false) {
+            return [];
+        }
 
         $result = array();
         $tmp = array();
@@ -178,11 +235,10 @@ class DataMiner{
 
             $latlons = explode("                ",(string)$latlons);
             $numberOfStations = count($latlons);
-            $i = 0;
             $timestamps = [];
             foreach ($latlons as $latlon) {
                 $tmp = [];
-                if($i>0 && $i<($numberOfStations-1)) {
+                if(trim($latlon) !== "") {
                     $latlon = explode(" ",(string)$latlon);
                     $tmp["lat"] = floatval($latlon[0]);
                     $tmp["lon"] = floatval($latlon[1]);
@@ -190,11 +246,10 @@ class DataMiner{
                     $tmp["epochtime"] = floatval($epoch);
 
                     // convert UNIX timestamp to time
-                    $tmp["time"] = date("Y-m-d\TH:i:s\Z", intval($latlon[3]));
+                    $tmp["time"] = date("Y-m-d\TH:i:s\Z", intval($epoch));
                     $tmp["type"] = $settings["stationtype"];
                     array_push($timestamps,$tmp);
                 }
-                $i++;
             }
 
             // combine station arrays as one
@@ -223,9 +278,9 @@ class DataMiner{
             $observations = explode("                ",(string)$observations);
 
             $tmp = [];
-            foreach($observations as $key => $observation) {
-                if($key > 0 and $key < (count($observations)-1))
-                $tmp[$key] = explode(" ",$observation);
+            foreach($observations as $observation) {
+                if(trim($observation) !== "")
+                    $tmp[] = explode(" ",$observation);
             }
 
             $observations = [];
@@ -250,106 +305,6 @@ class DataMiner{
         return $final;
     }
 
-    public function getRoadData($timestamp, $roadSettings, $debug = false) {
-        $WEATHER_API_BASE = "https://tie.digitraffic.fi/api/weather/v1";
-        $user = 'Tuulen Viemät';
-        $options = [
-            'http' => [
-                'method' => "GET",
-                'header' => "Accept-Encoding: gzip\r\n" .
-                            "Accept: application/json\r\n" .
-                            "Digitraffic-User: ".$user
-            ]
-        ];
-        $context = stream_context_create($options);
-        // Load metadata
-        $metadataUrl = $WEATHER_API_BASE . "/stations";
-        $metadataJson = gzdecode(file_get_contents($metadataUrl, false, $context));
-        $stations = json_decode($metadataJson, true);
-        // Load sensor data
-        $dataUrl = $metadataUrl . "/data";
-        $stationJson = gzdecode(file_get_contents($dataUrl, false, $context));
-        $allSensorData = json_decode($stationJson, true);
-        // Index sensors by station ID
-        $indexedSensors = [];
-        if (isset($allSensorData['stations'])) {
-            foreach ($allSensorData['stations'] as $sData) {
-                $indexedSensors[$sData['id']] = $sData['sensorValues'];
-            }
-        }
-        // Map Digitraffic → Tuulikartta names
-        $roadParamMap = [
-            "SADE_INTENSITEETTI" => "ri_10min",
-            "KESKITUULI" => "ws_10min",
-            "MAKSIMITUULI" => "wg_10min",
-            "TUULENSUUNTA" => "wd_10min",
-            "NÄKYVYYS_M" => "vis",
-            "VALLITSEVA_SÄÄ" => "wawa",
-            "ILMA"   => "t2m",
-            "LUMEN_MÄÄRÄ1" => "snow_aws",
-            "KASTEPISTE" => "dewpoint"
-        ];
-        $result = [];
-        foreach ($stations['features'] as $station) {
-            $stationId = $station['properties']['id'];
-            if ($station['properties']['collectionStatus'] !== "GATHERING") {
-                continue;
-            }
-            if (!isset($indexedSensors[$stationId])) {
-                continue;
-            }
-            // Create a single entry per station
-            $entry = [
-                "station"   => $station['properties']['name'],
-                "fmisid"    => $stationId,
-                "lat"       => $station['geometry']['coordinates'][1],
-                "lon"       => $station['geometry']['coordinates'][0],
-                "type"      => "road",
-                "time"      => null,
-                "epochtime" => null,
-
-                // Default as null, filled if corresponding sensor is found
-                "ri_10min"  => null,
-                "ws_10min"  => null,
-                "wg_10min"  => null,
-                "wd_10min"  => null,
-                "vis"       => null,
-                "wawa"      => null,
-                "t2m"       => null,
-                "n_man"     => null,
-                "r_1h"      => null,
-                "snow_aws"  => null,
-                "pressure"  => null,
-                "dewpoint"  => null
-            ];
-            $hasRecentSensor = false;
-            // Add all mapped sensor values
-            foreach ($indexedSensors[$stationId] as $sensor) {
-                if (!isset($sensor['measuredTime'])) {
-                    continue;
-                }
-                $sensorTime = strtotime($sensor['measuredTime']);
-                if (time() - $sensorTime > 60 * 60 * 24) { // Only consider sensors updated within the last day
-                    continue;
-                }
-                $hasRecentSensor = true;
-                $rawName = $sensor['name'];
-                if (isset($roadParamMap[$rawName])) {
-                    $mappedName = $roadParamMap[$rawName];
-                    $entry[$mappedName] = floatval($sensor['value']);
-                    // Use the newest timestamp
-                    $entry["time"] = $sensor['measuredTime'];
-                    $entry["epochtime"] = strtotime($sensor['measuredTime']);
-                }
-            }
-            if ($hasRecentSensor) {
-                $result[] = $entry;
-            }
-        }
-        return $result;
-    }
-
-
     /** Parse observation data about R-values from RWC
      * @return R-values as an array
      */
@@ -364,7 +319,7 @@ class DataMiner{
             $tmp["lat"] = $item["Leveyspiiri"];
             $tmp["lon"] = $item["Pituuspiiri"];
             $tmp["time"] = $item["Aika"];
-            $tmp["type"] = "magnetometer";
+            $tmp["type"] = "R";
             $tmp   ["rVal"] = $item["R-luku"];
             $tmp["upperLim"] = $item["Ylempi raja-arvo"];
             $tmp["lowerLim"] = $item["Alempi raja-arvo"];
@@ -379,16 +334,8 @@ class DataMiner{
             }
             array_push($result,$tmp);
         }
-
-        return $result;
     }
-
-    /**
-     * Parse observation data from multipointcoverage for radionuclide data
-     * @param    timestamp timestamp or now if latest observations
-     * @param    settings array that contains required query parameters
-     * @return   graph true if graph dat request
-     */
+    
     public function nuclideMultipointcoverage($timestamp,$settings,$graph,$rangeDays = 150) {
         date_default_timezone_set("UTC");
 
@@ -507,6 +454,105 @@ class DataMiner{
         }
         return $final;
     }
+
+    /**
+     * Get magnetometer data from FMI open data
+     * @param    timestamp timestamp or now if latest observations
+     * @param    settings array that contains required query parameters
+     * @return   data as an array
+     */
+    public function magnetometer($timestamp,$magnSettings,$graph) {
+        date_default_timezone_set("UTC");
+
+        $url = "";
+        $url .= "http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature";
+
+        foreach($magnSettings as $key => $value) {
+          $url .= "&{$key}={$value}";
+        }
+
+        $url = $url . $this->setTimeforMagnetometer($timestamp, $graph);
+        error_log("magn url: $url");
+        $ctx = stream_context_create(array('http'=>
+            array(
+                'timeout' => 60,
+                'header' => "Cache-Control: no-cache, no-store, must-revalidate\r\n" .
+                   "Pragma: no-cache\r\n" .
+                   "Expires: 0\r\n"
+            )
+        ));
+
+        $xmlData = file_get_contents($url, false, $ctx);
+        if($xmlData == false) {
+            return [];
+        }
+        if($xmlData == "") {
+            return [];
+        }
+
+        $resultString = simplexml_load_string($xmlData);
+
+        // extract wanted stuff from xml data
+        $data = $resultString->children("wfs", true);
+        $datalength = count($data->member);
+        error_log("Number of magnetometer data points: $datalength");
+        $final = [];
+
+        foreach($data as $member) {
+            $tmp = [];
+            $member = $member->children("BsWfs", true)->BsWfsElement;
+
+            $location = $member->children("BsWfs", true)->Location
+                            ->children("gml", true)->Point
+                            ->children("gml", true)->pos;
+
+            $time = $member->children("BsWfs", true)->Time;
+
+            $component = $member->children("BsWfs", true)->ParameterName;
+
+            if($component == "MAGNZ_PT1M_AVG") {
+                $component = "Z";
+            } elseif ($component == "MAGNY_PT1M_AVG") {
+                $component = "Y";
+            } elseif ($component == "MAGNX_PT1M_AVG") {
+                $component = "X";
+            };
+
+            $value = $member->children("BsWfs", true)->ParameterValue;
+
+            $location = explode(" ", (string)$location);
+            $lat = floatval($location[0]);
+            $lon = floatval($location[1]);
+
+            // store data in nice array
+            $dataPointKey = $lat . "," . $lon . "," . (string)$time;
+            $fmisid = $lat . "," . $lon; // no fmisid for magnetometer data, use lat,lon as key
+
+            if(!isset($final[$dataPointKey])) {
+                $final[$dataPointKey] = [
+                    "lat" => $lat,
+                    "lon" => $lon,
+                    "time" => (string)$time,
+                    "epochtime" => strtotime((string)$time),
+                    "type" => "magnetometer",
+                    "fmisid" => $fmisid
+                ];
+            }
+
+            $value = trim((string)$value);
+            if ($value === "" || strtolower($value) === "nan") {
+                $final[$dataPointKey][$component] = null;
+            } elseif (is_numeric($value)) {
+                $final[$dataPointKey][$component] = floatval($value);
+            } else {
+                $final[$dataPointKey][$component] = $value;
+            }
+            }
+            
+            $final = array_values($final);
+            return $final;
+        }
+
     /**
     *
     * Get observation data from timeseries
@@ -515,7 +561,6 @@ class DataMiner{
     * @return   graph true if graph dat request
     *
     */
-
     public function timeseries($timestamp,$settings) {
       $url =  "http://opendata.fmi.fi/timeseries?";
       $url .= "format=json";
@@ -539,7 +584,6 @@ class DataMiner{
     * @return   data as an array
     *
     */
-
     public function smhiOpenData() {
         date_default_timezone_set('GMT');
         $parameters = ["vis"=>12,"t2m"=>1,"wd_10min"=>3,"ws_10min"=>4,"wg_10min"=>21,"rh"=>6,"rr_1h"=>7,"n_man"=>16];
