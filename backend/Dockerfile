@@ -17,6 +17,9 @@ COPY . .
 # Expose the port your app runs on (adjust if needed)
 EXPOSE 3000
 
+# Creare SQL data directory
+RUN mkdir -p /var/data && chown -R node:node /var/data
+
 # Use non-root user for security
 USER node
 
