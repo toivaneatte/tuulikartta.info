@@ -7,6 +7,7 @@ describe("main.js utilities", () => {
   // Load the module after setup
   before(async () => {
     await import("../js/main.js");
+    await import("../js/camera.js");
     saa = globalThis.saa;
   });
 

@@ -10,6 +10,8 @@ const OSM_TILE_SERVER_URL =
   window.APP_CONFIG?.OSM_TILE_SERVER_URL ||
   "http://localhost:8080/tile/{z}/{x}/{y}.png";
 
+// Cluster symbol path fallback (camera cluster icon) - avoids undefined SYMBOL_PATH crashes
+const SYMBOL_PATH = (window.SYMBOL_PATH || '../symbols/');
 
 // Use globalThis for compatibility with both browser and test environments
 globalThis.saa = globalThis.saa || {};
@@ -42,10 +44,48 @@ var saa = globalThis.saa;
   window.longitude = localStorage.getItem('longitude') ? localStorage.getItem('longitude') : 25
   window.zoomlevel = localStorage.getItem('zoomlevel') ? localStorage.getItem('zoomlevel') : 8
   window.observationSource = localStorage.getItem('observationSource') ? localStorage.getItem('observationSource') : 'Näytä vain synop-asemat'
-  window.selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('longitude') : 'ws_10min'
+  window.selectedParameter = localStorage.getItem('selectedparameter') ? localStorage.getItem('selectedparameter') : 'ws_10min'
   window.startPosition = 0
   var toggleDataSelect = 'close'
   var minRoadZoomLevel = 8
+
+  // Initialize marker cluster for road stations
+  // Road observations are now clustered at all zoom levels (up to max zoom), to avoid marker overload.
+  saa.Tuulikartta.markerGroupRoad = L.markerClusterGroup({
+    spiderfyOnMaxZoom: false,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+    removeOutsideVisibleBounds: true,
+    chunkedLoading: true,
+    chunkInterval: 1000,
+    maxClusterRadius: 100,
+    disableClusteringAtZoom: 10, 
+    iconCreateFunction: function(cluster) {
+      const children = cluster.getAllChildMarkers();
+      const uniqueFmisIds = new Set();
+      children.forEach(function(marker) {
+        if (marker.fmisid) {
+          uniqueFmisIds.add(marker.fmisid);
+        }
+      });
+      const childCount = uniqueFmisIds.size > 0 ? uniqueFmisIds.size : cluster.getChildCount();
+
+      if (childCount < 2) {
+        // For single station, show the individual marker icon instead of cluster
+        return children[0].options.icon;
+      } else {
+        // For 2 or more stations, show cluster icon with count
+        return L.divIcon({
+          html: `
+            <div style="text-align:center; width:40px; font-size:13px;">
+              <img src="${SYMBOL_PATH}weather-cluster-image.png" style="width:50px; height:50px; margin-bottom:-7px">
+              <b>${childCount}</b>
+            </div>
+          `
+        });
+      }
+    }
+  });
 
   saa.Tuulikartta.showStationObservations = true
   saa.Tuulikartta.showRoadObservations = false
@@ -375,6 +415,7 @@ var saa = globalThis.saa;
 
   Tuulikartta.drawData = function (param) {
 
+    if (!param) param = window.selectedParameter || 'ws_10min'
     if(!saa.Tuulikartta.showStationObservations && !saa.Tuulikartta.showRoadObservations) return false
     Tuulikartta.clearMarkers()
 
@@ -1113,6 +1154,8 @@ var saa = globalThis.saa;
           [parseFloat(data['lat']), parseFloat(data['lon'])],
           { icon: warningIcon, interactive: false, keyboard: false, zIndexOffset: 1000 }
         )
+        warnMarker.fmisid = data['fmisid'] || null
+        warnMarker.type = data['type'] || null
         if (data['type'] === 'road') {
           warnMarker.addTo(saa.Tuulikartta.markerGroupRoad)
         } else {

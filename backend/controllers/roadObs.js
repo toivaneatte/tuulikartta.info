@@ -139,6 +139,27 @@ roadRouter.get('/cameras', async (req, res) => {
 });
 
 // ---------------------------------------------------------
+// GET /api/road/cameras/:stationId/history endpoint for fetching camera history from Digitraffic API
+// ---------------------------------------------------------
+roadRouter.get('/cameras/:stationId/history', async (req, res) => {
+  logger.info(`GET /api/road/cameras/${req.params.stationId}/history`);
+  const historyURL = `${config.roadCameraURL}/${req.params.stationId}/history`;
+  const headers = {
+    "Accept": "application/json",
+    "User-Agent": config.digitrafficAPIuser
+  };
+  try {
+    const response = await fetch(historyURL, { headers });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    logger.error("Error in /api/road/cameras/:stationId/history:", error);
+    res.status(500).json({ error: "Failed to fetch camera history" });
+  }
+});
+
+// ---------------------------------------------------------
 // GET /api/road/cameras/:stationId endpoint for fetching road camera data from Digitraffic API for one station
 // ---------------------------------------------------------
 roadRouter.get('/cameras/:stationId', async (req, res) => {
