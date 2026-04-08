@@ -50,32 +50,34 @@ function fetchMultiple($urls) {
 	} while ($active && $status == CURLM_OK);
 
 	$results = [];
-    foreach ($curlHandles as $key => $ch) {
-			$content = curl_multi_getcontent($ch);
-
-			if (curl_errno($ch)) {
-				error_log("Error fetching URL for key '$key': " . curl_error($ch));
-				$results[$key] = null;
-			} else { // for debugging
-				//error_log("$key HTTP status: " . curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        //error_log("$key response length: " . strlen($content));
-			}
-			
+	$statuses = [];
+	foreach ($curlHandles as $key => $ch) {
+		$content = curl_multi_getcontent($ch);
+		if (curl_errno($ch)) {
+			error_log("Error fetching URL for key '$key': " . curl_error($ch));
+			$results[$key] = null;
+			$statuses[$key] = 0;
+		} else {
 			$results[$key] = $content;
+			$statuses[$key] = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		}
+		curl_multi_remove_handle($multiHandle, $ch);
+	}
 
 	curl_multi_close($multiHandle);
-	return $results;
+	return ['content' => $results, 'statuses' => $statuses];
 }
 
 // use the utility function to fetch all data in parallel
-$responses = fetchMultiple([
+$fetched = fetchMultiple([
 	"synop" => $backendUrlWeather,
 	"rvalues" => $backendUrlRValues,
 	"radiation" => $backendUrlExternalRadiation,
 	"nuclides" => $backendUrlNuclides,
 	"roadobs" => $backendUrlRoadObs
 ]);
+$responses = $fetched['content'];
+$statuses  = $fetched['statuses'];
 error_log("Responses fetched");
 
 // Earth's magnetic field
@@ -102,6 +104,20 @@ $nuclidesArray = json_decode($responses["nuclides"], true) ?? [];
 $roadArray = json_decode($responses["roadobs"], true) ?? [];
 error_log("Responses decoded");
 
+// Build warnings for failed secondary sources
+$warnings = [];
+$sourceLabels = [
+	"rvalues"   => "Avaruussäädata ei saatavilla",
+	"radiation" => "Säteilydata ei saatavilla",
+	"nuclides"  => "Nuklidimittaukset ei saatavilla",
+	"roadobs"   => "Tiesääasemien data ei saatavilla",
+];
+foreach ($sourceLabels as $key => $label) {
+	if ($statuses[$key] !== 200) {
+		$warnings[] = $label;
+	}
+}
+
 // error_log("synop data: " . $responses["synop"]); // debugging logs
 // error_log("R value data: " . $responses["rvalues"]); // debugging logs
 // error_log("External radiation data: " . $responses["radiation"]); // debugging logs
@@ -119,4 +135,4 @@ $combinedData = [
 //error_log("Combined data array: " . json_encode($combinedData)); // debugging logs
 
 error_log("Data combined, outputting JSON...");
-print json_encode($combinedData);
+print json_encode(['data' => $combinedData, 'warnings' => $warnings]);

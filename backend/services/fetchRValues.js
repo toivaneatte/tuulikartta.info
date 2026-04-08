@@ -13,7 +13,7 @@ async function getRValues() {
   const url = config.SpaceFMIURL;
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) })
     
     if (!response.ok) {
       throw new Error(`HTTP error: ${response.status}`);

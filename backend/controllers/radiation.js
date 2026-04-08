@@ -58,8 +58,8 @@ radiationRouter.get('/external', async (req, res) => {
 
   // fetch actual data from API
   try {
-    const responseXml = await fetch(URL).then(r => r.text());
-    
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
+
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
     }
@@ -94,8 +94,8 @@ radiationRouter.get('/external/:stationId', async (req, res) => {
 
   // fetch actual data from API
   try {
-    const responseXml = await fetch(URL).then(r => r.text());
-    
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
+
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
     }
@@ -129,8 +129,8 @@ radiationRouter.get('/nuclides', async (req, res) => {
 
   // fetch actual data from API
   try{
-    const responseXml = await fetch(URL).then(r => r.text());
-    
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
+
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
     }

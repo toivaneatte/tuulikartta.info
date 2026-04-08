@@ -156,10 +156,12 @@ var saa = saa || {};
         Tuulikartta.showError(msg)
         console.log("Tuulikartta data error!!", xhr)
       },
-      success: function (data) {
+      success: function (response) {
         saa.Tuulikartta.dataLoader(false)
         saa.Tuulikartta.map.spin(false)
-        // store the Map-instance in map variable
+        var data = Array.isArray(response) ? response : response.data
+        var warnings = response.warnings || []
+        warnings.forEach(function (w) { Tuulikartta.showError(w) })
         saa.Tuulikartta.data = data
         Tuulikartta.drawData(window.selectedParameter)
         window.selectedParameter = $('#select-wind-parameter').val()
