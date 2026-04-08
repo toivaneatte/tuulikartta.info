@@ -90,33 +90,32 @@ $magnSettings["timestep"]       = "10";
 $magnData = $dataMiner->magnetometer($timestamp, $magnSettings, false) ?? [];
 error_log("magnetometer data handled");
 
-// Decode JSON responses into associative arrays, handling nulls
-$synopDecoded = json_decode($responses["synop"], true);
-if ($synopDecoded && isset($synopDecoded['error'])) {
-	http_response_code(502);
-	echo json_encode(['error' => $synopDecoded['error']]);
-	exit;
-}
-$synopArray = $synopDecoded ?? [];
-$rValuesArray = json_decode($responses["rvalues"], true) ?? [];
-$externalRadiationArray = json_decode($responses["radiation"], true) ?? [];
-$nuclidesArray = json_decode($responses["nuclides"], true) ?? [];
-$roadArray = json_decode($responses["roadobs"], true) ?? [];
-error_log("Responses decoded");
-
-// Build warnings for failed secondary sources
+// Decode all responses and collect warnings uniformly for all sources
 $warnings = [];
 $sourceLabels = [
+	"synop"     => "Säähavaintodata ei saatavilla",
 	"rvalues"   => "Avaruussäädata ei saatavilla",
 	"radiation" => "Säteilydata ei saatavilla",
 	"nuclides"  => "Nuklidimittaukset ei saatavilla",
 	"roadobs"   => "Tiesääasemien data ei saatavilla",
 ];
+$decoded = [];
 foreach ($sourceLabels as $key => $label) {
-	if ($statuses[$key] !== 200) {
-		$warnings[] = $label;
+	$data = json_decode($responses[$key], true);
+	if ($statuses[$key] !== 200 || ($data && isset($data['error']))) {
+		$warnings[] = ($data && isset($data['error'])) ? $data['error'] : $label;
+		$decoded[$key] = [];
+	} else {
+		$decoded[$key] = $data ?? [];
 	}
 }
+error_log("Responses decoded");
+
+$synopArray            = $decoded["synop"];
+$rValuesArray          = $decoded["rvalues"];
+$externalRadiationArray = $decoded["radiation"];
+$nuclidesArray         = $decoded["nuclides"];
+$roadArray             = $decoded["roadobs"];
 
 // error_log("synop data: " . $responses["synop"]); // debugging logs
 // error_log("R value data: " . $responses["rvalues"]); // debugging logs

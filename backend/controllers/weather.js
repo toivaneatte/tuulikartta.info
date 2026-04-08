@@ -18,7 +18,7 @@ const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 // ---------------------------------------------------------
 const fetchNewFMIData = async (url) => {
   //logger.debug(`Fetching weather data from FMI API with URL: ${url}`);
-  const xml = await fetch(url, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
+  const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
   const observations = await parseFMIMultipointcoverage(xml, config.favouriteParameters);
   logger.info(`Fetched and processed ${observations.length} observations from FMI API.`);
   return observations;
@@ -37,7 +37,7 @@ const buildR1hMap = (rows) => {
 const fetchR1hObservations = async (endTime) => {
   const startTime = new Date(endTime.getTime() - 70 * 60 * 1000);
   const url = `${config.FMIWeatherURL.replace(/parameters=[^&]+/, 'parameters=r_1h')}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
-  const xml = await fetch(url, { signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.text());
+  const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
   return parseFMIMultipointcoverage(xml, 'r_1h');
 };
 
@@ -232,7 +232,7 @@ weatherRouter.get('/latest', async (req, res) => {
       observations = await fetchNewFMIData(url);
     } catch (err) {
       logger.error(`Error fetching from FMI API: ${err.message}`);
-      return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
+      return res.status(502).send({ error: 'Säähavaintodata ei saatavilla' });
     }
     const dailyValues = await fetchDailyAggregates(timestamp);
     const dailyByFmisid = {};
@@ -281,7 +281,7 @@ weatherRouter.get('/latest', async (req, res) => {
     observations = await fetchNewFMIData(url);
   } catch (err) {
     logger.error(`Error fetching /latest from FMI API: ${err.message}`);
-    return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
+    return res.status(502).send({ error: 'Säähavaintodata ei saatavilla' });
   }
 
   try {
@@ -355,7 +355,7 @@ weatherRouter.get('/xml', async (req, res) => {
     });
 
   if (!xmlData) {
-    return res.status(502).send({ error: 'Failed to fetch data from FMI API' });
+    return res.status(502).send({ error: 'Säähavaintodata ei saatavilla' });
   }
 
   // Cache current data (per-station key when fmisid is present)

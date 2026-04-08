@@ -39,8 +39,8 @@ roadRouter.get('/obs', async (req, res) => {
   try {
     // fetch metadata first to get the list of stations, then fetch data for those stations. 
     const [metaResponse, dataResponse] = await Promise.all([
-      fetch(metaURL, { headers, signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.json()),
-      fetch(dataURL, { headers, signal: AbortSignal.timeout(config.fmiApiTimeoutMs) }).then(r => r.json())
+      fetch(metaURL, { headers, signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.json()),
+      fetch(dataURL, { headers, signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.json())
     ]);
 
     // parse the responses and return the observations
@@ -52,7 +52,7 @@ roadRouter.get('/obs', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/road/obs endpoint:", error);
-    res.status(500).json({ error: "Failed to fetch road observations" });
+    res.status(500).json({ error: "Tiesääasemat ei saatavilla" });
   }
 });
 
@@ -95,7 +95,7 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
   } catch (error) {
     logger.error(`Error in /api/road/obs/${req.params.stationId} endpoint:`, error);
-    res.status(500).json({ error: `Failed to fetch road observations for station ${req.params.stationId}` });
+    res.status(500).json({ error: `Tiesääasemat ei saatavilla for station ${req.params.stationId}` });
   }
 });
 
