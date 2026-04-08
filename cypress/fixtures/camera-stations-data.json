@@ -1,0 +1,14 @@
+{
+  "stations": [
+    {
+      "id": "TEST_STATION_1",
+      "dataUpdatedTime": "2026-03-31T10:00:00Z",
+      "presets": [
+        {
+          "id": "p1",
+          "measuredTime": "2026-03-31T10:00:00Z"
+        }
+      ]
+    }
+  ]
+}
