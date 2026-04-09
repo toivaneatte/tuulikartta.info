@@ -13,7 +13,7 @@ class DataMiner{
 
     private function setTime($timestamp, $graph) {
       $url = "";
-      if($graph) {
+      if($graph) { // get data for 24h time range
         if ( $timestamp === "now" ) {
           $endtime = new DateTime();
           $end     = $endtime->format('Y-m-d\TH:i:s\Z');
@@ -30,7 +30,7 @@ class DataMiner{
           $url     = "&starttime={$start}&endtime={$end}";
         }
 
-      } else {
+      } else { // get data from midnight of asked date until asked time
         if ( $timestamp === "now" ) {
           $start  = new DateTime('', new DateTimezone('Europe/Helsinki'));
           $start->setTime(0,0);
@@ -51,14 +51,10 @@ class DataMiner{
       }
       return $url;
     }
-
-    // if graph is false, only get the data from latest even 10 min as older data is not needed
-    // this way the newest datapoint won't have to be separately extracted, however when api
-    // hasn't been updated yet there will be no data at all
-    // intending to add fallback to previous datapoint
+    
     private function setTimeforMagnetometer($timestamp, $graph) {
       $url = "";
-      if($graph) {
+      if($graph) { // get data for 24h time range
         if ( $timestamp === "now" ) {
           $endtime = new DateTime();
           $end     = $endtime->format('Y-m-d\TH:i:s\Z');
@@ -74,23 +70,24 @@ class DataMiner{
 
           $url     = "&starttime={$start}&endtime={$end}";
         }
-    // set start and endtime as the same to get only one timestamp's data
+
       } else {
+            // get data from a 20 min range
+            // to have fallback if newest data not yet available
         if ( $timestamp === "now" ) {
-          $start  = new DateTime();
+          $end  = new DateTime();
         } 
         else {
-          $start = new DateTime($timestamp);
+          $end = new DateTime($timestamp);
         }
-        // round down to nearest 10 min, otherwise API returns nothing?
-        $start->setTime(
-        (int)$start->format('H'),
-        floor($start->format('i') / 10) * 10,
-        0
-        );
+
+        $start = strtotime($timestamp) - 20 * 60; // 20 min before end time
+        $start = new DateTime("@$start"); // convert unix time to datetime
+
           $start->setTimezone(new DateTimeZone('UTC'));
           $start  = $start->format('Y-m-d\TH:i:s\Z');
-          $end    = $start;
+          $end ->setTimezone(new DateTimeZone('UTC'));
+          $end    = $end->format('Y-m-d\TH:i:s\Z');
           $url     = "&starttime={$start}&endtime={$end}";
       }
       return $url;
@@ -491,14 +488,26 @@ class DataMiner{
         }
 
         $resultString = simplexml_load_string($xmlData);
-
-        // extract wanted stuff from xml data
         $data = $resultString->children("wfs", true);
+        // check how many data points we got
         $datalength = count($data->member);
         error_log("Number of magnetometer data points: $datalength");
+        
+        $members = [];
+        // turn data into array to be able to reverse
+        foreach ($data->member as $m) {
+            $members[] = $m;
+        }
+        // if not graph data, reverse order to have newest data first
+        if(!$graph) {
+            $members = array_reverse($members);
+            error_log("Reversing magnetometer data order for non-graph request");
+        }
+        
         $final = [];
 
-        foreach($data as $member) {
+        // extract data from xml
+        foreach($members as $member) {
             $tmp = [];
             $member = $member->children("BsWfs", true)->BsWfsElement;
 
@@ -524,9 +533,35 @@ class DataMiner{
             $lat = floatval($location[0]);
             $lon = floatval($location[1]);
 
-            // store data in nice array
-            $dataPointKey = $lat . "," . $lon . "," . (string)$time;
+            $dataPointKey = $lat . "," . $lon . "," . (string)$time; // save x y and z under same key
             $fmisid = $lat . "," . $lon; // no fmisid for magnetometer data, use lat,lon as key
+
+            // if not graph data, check that we dont have newer data for same location already
+            if(!$graph) {
+                // check for newer data for same location
+            $newer_data_exists = false;
+            foreach ($final as $key => $existingData) {
+                if ($existingData['fmisid'] === $fmisid 
+                    && $existingData['epochtime'] > strtotime((string)$time)) {
+                        error_log("Newer data exists for location $fmisid");
+                        // check that newer data has valid observations
+                        // if not consider it as non-existing and remove it from final data
+                        if($existingData['X'] !== null || $existingData['Y'] !== null
+                        || $existingData['Z'] !== null) {
+                            error_log("Newer data for location $fmisid has valid observations, skipping older data point");
+                            $newer_data_exists = true;
+                        }
+                        else {
+                            unset($final[$key]);
+                        }
+                    break;
+                    }
+                }
+
+            if ($newer_data_exists) {
+                continue; // skip this data point if newer data exists for the same location
+            }
+            }
 
             if(!isset($final[$dataPointKey])) {
                 $final[$dataPointKey] = [
