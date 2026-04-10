@@ -58,6 +58,10 @@ const favouriteStations = [
 // How many days to keep favourite station observations in SQLite
 const favouriteRetentionDays = 3;
 
+// On cold start (or when no recent favourite rows exist), how many hours
+// of favourite observations to backfill into SQLite cache.
+const favouriteInitialBackfillHours = 72;
+
 // How many minutes the latest observation data is considered fresh before re-fetching from FMI
 const currentDataMaxAgeMinutes = 10;
 
@@ -99,6 +103,7 @@ module.exports = {
   favouriteStations,
   fetchFavouritePeriod,
   favouriteRetentionDays,
+  favouriteInitialBackfillHours,
   favouriteParameters,
   currentDataMaxAgeMinutes,
   fmiApiTimeoutMs,

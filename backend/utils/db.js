@@ -135,6 +135,13 @@ const getClosestFavouritePerStation = db.prepare(`
   )
 `);
 
+// Returns favourite observations for a single station in a time range (inclusive)
+const getFavouriteObsRangeByStation = db.prepare(`
+  SELECT * FROM favourite_observations
+  WHERE fmisid = ? AND timestamp >= ? AND timestamp <= ?
+  ORDER BY timestamp ASC
+`);
+
 // Updates daily aggregate columns for a specific fmisid + timestamp row
 const updateMapObsDailyValues = db.prepare(`
   UPDATE map_observations
@@ -196,6 +203,7 @@ module.exports = {
   updateMapObsDailyValues,
   getLatestFavouritePerStation,
   getClosestFavouritePerStation,
+  getFavouriteObsRangeByStation,
   updateFavouriteDailyValues,
   getFavouriteObsSince,
   getLatestR1hMapObs,
