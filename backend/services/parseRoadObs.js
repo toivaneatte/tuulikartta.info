@@ -24,7 +24,7 @@ async function parseRoadObs(stations, data, timestamp) {
     }
   }
 
-  // Mapping the data to a more usable format
+  // Mapping the data to match FMI format
   const roadParamMap = {
     "SADE_INTENSITEETTI": "ri_10min",
     "KESKITUULI": "ws_10min",
@@ -35,7 +35,10 @@ async function parseRoadObs(stations, data, timestamp) {
     "ILMA": "t2m",
     "LUMEN_MÄÄRÄ1": "snow_aws",
     "KASTEPISTE": "dewpoint",
-    "KASTEPISTE_ERO_ILMA": "t2mdewpoint"
+    "KASTEPISTE_ERO_ILMA": "t2mdewpoint",
+    "ILMAN_LÄMPÖTILA_24H_MIN": "tmin",
+    "ILMAN_LÄMPÖTILA_24H_MAX": "tmax",
+    "SADESUMMA_LIUKUVA_24H": "rr_1d"
   };
 
   result = [];
@@ -65,7 +68,10 @@ async function parseRoadObs(stations, data, timestamp) {
       t2m: null,
       snow_aws: null,
       dewpoint: null,
-      t2mdewpoint: null
+      t2mdewpoint: null,
+      tmin: null,
+      tmax: null,
+      rr_1d: null
     };
     
     let hasRecentSensor = false;
