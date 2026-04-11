@@ -29,11 +29,6 @@ roadRouter.get('/obs', async (req, res) => {
   //start by making time stamp
   const timestamp = req.query.time || "now";
   const UTCtimestamp = setTimeService.setTimeRoad(timestamp);
-  
-  // TODO: for historical data, we might need to use this like in other enpoints. But at the moment no timestamp is given to the API.
-  //URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
-  //logger.debug("Constructed URL for road observations metadata: " + metaURL);
-  //logger.debug("Constructed URL for road observations data: " + dataURL);
 
   // fetch actual data from API
   try {
