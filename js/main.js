@@ -1167,7 +1167,7 @@ var saa = globalThis.saa;
     if (saa.Tuulikartta.timeValue === 'now') {
       for (var i = 0; i < saa.Tuulikartta.data.length && i < 100; i++) {
         if (saa.Tuulikartta.data[i]['type'] === 'synop') {
-	        var time = moment(saa.Tuulikartta.data[i]['time'], ['YYYY-MM-DDTHH:mm:ssZ'])
+	        var time = moment(saa.Tuulikartta.data[i]['time'])
 	        var timestring = time.format('DD.MM.YYYY HH:mm')
           document.getElementById('datepicker-button').value = timestring.split(' ')[0]
 	        document.getElementById('clockpicker-button').value = timestring.split(' ')[1]
