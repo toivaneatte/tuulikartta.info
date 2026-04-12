@@ -50,32 +50,34 @@ function fetchMultiple($urls) {
 	} while ($active && $status == CURLM_OK);
 
 	$results = [];
-    foreach ($curlHandles as $key => $ch) {
-			$content = curl_multi_getcontent($ch);
-
-			if (curl_errno($ch)) {
-				error_log("Error fetching URL for key '$key': " . curl_error($ch));
-				$results[$key] = null;
-			} else { // for debugging
-				//error_log("$key HTTP status: " . curl_getinfo($ch, CURLINFO_HTTP_CODE));
-        //error_log("$key response length: " . strlen($content));
-			}
-			
+	$statuses = [];
+	foreach ($curlHandles as $key => $ch) {
+		$content = curl_multi_getcontent($ch);
+		if (curl_errno($ch)) {
+			error_log("Error fetching URL for key '$key': " . curl_error($ch));
+			$results[$key] = null;
+			$statuses[$key] = 0;
+		} else {
 			$results[$key] = $content;
+			$statuses[$key] = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		}
+		curl_multi_remove_handle($multiHandle, $ch);
+	}
 
 	curl_multi_close($multiHandle);
-	return $results;
+	return ['content' => $results, 'statuses' => $statuses];
 }
 
 // use the utility function to fetch all data in parallel
-$responses = fetchMultiple([
+$fetched = fetchMultiple([
 	"synop" => $backendUrlWeather,
 	"rvalues" => $backendUrlRValues,
 	"radiation" => $backendUrlExternalRadiation,
 	"nuclides" => $backendUrlNuclides,
 	"roadobs" => $backendUrlRoadObs
 ]);
+$responses = $fetched['content'];
+$statuses  = $fetched['statuses'];
 error_log("Responses fetched");
 
 // Earth's magnetic field
@@ -88,19 +90,32 @@ $magnSettings["timestep"]       = "10";
 $magnData = $dataMiner->magnetometer($timestamp, $magnSettings, false) ?? [];
 error_log("magnetometer data handled");
 
-// Decode JSON responses into associative arrays, handling nulls
-$synopDecoded = json_decode($responses["synop"], true);
-if ($synopDecoded && isset($synopDecoded['error'])) {
-	http_response_code(502);
-	echo json_encode(['error' => $synopDecoded['error']]);
-	exit;
+// Decode all responses and collect warnings uniformly for all sources
+$warnings = [];
+$sourceLabels = [
+	"synop"     => "Säähavaintodata ei saatavilla",
+	"rvalues"   => "Avaruussäädata ei saatavilla",
+	"radiation" => "Säteilydata ei saatavilla",
+	"nuclides"  => "Nuklidimittaukset ei saatavilla",
+	"roadobs"   => "Tiesääasemien data ei saatavilla",
+];
+$decoded = [];
+foreach ($sourceLabels as $key => $label) {
+	$data = json_decode($responses[$key], true);
+	if ($statuses[$key] !== 200 || ($data && isset($data['error']))) {
+		$warnings[] = ($data && isset($data['error'])) ? $data['error'] : $label;
+		$decoded[$key] = [];
+	} else {
+		$decoded[$key] = $data ?? [];
+	}
 }
-$synopArray = $synopDecoded ?? [];
-$rValuesArray = json_decode($responses["rvalues"], true) ?? [];
-$externalRadiationArray = json_decode($responses["radiation"], true) ?? [];
-$nuclidesArray = json_decode($responses["nuclides"], true) ?? [];
-$roadArray = json_decode($responses["roadobs"], true) ?? [];
 error_log("Responses decoded");
+
+$synopArray            = $decoded["synop"];
+$rValuesArray          = $decoded["rvalues"];
+$externalRadiationArray = $decoded["radiation"];
+$nuclidesArray         = $decoded["nuclides"];
+$roadArray             = $decoded["roadobs"];
 
 // error_log("synop data: " . $responses["synop"]); // debugging logs
 // error_log("R value data: " . $responses["rvalues"]); // debugging logs
@@ -119,4 +134,4 @@ $combinedData = [
 //error_log("Combined data array: " . json_encode($combinedData)); // debugging logs
 
 error_log("Data combined, outputting JSON...");
-print json_encode($combinedData);
+print json_encode(['data' => $combinedData, 'warnings' => $warnings]);

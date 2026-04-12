@@ -65,8 +65,8 @@ const favouriteInitialBackfillHours = 72;
 // How many minutes the latest observation data is considered fresh before re-fetching from FMI
 const currentDataMaxAgeMinutes = 10;
 
-// Timeout for FMI API requests (in milliseconds)
-const fmiApiTimeoutMs = 15 * 1000; // 15 seconds
+// Timeout for all external API requests (in milliseconds)
+const apiTimeoutMs = 15 * 1000; // 15 seconds
 
 // In minutes. For how long all of the observations are kept in the database.
 // observations older than this are fetched straight from fmi api.
@@ -106,7 +106,7 @@ module.exports = {
   favouriteInitialBackfillHours,
   favouriteParameters,
   currentDataMaxAgeMinutes,
-  fmiApiTimeoutMs,
+  apiTimeoutMs,
   mapObservationsWindowMinutes,
   dailyAggregateParameters,
 };

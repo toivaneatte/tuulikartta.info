@@ -13,7 +13,7 @@ async function getRValues() {
   const url = config.SpaceFMIURL;
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) })
     
     if (!response.ok) {
       throw new Error(`HTTP error: ${response.status}`);
@@ -55,7 +55,7 @@ async function getRValues() {
     return result;
 
     } catch (error) {
-    console.error("Error fetching R values:", error);
+    console.error("Avaruussäädata ei saatavilla:", error);
     throw error;
   }
 }
