@@ -13,16 +13,22 @@ var saa = saa || {};
   // ---------------------------------------------------------
 
   Tuulikartta.showError = function (message) {
-    var toast = document.getElementById('tuulikartta-toast')
-    if (!toast) {
-      toast = document.createElement('div')
-      toast.id = 'tuulikartta-toast'
-      document.body.appendChild(toast)
+    var container = document.getElementById('tuulikartta-toast-container')
+    if (!container) {
+      container = document.createElement('div')
+      container.id = 'tuulikartta-toast-container'
+      document.body.appendChild(container)
     }
+    var toast = document.createElement('div')
+    toast.className = 'tuulikartta-toast'
     toast.textContent = message
+    container.appendChild(toast)
+    toast.offsetHeight // force reflow for transition
     toast.classList.add('show')
-    clearTimeout(toast._hideTimer)
-    toast._hideTimer = setTimeout(function () { toast.classList.remove('show') }, 5000)
+    setTimeout(function () {
+      toast.classList.remove('show')
+      setTimeout(function () { container.removeChild(toast) }, 300)
+    }, 10000)
   }
 
   // ---------------------------------------------------------
