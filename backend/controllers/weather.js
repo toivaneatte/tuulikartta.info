@@ -9,7 +9,7 @@ const { request } = require('express')
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
-const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation, getLatestR1hMapObs, getLatestR1hFavObs } = require('../utils/db');
+const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation, getFavouriteObsRangeByStation, getLatestR1hMapObs, getLatestR1hFavObs } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 
@@ -410,6 +410,50 @@ weatherRouter.get('/favourites', (req, res) => {
   logger.info(`Returning ${rows.length} favourite station observations`);
   res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
 })
+
+// ---------------------------------------------------------
+// GET /api/weather/favourites/graph
+// Returns 24h synop timeseries for one favourite station from SQLite cache.
+// Optional query param: ?time=2026-02-25T14:30:00Z
+// ---------------------------------------------------------
+weatherRouter.get('/favourites/graph', (req, res) => {
+  logger.info('GET /api/weather/favourites/graph');
+  const { fmisid, time } = req.query;
+
+  if (!fmisid) {
+    return res.status(400).send({ error: 'Missing fmisid' });
+  }
+
+  const end = (time && time !== 'now') ? new Date(time) : new Date();
+  if (isNaN(end.getTime())) {
+    return res.status(400).send({ error: 'Invalid time parameter' });
+  }
+  if (end > new Date()) {
+    return res.status(400).send({ error: 'No data available for future timestamps' });
+  }
+
+  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  const stationId = parseInt(fmisid, 10);
+  if (Number.isNaN(stationId)) {
+    return res.status(400).send({ error: 'Invalid fmisid' });
+  }
+
+  let rows;
+  try {
+    rows = getFavouriteObsRangeByStation.all(stationId, start.toISOString(), end.toISOString());
+  } catch (err) {
+    logger.error(`Error querying favourite graph cache for ${stationId}: ${err.message}`);
+    return res.status(500).send({ error: 'Internal error' });
+  }
+
+  if (!rows || rows.length === 0) {
+    return res.status(404).send({ error: 'No cached favourite graph data found' });
+  }
+
+  const r1hMap = buildR1hMap(getLatestR1hFavObs.all(end.toISOString()));
+  logger.info(`Returning ${rows.length} cached favourite graph rows for fmisid=${stationId}`);
+  res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
+});
 
 // ---------------------------------------------------------
 // Other endpoints return 404 Not Found

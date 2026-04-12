@@ -69,8 +69,11 @@ nodeCron.schedule(config.fetchFavouritePeriod, async () => {
   const since10min = new Date();
   since10min.setMinutes(since10min.getMinutes() - 10);
   const hasRecentData = countRecentRows.get({ since: since10min.toISOString() }).c > 0;
-  const windowMinutes = hasRecentData ? fetchWindowMinutes : 24 * 60;
-  if (!hasRecentData) logger.info('No recent data found — fetching 24h backfill');
+  const initialBackfillHours = Number.isFinite(config.favouriteInitialBackfillHours)
+    ? config.favouriteInitialBackfillHours
+    : 72;
+  const windowMinutes = hasRecentData ? fetchWindowMinutes : initialBackfillHours * 60;
+  if (!hasRecentData) logger.info(`No recent data found — fetching ${initialBackfillHours}h backfill`);
 
   // Build URL with explicit parameters and only enabled stations
   const startTime = new Date();
