@@ -28,7 +28,7 @@ roadRouter.get('/obs', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  const UTCtimestamp = setTimeService.setTimeRoad(timestamp);
+  const UTCtimestamp = setTimeService.setTime(timestamp, false);
 
   // fetch actual data from API
   try {
@@ -68,7 +68,7 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  const UTCtimestamp = setTimeService.setTimeRoad(timestamp);
+  const UTCtimestamp = setTimeService.setTime(timestamp, false);
   
   //logger.debug(`Constructed URL for road observations metadata for station ${req.params.stationId}: ${metaURL}`);
   //logger.debug(`Constructed URL for road observations data for station ${req.params.stationId}: ${dataURL}`);
