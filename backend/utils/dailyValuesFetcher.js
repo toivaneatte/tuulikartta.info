@@ -38,14 +38,7 @@ const fetchDailyAggregates = async (endTimestamp) => {
 
   let observations;
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-    let xml;
-    try {
-      xml = await fetch(url, { signal: controller.signal }).then(r => r.text());
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
     observations = await parseFMIMultipointcoverage(xml, config.dailyAggregateParameters);
   } catch (err) {
     logger.error(`Error fetching daily aggregates: ${err.message}`);

@@ -38,7 +38,7 @@ radiationRouter.get('/rvalue', async (req, res) => {
     res.send(rValues);
   } catch (error) {
     logger.error("Error in /api/radiation/rvalue endpoint:", error);
-    res.status(500).json({ error: "Failed to fetch R values" });
+    res.status(500).json({ error: "R-luvut ei saatavilla" });
   }
 });
 
@@ -58,8 +58,8 @@ radiationRouter.get('/external', async (req, res) => {
 
   // fetch actual data from API
   try {
-    const responseXml = await fetch(URL).then(r => r.text());
-    
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
     }
@@ -73,7 +73,7 @@ radiationRouter.get('/external', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/radiation/external endpoint:", error);
-    res.status(500).json({ error: "Failed to fetch external radiation data" });
+    res.status(500).json({ error: "Ulkoinen säteily ei saatavilla" });
   }
 });
 
@@ -94,8 +94,8 @@ radiationRouter.get('/external/:stationId', async (req, res) => {
 
   // fetch actual data from API
   try {
-    const responseXml = await fetch(URL).then(r => r.text());
-    
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
     }
@@ -109,7 +109,7 @@ radiationRouter.get('/external/:stationId', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/radiation/external endpoint:", error);
-    res.status(500).json({ error: "Failed to fetch external radiation data" });
+    res.status(500).json({ error: "Säteilydata ei saatavilla" });
   }
 });
 
@@ -129,8 +129,8 @@ radiationRouter.get('/nuclides', async (req, res) => {
 
   // fetch actual data from API
   try{
-    const responseXml = await fetch(URL).then(r => r.text());
-    
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
     }
@@ -144,7 +144,7 @@ radiationRouter.get('/nuclides', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/radiation/nuclides endpoint:", error);
-    res.status(500).json({ error: "Failed to fetch nuclide data" });
+    res.status(500).json({ error: "Ilman radioaktiivisuus ei saatavilla" });
   }
 });
 
