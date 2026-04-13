@@ -12,7 +12,11 @@ var saa = saa || {};
   // Show a temporary error toast notification
   // ---------------------------------------------------------
 
+  var visibleToasts = new Set()
+
   Tuulikartta.showError = function (message) {
+    if (visibleToasts.has(message)) return
+    visibleToasts.add(message)
     var container = document.getElementById('tuulikartta-toast-container')
     if (!container) {
       container = document.createElement('div')
@@ -27,7 +31,10 @@ var saa = saa || {};
     toast.classList.add('show')
     setTimeout(function () {
       toast.classList.remove('show')
-      setTimeout(function () { container.removeChild(toast) }, 300)
+      setTimeout(function () {
+        container.removeChild(toast)
+        visibleToasts.delete(message)
+      }, 300)
     }, 10000)
   }
 

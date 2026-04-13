@@ -38,7 +38,7 @@ radiationRouter.get('/rvalue', async (req, res) => {
     res.send(rValues);
   } catch (error) {
     logger.error("Error in /api/radiation/rvalue endpoint:", error);
-    res.status(500).json({ error: "R-luvut ei saatavilla" });
+    res.status(500).json({ error: "R-luvut timeout" });
   }
 });
 
@@ -73,7 +73,7 @@ radiationRouter.get('/external', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/radiation/external endpoint:", error);
-    res.status(500).json({ error: "Ulkoinen säteily ei saatavilla" });
+    res.status(500).json({ error: "Ulkoinen säteily timeout" });
   }
 });
 
@@ -109,7 +109,7 @@ radiationRouter.get('/external/:stationId', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/radiation/external endpoint:", error);
-    res.status(500).json({ error: "Säteilydata ei saatavilla" });
+    res.status(500).json({ error: "Säteilydata timeout" });
   }
 });
 
@@ -144,7 +144,7 @@ radiationRouter.get('/nuclides', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/radiation/nuclides endpoint:", error);
-    res.status(500).json({ error: "Ilman radioaktiivisuus ei saatavilla" });
+    res.status(500).json({ error: "Ilman radioaktiivisuus timeout" });
   }
 });
 

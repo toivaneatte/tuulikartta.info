@@ -107,7 +107,7 @@ const getLatestMapTimestamp = db.prepare(`
 // Returns the closest distinct timestamp to the given ISO string
 const getClosestMapTimestamp = db.prepare(`
   SELECT timestamp FROM map_observations
-  ORDER BY ABS(strftime('%s', timestamp) - strftime('%s', ?))
+  ORDER BY ABS(julianday(SUBSTR(timestamp, 1, 19)) - julianday(SUBSTR(?, 1, 19)))
   LIMIT 1
 `);
 

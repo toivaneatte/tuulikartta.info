@@ -47,7 +47,7 @@ roadRouter.get('/obs', async (req, res) => {
 
   } catch (error) {
     logger.error("Error in /api/road/obs endpoint:", error);
-    res.status(500).json({ error: "Tiesääasemat ei saatavilla" });
+    res.status(500).json({ error: "Tiesääasemat timeout" });
   }
 });
 
@@ -90,7 +90,7 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
   } catch (error) {
     logger.error(`Error in /api/road/obs/${req.params.stationId} endpoint:`, error);
-    res.status(500).json({ error: `Tiesääasemat ei saatavilla for station ${req.params.stationId}` });
+    res.status(500).json({ error: `Tiesääasemat timeout for station ${req.params.stationId}` });
   }
 });
 

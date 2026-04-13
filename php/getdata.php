@@ -93,11 +93,11 @@ error_log("magnetometer data handled");
 // Decode all responses and collect warnings uniformly for all sources
 $warnings = [];
 $sourceLabels = [
-	"synop"     => "Säähavaintodata ei saatavilla",
-	"rvalues"   => "Avaruussäädata ei saatavilla",
-	"radiation" => "Säteilydata ei saatavilla",
-	"nuclides"  => "Nuklidimittaukset ei saatavilla",
-	"roadobs"   => "Tiesääasemien data ei saatavilla",
+	"synop"     => "Säähavaintodata timeout",
+	"rvalues"   => "R-luvut timeout",
+	"radiation" => "Ulkoinen säteily timeout",
+	"nuclides"  => "Ilman radioaktiivisuus timeout",
+	"roadobs"   => "Tiesääasemat timeout",
 ];
 $decoded = [];
 foreach ($sourceLabels as $key => $label) {

@@ -215,7 +215,7 @@ weatherRouter.get('/latest', async (req, res) => {
       try {
         r1hMap = buildR1hMap(await fetchR1hObservations(new Date(closest.timestamp)));
       } catch (err) {
-        logger.warn(`Could not fetch r_1h carry-forward: ${err.message}`);
+        logger.error(`Could not fetch r_1h carry-forward: ${err.message}`);
       }
       return res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
     }
@@ -232,7 +232,7 @@ weatherRouter.get('/latest', async (req, res) => {
       observations = await fetchNewFMIData(url);
     } catch (err) {
       logger.error(`Error fetching from FMI API: ${err.message}`);
-      return res.status(502).send({ error: 'Säähavaintodata ei saatavilla' });
+      return res.status(502).send({ error: 'Säähavaintodata timeout' });
     }
     const dailyValues = await fetchDailyAggregates(timestamp);
     const dailyByFmisid = {};
@@ -243,7 +243,7 @@ weatherRouter.get('/latest', async (req, res) => {
     try {
       r1hMap = buildR1hMap(await fetchR1hObservations(endTime));
     } catch (err) {
-      logger.warn(`Could not fetch r_1h carry-forward: ${err.message}`);
+      logger.error(`Could not fetch r_1h carry-forward: ${err.message}`);
     }
     const obsWithDaily = observations.map(obs => ({ ...obs, ...dailyByFmisid[obs.fmisid], r_1h: obs.r_1h ?? r1hMap[obs.fmisid] ?? null }));
     return res.send(computeLatestPerStation(obsWithDaily));
@@ -281,7 +281,7 @@ weatherRouter.get('/latest', async (req, res) => {
     observations = await fetchNewFMIData(url);
   } catch (err) {
     logger.error(`Error fetching /latest from FMI API: ${err.message}`);
-    return res.status(502).send({ error: 'Säähavaintodata ei saatavilla' });
+    return res.status(502).send({ error: 'Säähavaintodata timeout' });
   }
 
   try {
@@ -355,7 +355,7 @@ weatherRouter.get('/xml', async (req, res) => {
     });
 
   if (!xmlData) {
-    return res.status(502).send({ error: 'Säähavaintodata ei saatavilla' });
+    return res.status(502).send({ error: 'Säähavaintodata timeout' });
   }
 
   // Cache current data (per-station key when fmisid is present)
