@@ -409,6 +409,7 @@ var saa = globalThis.saa;
 
   Tuulikartta.isDataStale = function (epochtime) {
     if (saa.Tuulikartta.timeValue !== 'now') return false
+    if (window.favouritesMode) return false
     var currentBlockStart = Math.floor(Date.now() / 1000 / 600) * 600
     return epochtime < currentBlockStart
   }

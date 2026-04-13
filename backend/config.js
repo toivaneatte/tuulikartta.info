@@ -66,7 +66,7 @@ const favouriteInitialBackfillHours = 72;
 const currentDataMaxAgeMinutes = 10;
 
 // Timeout for all external API requests (in milliseconds)
-const apiTimeoutMs = 10; // 15 seconds
+const apiTimeoutMs = 10 * 1000;
 
 // In minutes. For how long all of the observations are kept in the database.
 // observations older than this are fetched straight from fmi api.

@@ -124,6 +124,18 @@ const getLatestFavouritePerStation = db.prepare(`
   )
 `);
 
+// Returns the second most recent distinct timestamp from favourite_observations
+const getSecondLatestFavouriteTimestamp = db.prepare(`
+  SELECT DISTINCT timestamp FROM favourite_observations
+  ORDER BY timestamp DESC
+  LIMIT 1 OFFSET 1
+`);
+
+// Returns all favourite observations for a given exact timestamp
+const getFavouriteObsByTimestamp = db.prepare(`
+  SELECT * FROM favourite_observations WHERE timestamp = ?
+`);
+
 // Returns the closest observation per fmisid to a given ISO timestamp
 const getClosestFavouritePerStation = db.prepare(`
   SELECT fo.* FROM favourite_observations fo
@@ -202,6 +214,8 @@ module.exports = {
   deleteOldMapObservations,
   updateMapObsDailyValues,
   getLatestFavouritePerStation,
+  getSecondLatestFavouriteTimestamp,
+  getFavouriteObsByTimestamp,
   getClosestFavouritePerStation,
   getFavouriteObsRangeByStation,
   updateFavouriteDailyValues,

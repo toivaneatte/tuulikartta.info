@@ -9,7 +9,7 @@ const { request } = require('express')
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
-const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getClosestFavouritePerStation, getFavouriteObsRangeByStation, getLatestR1hMapObs, getLatestR1hFavObs } = require('../utils/db');
+const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getSecondLatestFavouriteTimestamp, getFavouriteObsByTimestamp, getClosestFavouritePerStation, getFavouriteObsRangeByStation, getLatestR1hMapObs, getLatestR1hFavObs } = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 
@@ -384,6 +384,7 @@ weatherRouter.get('/favourites', (req, res) => {
   logger.info("GET /api/weather/favourites");
   const time = req.query.time;
   let rows;
+  let usedTimestamp;
 
   try {
     // if time is given and it is not "now", return the closest observations to that time, if they are within 5 minutes of the requested time.
@@ -392,9 +393,18 @@ weatherRouter.get('/favourites', (req, res) => {
       rows = getClosestFavouritePerStation.all(time).filter(row =>
         Math.abs(new Date(row.timestamp).getTime() - reqMs) <= 5 * 60 * 1000
       );
+      usedTimestamp = time;
     } else {
-      // otherwise return the latest observations per station
-      rows = getLatestFavouritePerStation.all();
+      // Use the second most recent timestamp to avoid showing an empty latest batch
+      // (FMI publishes at :00 and :10, so the latest batch may arrive empty for a few minutes)
+      const secondLatest = getSecondLatestFavouriteTimestamp.get();
+      if (secondLatest) {
+        rows = getFavouriteObsByTimestamp.all(secondLatest.timestamp);
+        usedTimestamp = secondLatest.timestamp;
+      } else {
+        rows = getLatestFavouritePerStation.all();
+        usedTimestamp = new Date().toISOString();
+      }
     }
   } catch (err) {
     logger.error(`Error querying favourite_observations: ${err.message}`);
@@ -405,8 +415,7 @@ weatherRouter.get('/favourites', (req, res) => {
     return res.status(404).send({ error: 'No data found' });
   }
 
-  const r1hTimestamp = (time && time !== 'now') ? time : new Date().toISOString();
-  const r1hMap = buildR1hMap(getLatestR1hFavObs.all(r1hTimestamp));
+  const r1hMap = buildR1hMap(getLatestR1hFavObs.all(usedTimestamp));
   logger.info(`Returning ${rows.length} favourite station observations`);
   res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
 })
