@@ -755,6 +755,7 @@ var saa = globalThis.saa;
             })
             marker.type = 'magnetometer'
             marker.fmisid = saa.Tuulikartta.data[i]['fmisid']
+            renderedStationIndices.add(i)
           }
         }
 
