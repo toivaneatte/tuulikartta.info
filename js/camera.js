@@ -490,9 +490,8 @@ camera.normalizeWeatherStation = function(raw) {
             const cleanPresetTitle = presetTitle.replaceAll("_", " ");
             // Make the HTML image output and insert it into the popup window
             if (i == 0) {
-              // Track the first (main) preset as current
+              // Track the first (main) preset as current and show it in main view
               currentPresetId = preset.id;
-              // Build the HTML for the image and insert it into the main picture container
               let mainOutput = `<img src="${imagePresets[i].url}"
                                 style="width:97%;
                                 margin: 10px auto;"
@@ -500,50 +499,41 @@ camera.normalizeWeatherStation = function(raw) {
                                 <p style="text-align:center; color: black;
                                 font-size: 1.5em; margin: 1px;">${cleanPresetTitle}</p>`;
               w.document.getElementById("mainPic").innerHTML = mainOutput;
-            } else {
-              // Build the HTML for the image and insert it into the thumbnail container
-              let output = `<button type="button"
-                            data-preset-id="${preset.id}"
-                            onclick="(function(mini){
-                              var doc=(mini&&mini.ownerDocument)?mini.ownerDocument:document;
-                              var main=doc.getElementById('mainPic');
-                              var miniImg=mini.querySelector('img');
-                              var mainTxt=main.querySelector('p');
-                              var miniTxt=mini.querySelector('span');
-                              if(!main) return;
-                              var mainImg=main.querySelector('img');
-                              if(!mainImg||!miniImg) return;
-                              var tmpSrc=mainImg.src;
-                              var tmpTxt=mainTxt?mainTxt.textContent:'';
-                              mainImg.src=miniImg.src;
-                              miniImg.src=tmpSrc;
-                              if(mainTxt&&miniTxt){
-                                mainTxt.textContent=miniTxt.textContent;
-                                miniTxt.textContent=tmpTxt;
-                              }
-                              var tmpAlt=mainImg.alt;
-                              mainImg.alt=miniImg.alt||'';
-                              miniImg.alt=tmpAlt||'';
-                              var opener=doc.defaultView&&doc.defaultView.opener;
-                              if(opener&&opener.saa&&opener.saa.camera)opener.saa.camera.setCurrentPreset(mini.dataset.presetId,doc.defaultView||window);})(this)"
-                            style="background-color: #ccefff;
-                            border-radius: 5px;
-                            border: none;
-                            padding: 0;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: center;">
-                            <img src="${imagePresets[i].url}"
-                            style="width:200px;
-                            padding: 3px;
-                            margin-bottom: 3px;"
-                            alt="${cleanPresetTitle}">
-                            <span style="text-align:center; color: black;
-                            padding: 2px;">${cleanPresetTitle}</span>
-                            </button>`;
-              w.document.getElementById("miniPics").innerHTML += output;
             }
+            // Build thumbnail for every preset (including first) so all can be selected
+            let output = `<button type="button"
+                          data-preset-id="${preset.id}"
+                          onclick="(function(mini){
+                            var doc=(mini&&mini.ownerDocument)?mini.ownerDocument:document;
+                            var main=doc.getElementById('mainPic');
+                            if(!main) return;
+                            var mainImg=main.querySelector('img');
+                            var miniImg=mini.querySelector('img');
+                            if(!mainImg||!miniImg) return;
+                            mainImg.src=miniImg.src;
+                            mainImg.alt=miniImg.alt||'';
+                            var mainTxt=main.querySelector('p');
+                            var miniTxt=mini.querySelector('span');
+                            if(mainTxt&&miniTxt) mainTxt.textContent=miniTxt.textContent;
+                            var opener=doc.defaultView&&doc.defaultView.opener;
+                            if(opener&&opener.saa&&opener.saa.camera)opener.saa.camera.setCurrentPreset(mini.dataset.presetId,doc.defaultView||window);})(this)"
+                          style="background-color: #ccefff;
+                          border-radius: 5px;
+                          border: none;
+                          padding: 0;
+                          display: flex;
+                          flex-direction: column;
+                          align-items: center;
+                          justify-content: center;">
+                          <img src="${imagePresets[i].url}"
+                          style="width:200px;
+                          padding: 3px;
+                          margin-bottom: 3px;"
+                          alt="${cleanPresetTitle}">
+                          <span style="text-align:center; color: black;
+                          padding: 2px;">${cleanPresetTitle}</span>
+                          </button>`;
+            w.document.getElementById("miniPics").innerHTML += output;
           }
 
           // Fetch history and initialize slider
@@ -645,18 +635,36 @@ camera.normalizeWeatherStation = function(raw) {
       });
   };
 
-  // Update mainPic to the image closest to the given Unix ms timestamp for the active preset
+  // Update mainPic and all thumbnails to the image closest to the given Unix ms timestamp
   camera.updateImagesForTime = function(w, timestamp) {
-    if (!currentPresetId || !historyByPreset[currentPresetId]) return;
-    const entries = historyByPreset[currentPresetId];
-    if (entries.length === 0) return;
-    const closest = entries.reduce(function(best, e) {
-      return Math.abs(e.time - timestamp) < Math.abs(best.time - timestamp) ? e : best;
-    });
-    const mainPic = w.document.getElementById('mainPic');
-    if (!mainPic) return;
-    const img = mainPic.querySelector('img');
-    if (img) img.src = closest.url;
+    // Update main image
+    if (currentPresetId && historyByPreset[currentPresetId]) {
+      const entries = historyByPreset[currentPresetId];
+      if (entries.length > 0) {
+        const closest = entries.reduce(function(best, e) {
+          return Math.abs(e.time - timestamp) < Math.abs(best.time - timestamp) ? e : best;
+        });
+        const mainPic = w.document.getElementById('mainPic');
+        if (mainPic) {
+          const img = mainPic.querySelector('img');
+          if (img) img.src = closest.url;
+        }
+      }
+    }
+
+    // Update each thumbnail to match the selected time
+    const miniButtons = w.document.querySelectorAll('#miniPics button[data-preset-id]');
+    for (let i = 0; i < miniButtons.length; i++) {
+      const btn = miniButtons[i];
+      const pid = btn.dataset.presetId;
+      if (!historyByPreset[pid] || historyByPreset[pid].length === 0) continue;
+      const entries = historyByPreset[pid];
+      const closest = entries.reduce(function(best, e) {
+        return Math.abs(e.time - timestamp) < Math.abs(best.time - timestamp) ? e : best;
+      });
+      const miniImg = btn.querySelector('img');
+      if (miniImg) miniImg.src = closest.url;
+    }
   };
 
   // Update active preset and refresh mainPic for current slider time (called from thumbnail onclick)
@@ -705,12 +713,16 @@ camera.normalizeWeatherStation = function(raw) {
     // Show current time in display
     timeDisplay.textContent = moment(maxTime).local().format('HH:mm');
     currentSliderTime = null; // at max = live view
-
+    // Debounce slider input to prevent excessive API calls when dragging (400ms delay, adjust at line 725)
+    var updateDebounceTimer = null;
     timeSlider.addEventListener('input', function() {
       const selected = parseInt(this.value);
       timeDisplay.textContent = moment(selected).local().format('HH:mm');
       currentSliderTime = (selected === maxTime) ? null : selected;
-      camera.updateImagesForTime(w, selected);
+      clearTimeout(updateDebounceTimer);
+      updateDebounceTimer = setTimeout(function() {
+        camera.updateImagesForTime(w, selected);
+      }, 400);
     });
   };
   
@@ -718,7 +730,7 @@ camera.normalizeWeatherStation = function(raw) {
   camera.getSelectedTime = function() {
     return selectedTime;
   };
-  
+
   // Public method to get selected time in minutes
   camera.getSelectedTimeMinutes = function() {
     return selectedTimeMinutes;
