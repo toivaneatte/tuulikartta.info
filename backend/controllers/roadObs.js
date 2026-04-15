@@ -12,6 +12,12 @@ const setTimeService = require('../services/setTime');
 const { parseRoadObs, parseSingleRoadObs } = require('../services/parseRoadObs');
 const { parseRoadCameras, parseSingleRoadCamera } = require('../services/parseRoadCameras');
 
+const isFutureTimestamp = (timestamp) => {
+  if (!timestamp || timestamp === 'now') return false;
+  const parsed = Date.parse(timestamp);
+  return !Number.isNaN(parsed) && parsed > Date.now();
+};
+
 // ---------------------------------------------------------
 // GET /api/road/obs endpoint for fetching road observations from Digitraffic API
 // ---------------------------------------------------------
@@ -28,6 +34,11 @@ roadRouter.get('/obs', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
+  if (isFutureTimestamp(timestamp)) {
+    logger.info(`Rejected future timestamp: ${timestamp}`);
+    return res.status(400).json({ error: 'No data available for future timestamps' });
+  }
+
   let requestedTime = timestamp === "now"
     ? Date.now()
     : Date.parse(timestamp);
@@ -73,9 +84,18 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
+  if (isFutureTimestamp(timestamp)) {
+    logger.info(`Rejected future timestamp: ${timestamp}`);
+    return res.status(400).json({ error: 'No data available for future timestamps' });
+  }
+
   let requestedTime = timestamp === "now"
     ? Date.now()
     : Date.parse(timestamp);
+  if (Number.isNaN(requestedTime)) {
+    logger.warn(`Invalid road observation time query: ${timestamp}. Falling back to now.`);
+    requestedTime = Date.now();
+  }
 
   try {
     // fetch metadata first to get the list of stations, then fetch data for those stations. 
