@@ -28,7 +28,13 @@ roadRouter.get('/obs', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  const UTCtimestamp = setTimeService.setTime(timestamp, false);
+  let requestedTime = timestamp === "now"
+    ? Date.now()
+    : Date.parse(timestamp);
+  if (Number.isNaN(requestedTime)) {
+    logger.warn(`Invalid road observation time query: ${timestamp}. Falling back to now.`);
+    requestedTime = Date.now();
+  }
 
   // fetch actual data from API
   try {
@@ -40,7 +46,7 @@ roadRouter.get('/obs', async (req, res) => {
 
     // parse the responses and return the observations
     logger.info("Road observation metadata and data fetched successfully. Parsing responses...");
-    const observations = await parseRoadObs(metaResponse, dataResponse, UTCtimestamp);
+    const observations = await parseRoadObs(metaResponse, dataResponse, requestedTime);
     
     res.set('Content-Type', 'application/json');
     res.json(observations);
@@ -67,10 +73,9 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
   //start by making time stamp
   const timestamp = req.query.time || "now";
-  const UTCtimestamp = setTimeService.setTime(timestamp, false);
-  
-  //logger.debug(`Constructed URL for road observations metadata for station ${req.params.stationId}: ${metaURL}`);
-  //logger.debug(`Constructed URL for road observations data for station ${req.params.stationId}: ${dataURL}`);
+  let requestedTime = timestamp === "now"
+    ? Date.now()
+    : Date.parse(timestamp);
 
   try {
     // fetch metadata first to get the list of stations, then fetch data for those stations. 
@@ -83,7 +88,7 @@ roadRouter.get('/obs/:stationId', async (req, res) => {
 
     // parse the responses and return the observations
     logger.info(`Road observation metadata and data for station ${req.params.stationId} fetched successfully. Parsing responses...`);
-    const observation = await parseSingleRoadObs(metaResponse, dataResponse, UTCtimestamp);
+    const observation = await parseSingleRoadObs(metaResponse, dataResponse, requestedTime);
     
     res.set('Content-Type', 'application/json');
     res.json(observation);

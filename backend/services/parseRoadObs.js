@@ -16,6 +16,18 @@ const config = require('../config');
  * @returns  - an array of observation objects for the stations, each containing the station information and the relevant sensor values
  */
 async function parseRoadObs(stations, data, timestamp) {
+  // Normalize requested time so we can compare numeric timestamps correctly.
+  let targetTime = timestamp === 'now'
+    ? Date.now()
+    : typeof timestamp === 'string'
+      ? Date.parse(timestamp)
+      : timestamp;
+
+  if (Number.isNaN(targetTime)) {
+    logger.warn(`parseRoadObs: invalid timestamp '${timestamp}', using current time`);
+    targetTime = Date.now();
+  }
+
   // Index data by station id for easier lookup
   const indexedData = {};
   if (data.stations) {
@@ -79,8 +91,11 @@ async function parseRoadObs(stations, data, timestamp) {
       if (!sensor.measuredTime) continue; // skip if no measured time
       const sensorTime = new Date(sensor.measuredTime).getTime();
 
-      // skip older than 24h
-      if (timestamp - sensorTime > 24 * 60 * 60 * 1000) continue;
+      // skip older than 24h relative to the requested timestamp
+      if (targetTime - sensorTime > 24 * 60 * 60 * 1000) continue;
+
+      // skip sensor values recorded after the requested timestamp
+      if (sensorTime > targetTime) continue;
 
       hasRecentSensor = true;
       const mappedName = roadParamMap[sensor.name];
