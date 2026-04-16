@@ -68,11 +68,10 @@ var saa = saa || {};
       maxWidth = 650
     }
 
-    if (data['type'] === 'synop') {
-      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['synop']+'</span> <br>'
-    } else {
-      var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+translations[window.selectedLanguage]['road']+'</span> <br>'
-    }
+    // all station types don't currently have translations, so we show 'type' directly
+    var stationType = '<b>'+translations[window.selectedLanguage]['stationType']+':</b> <span id="station-type">'+data['type']+'</span> <br>'
+    // note that magnetometer stations have artificial ids
+    var stationID = '<b>'+'ID'+':</b> <span id="station-id">'+data['fmisid']+'</span> <br>'
 
     var displayStationName = data['station'];
     if (data['type'] === 'road' && typeof displayStationName === 'string') {
@@ -85,6 +84,7 @@ var saa = saa || {};
     var output = '<div style="text-align:center;">'
     output += '<b>'+translations[window.selectedLanguage]['observationStation']+': </b>' + displayStationName + '<br>'
     output += stationType
+    output += stationID
 
     if (saa.Tuulikartta.timeValue === 'now') {
       output += '<b>'+translations[window.selectedLanguage]['latestObservation']+': </b>' + time + '<br>'
