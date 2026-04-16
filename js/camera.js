@@ -524,7 +524,8 @@ camera.normalizeWeatherStation = function(raw) {
                           display: flex;
                           flex-direction: column;
                           align-items: center;
-                          justify-content: center;">
+                          justify-content: center;
+                          cursor: pointer;">
                           <img src="${imagePresets[i].url}"
                           style="width:200px;
                           padding: 3px;
