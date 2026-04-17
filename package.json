@@ -5,7 +5,9 @@
   "main": "js/main.js",
   "type": "module",
   "scripts": {
-    "test": "mocha --file test/setup.js"
+    "test": "mocha --file test/setup.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "repository": {
     "type": "git",
@@ -39,8 +41,12 @@
     "tabulator-tables": "^4.9.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
     "chai": "^6.2.2",
     "cypress": "^15.12.0",
-    "mocha": "^11.7.5"
+    "eslint": "^9.38.0",
+    "globals": "^16.4.0",
+    "mocha": "^11.7.5",
+    "prettier": "^3.6.2"
   }
 }
