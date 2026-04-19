@@ -92,6 +92,7 @@ var saa = saa || {};
       output += '<b>'+translations[window.selectedLanguage]['observationTime']+': </b>' + time + '<br>'
     }
     output += '</div>'
+    if (data['type'] === 'road') return output;
 
     output += `<div id="graph-box-loader" style="text-align: center;"></div>`;
     output += `<div id="graph-box" style="width:${maxWidth}px;">`

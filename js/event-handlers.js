@@ -40,7 +40,10 @@ var saa = saa || {};
       var fmisid = e.popup._source.fmisid
       var type = e.popup._source.type
       if(type === 'Synop-asema') type = 'synop'
-      saa.weatherGraph.getObservationGraph(fmisid,type,saa.Tuulikartta.timeValue)
+
+      if (type !== 'road') {
+        saa.weatherGraph.getObservationGraph(fmisid,type,saa.Tuulikartta.timeValue)
+      }
       $(".owl-carousel").owlCarousel({
         navigation: true,
         slideSpeed: 300,
