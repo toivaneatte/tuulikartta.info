@@ -56,21 +56,21 @@ const favouriteStations = [
 
 
 // How many days to keep favourite station observations in SQLite
-const favouriteRetentionDays = 3;
+const favouriteRetentionDays = 7;
 
 // On cold start (or when no recent favourite rows exist), how many hours
 // of favourite observations to backfill into SQLite cache.
-const favouriteInitialBackfillHours = 72;
+const favouriteInitialBackfillHours = 48;
 
 // How many minutes the latest observation data is considered fresh before re-fetching from FMI
 const currentDataMaxAgeMinutes = 10;
 
 // Timeout for all external API requests (in milliseconds)
-const apiTimeoutMs = 10 * 1000;
+const apiTimeoutMs = 10 * 1000; // 10 seconds
 
 // In minutes. For how long all of the observations are kept in the database.
 // observations older than this are fetched straight from fmi api.
-const mapObservationsWindowMinutes = 210;
+const mapObservationsWindowMinutes = 30;
 
 // fetch data for favourite stations in this period.
 const fetchFavouritePeriod = '*/10 * * * *'
