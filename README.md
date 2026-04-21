@@ -42,3 +42,14 @@ In the **backend/config.js**
 - Välimuistin ajat 
 - Suosikit
 - yms. yms.
+
+## Fetching data from external APIs
+Observations to be displyed on the map are fetched via the backend, except for magnetic field data (which just has not been refactored to backend). varmaan tarkempi selitys minkä tiedostojen kautta api-haku tehdään backendissä?
+
+Synop data: regular weather data, data is fetched for previous midnight until asked timestamp so that values for the day (e.g. max value) can be calculated.
+
+R data: R-values, describe fluctuations in the earth's magnetic field and tell how likely northern lights are to appear. The API only returns the newest data, history and graphs would have to be implemented using backend cache.
+
+Magnetometer data: strength of earth's magnetic field. Sets url time differently than synop data to avoid fetching unnecessary data, only the few newest measurements are needed. Does not use backend, url parts are defined in getdata.php and data is fetched and parsed in the magnetometer-function in dataMiner.php.
+
+Data for the graphs is fetched directly by the frontend from the APIs (kai?), has not been refactored to use backend. Data is handled in weather-graph-ts.php and graphs are drawn in graph.js.
