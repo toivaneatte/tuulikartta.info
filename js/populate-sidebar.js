@@ -97,14 +97,24 @@ var saa = saa || {};
     output += `<div id="graph-box-loader" style="text-align: center;"></div>`;
     output += `<div id="graph-box" style="width:${maxWidth}px;">`
     output += `<div id="owl-carousel-chart-${fmisid}" class="owl-carousel owl-theme">`
-    output += `<div id="weather-chart-${fmisid}_windrose"></div>`
-    output += `<div id="weather-chart-${fmisid}"></div>`
-    output += `<div id="weather-chart-${fmisid}_alt"></div>`
-    output += `<div id="weather-chart-${fmisid}_alt2"></div>`
-    output += `<div id="weather-chart-${fmisid}_radiation"></div>`
-    output += `<div id="weather-chart-${fmisid}_air_radio"></div>`
-    output += `<div id="weather-chart-${fmisid}_magnetometer"></div>`
-    output += `<div id="weather-chart-${fmisid}_snow"></div>`
+
+    if (data['type'] === 'synop') {
+      output += `<div id="weather-chart-${fmisid}_windrose"></div>`
+      output += `<div id="weather-chart-${fmisid}"></div>`
+      output += `<div id="weather-chart-${fmisid}_alt"></div>`
+      output += `<div id="weather-chart-${fmisid}_alt2"></div>`
+      output += `<div id="weather-chart-${fmisid}_snow"></div>`
+    }
+    else if (data['type'] === 'radiation') {
+      output += `<div id="weather-chart-${fmisid}_radiation"></div>`
+    }
+    else if (data['type'] === 'air_radio') {
+      output += `<div id="weather-chart-${fmisid}_air_radio"></div>`
+    }
+    else if (data['type'] === 'magnetometer') {
+      output += `<div id="weather-chart-${fmisid}_magnetometer"></div>`
+    }
+
     output += '</div>'
     output += `</div>`
 

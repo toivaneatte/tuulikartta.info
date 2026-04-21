@@ -1189,13 +1189,13 @@ var saa = globalThis.saa;
     else if(value === 'vis' || value === 'n_man')
     return 3
     else if(value === 'dose_rate')
-    return 4
+    return 1
     else if(value === 'air_activity')
-    return 5
+    return 1
     else if(value === 'magnetism')
-    return 6
+    return 1
     else if(value === 'snow_aws')
-    return 7
+    return 1
     else
     return 1
   }
