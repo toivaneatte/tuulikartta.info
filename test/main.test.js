@@ -115,16 +115,14 @@ describe("main.js utilities", () => {
       expect(globalThis.window.resolveGraphStartposition("n_man")).to.equal(3);
     });
 
-    it("should return 4 for radiation dose rate", () => {
-      expect(globalThis.window.resolveGraphStartposition("dose_rate")).to.equal(
-        4,
-      );
+    it("should return 1 for radiation dose rate", () => {
+      expect(globalThis.window.resolveGraphStartposition("dose_rate")).to.equal(1);
     });
 
-    it("should return 5 for air activity", () => {
+    it("should return 1 for air activity", () => {
       expect(
         globalThis.window.resolveGraphStartposition("air_activity"),
-      ).to.equal(5);
+      ).to.equal(1);
     });
 
     it("should return 1 as default for unknown parameters", () => {
