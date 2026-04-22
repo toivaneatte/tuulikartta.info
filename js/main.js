@@ -1195,7 +1195,7 @@ var saa = globalThis.saa;
     else if(value === 'magnetism')
     return 1
     else if(value === 'snow_aws')
-    return 1
+    return 4
     else
     return 1
   }
