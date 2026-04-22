@@ -1,6 +1,8 @@
 // Global setup file that runs before all tests
 // This initializes the global environment needed for browser-based code
 
+import moment from "moment";
+
 // Mock document object
 globalThis.document = {
   createElement: function (tag) {
@@ -111,6 +113,9 @@ globalThis.translations = {
 globalThis.selectedLanguage = "fi";
 
 globalThis.localStorage = globalThis.window.localStorage;
+
+// Provide moment globally for browser-script modules imported in Node tests
+globalThis.moment = moment;
 
 // Mock setInterval/setTimeout to prevent side effects in tests
 const originalSetInterval = globalThis.setInterval;

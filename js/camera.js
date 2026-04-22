@@ -6,6 +6,11 @@
 
 var saa = saa || {};
 
+// Use globalThis for compatibility with both browser and test environments
+globalThis.saa = globalThis.saa || {};
+// Rebind local reference to the shared global namespace
+saa = globalThis.saa;
+
 (function(camera, undefined) {
   'use strict';
 

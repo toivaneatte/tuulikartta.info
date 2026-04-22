@@ -3,7 +3,9 @@
 * Handles fetching and validating observation data from local cache and backend
 */
 
-var saa = saa || {};
+// Use globalThis for compatibility with both browser and test environments
+globalThis.saa = globalThis.saa || {};
+var saa = globalThis.saa;
 
 (function (Tuulikartta, undefined) {
   'use strict'

@@ -3,7 +3,9 @@
 * Manages all UI event bindings and interactions
 */
 
-var saa = saa || {};
+// Use globalThis for compatibility with both browser and test environments
+globalThis.saa = globalThis.saa || {};
+var saa = globalThis.saa;
 
 (function (Tuulikartta, undefined) {
   'use strict'
