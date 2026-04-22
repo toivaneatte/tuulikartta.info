@@ -166,6 +166,127 @@ describe('main.js (stubbed)', () => {
       expect(win.saa.Tuulikartta.map.hasLayer(win.saa.camera.markers)).to.equal(false)
     })
   })
+
+  it('should request favourites=1 when favourites mode is enabled', () => {
+    cy.get('#map .leaflet-control-select-favourites', { timeout: 20000 })
+      .should('be.visible')
+      .click()
+
+    cy.get('#map .leaflet-control-select-favourites').should('have.class', 'active')
+
+    cy.wait('@getData', { timeout: 20000 })
+      .its('request.url')
+      .should('include', 'favourites=1')
+  })
+
+  it('should go 1 hour forward in time when the time picker progress button is clicked', () => {
+    const seededDate = '01-04-2026'
+    const seededTime = '12:30'
+
+    cy.get('#datepicker-button', { timeout: 20000 })
+      .clear({ force: true })
+      .type(seededDate, { force: true })
+
+    cy.get('#clockpicker-button', { timeout: 20000 })
+      .clear({ force: true })
+      .type(seededTime, { force: true })
+
+    cy.get('#timepicker-progress-time', { timeout: 20000 }).should('be.visible').click()
+
+    cy.get('#datepicker-button', { timeout: 20000 }).should('have.value', '01.04.2026')
+    cy.get('#clockpicker-button', { timeout: 20000 }).should('have.value', '13:30')
+  })
+
+  it('should switch back to now mode when clicking the Now button', () => {
+    const seededDate = '01-04-2026'
+    const seededTime = '12:30'
+
+    cy.get('#datepicker-button', { timeout: 20000 })
+      .clear({ force: true })
+      .type(seededDate, { force: true })
+
+    cy.get('#clockpicker-button', { timeout: 20000 })
+      .clear({ force: true })
+      .type(seededTime, { force: true })
+
+    cy.get('#select-content-datasearch', { timeout: 20000 }).click()
+
+    cy.window({ timeout: 20000 }).should((win) => {
+      expect(win.saa.Tuulikartta.timeValue).to.not.equal('now')
+    })
+
+    cy.get('#select-content-now', { timeout: 20000 }).click()
+
+    cy.window({ timeout: 20000 }).should((win) => {
+      expect(win.saa.Tuulikartta.timeValue).to.equal('now')
+    })
+  })
+
+  it('should not enable camera layer outside now mode', () => {
+    const seededDate = '01-04-2026'
+    const seededTime = '12:30'
+
+    cy.get('#datepicker-button', { timeout: 20000 })
+      .clear({ force: true })
+      .type(seededDate, { force: true })
+
+    cy.get('#clockpicker-button', { timeout: 20000 })
+      .clear({ force: true })
+      .type(seededTime, { force: true })
+
+    cy.get('#select-content-datasearch', { timeout: 20000 }).click()
+
+    cy.window({ timeout: 20000 }).should((win) => {
+      expect(win.saa.Tuulikartta.timeValue).to.not.equal('now')
+      expect(win.saa.Tuulikartta.map.hasLayer(win.saa.camera.markers)).to.equal(false)
+    })
+
+    cy.get('#map .leaflet-control-select-cam', { timeout: 20000 })
+      .should('be.visible')
+      .click({ force: true })
+
+    cy.get('#map .leaflet-control-select-cam').should('not.have.class', 'active')
+
+    cy.window({ timeout: 20000 }).should((win) => {
+      expect(win.saa.Tuulikartta.map.hasLayer(win.saa.camera.markers)).to.equal(false)
+    })
+  })
+})
+
+describe('error handling (stubbed)', () => {
+  it('should show a toast when getdata.php fails', () => {
+    // Stub radar + list so the app falls back to php/getdata.php
+    cy.intercept('GET', '**/php/dataparser.php*', {
+      statusCode: 200,
+      headers: { 'content-type': 'application/json' },
+      body: {
+        name: 'suomi_dbz_eureffin',
+        dimension: '2026-04-01T10:00:00.000Z/2026-04-01T11:00:00.000Z/PT5M'
+      }
+    }).as('radarParser')
+
+    cy.intercept('GET', '**/list.php', {
+      statusCode: 200,
+      headers: { 'content-type': 'application/json' },
+      body: []
+    }).as('listFiles')
+
+    cy.intercept('GET', '**/php/getdata.php*', {
+      statusCode: 500,
+      headers: { 'content-type': 'application/json' },
+      body: { error: 'Tietojen haku epäonnistui' }
+    }).as('getDataFail')
+
+    cy.visit('/')
+    cy.wait('@radarParser', { timeout: 20000 })
+    cy.wait('@listFiles', { timeout: 20000 })
+    cy.wait('@getDataFail', { timeout: 20000 })
+
+    cy.get('#tuulikartta-toast-container', { timeout: 20000 }).should('exist')
+    cy.get('.tuulikartta-toast', { timeout: 20000 })
+      .should('exist')
+      .and('contain.text', 'Tietojen haku epäonnistui')
+  })
 })
 
 describe('performance (stubbed)', () => {
