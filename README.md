@@ -45,6 +45,10 @@ To run this project you need at least Docker and Docker Compose as well as some 
 
 **This can take up to 30 minutes for the inital run, as the map is being worked and pre-rendered.**
 
+## Testing
+
+jotain testauksesta tänne...
+
 ## Update or configure project parameters
 
 The project offers configuration options for those who have the need to change things. 
@@ -88,7 +92,16 @@ Main points of this process:
 
 - PHP handles some backend properties like creating requests to NodeJS backend and magnetic field data. This is the old backend from the base repo. This should be replaced by the NodeJS if further development is done.
 - javaScript handles the frontend as basic HTML + JS combo.
-- NodeJS backend handles fetching data from APIs and parsing as well as caching. Except fron Magnetic field data, this is handled tiwh PHP. 
+- NodeJS backend handles fetching data from APIs and parsing as well as caching. Except fron Magnetic field data, this is handled with PHP. More about backend in the READMe of /backend.
+- nginx acts as a reverse proxy and is used only in the prod version.
+- better-sqlite3 handles caching in the backend for better performance and reliability.
 
+## Known problems
 
+- Sometimes the loading of the website takes a long time or may get stuck in a loop.
+- HTML encoding error sometimes appears. Refresh usually fixes this.
+
+## License
+
+No license has been applied to this project. It is based in large part on an existing public repository that did not include a license, and as such, all rights to the original code remain with its author. This repository is provided for reference and educational purposes only. If you wish to reuse or distribute any part of this project, you should obtain permission from the original author where applicable.
 
