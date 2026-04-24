@@ -124,8 +124,7 @@ Returns road weather observations from Digitraffic.
   * Parses and combines data before returning results
   * Uses timeout protection for external API calls
 * **Response:**
-  Road weather observations for all stations at the requested time
-* **Errors:**
+  Road weather observations for all stations at the requested time (API returns only most recent observations, so it's possible none have them of the requested time)
 
   * `400` invalid/future timestamp
   * `500` external API failure or timeout
