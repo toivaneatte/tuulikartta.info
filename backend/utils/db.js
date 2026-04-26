@@ -69,17 +69,21 @@ logger.info('SQLite schema ready');
 // Add daily aggregate columns to map_observations and favourite_observations if they don't exist yet
 const dailyColumns = ['wg_1d', 'ws_1d', 'tmax', 'tmin', 'rr_1d', 'wg_max_dir', 'ws_max_dir'];
 for (const col of dailyColumns) {
-  try { db.exec(`ALTER TABLE map_observations ADD COLUMN ${col} REAL`); } catch (e) {}
-  try { db.exec(`ALTER TABLE favourite_observations ADD COLUMN ${col} REAL`); } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE map_observations ADD COLUMN ${col} REAL`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE favourite_observations ADD COLUMN ${col} REAL`);
+  } catch (e) {}
 }
 
 // Delete observations older than retentionDays. Returns number of deleted rows.
 const deleteOldObservations = (retentionDays) => {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - retentionDays);
-  const result = db.prepare(
-    `DELETE FROM favourite_observations WHERE timestamp < ?`
-  ).run(cutoff.toISOString());
+  const result = db
+    .prepare(`DELETE FROM favourite_observations WHERE timestamp < ?`)
+    .run(cutoff.toISOString());
   return result.changes;
 };
 
@@ -198,9 +202,9 @@ const getLatestR1hFavObs = db.prepare(`
 // Delete map_observations older than retentionMinutes
 const deleteOldMapObservations = (retentionMinutes) => {
   const cutoff = new Date(Date.now() - retentionMinutes * 60 * 1000);
-  const result = db.prepare(
-    `DELETE FROM map_observations WHERE timestamp < ?`
-  ).run(cutoff.toISOString());
+  const result = db
+    .prepare(`DELETE FROM map_observations WHERE timestamp < ?`)
+    .run(cutoff.toISOString());
   return result.changes;
 };
 

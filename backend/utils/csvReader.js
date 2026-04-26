@@ -9,7 +9,7 @@ function readConfig(filename) {
     const file = fs.readFileSync(filename, 'utf-8');
     const records = parse(file, {
       columns: true,
-      skip_empty_lines: true
+      skip_empty_lines: true,
     });
     return records;
   } catch (err) {
@@ -19,5 +19,5 @@ function readConfig(filename) {
 }
 
 module.exports = {
-  readConfig
+  readConfig,
 };

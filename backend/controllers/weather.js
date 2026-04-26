@@ -3,13 +3,27 @@ Author: Kasper Kivistö
 Description: This file contains the controller for handling weather-related API endpoints. It includes functions for fetching weather station data from the FMI Open Data API, caching it in Redis, and returning it as JSON or XML responses. The controller also includes a function for showing Redis memory usage information.
 */
 
-const weatherRouter = require('express').Router()
-const { request } = require('express')
+const weatherRouter = require('express').Router();
+const { request } = require('express');
 
 const logger = require('../utils/logger');
 const redisClient = require('../utils/redisClient');
 const config = require('../config');
-const { db, insertMapObsMany, getLatestMapTimestamp, getClosestMapTimestamp, getMapObsByTimestamp, deleteOldMapObservations, getLatestFavouritePerStation, getSecondLatestFavouriteTimestamp, getFavouriteObsByTimestamp, getClosestFavouritePerStation, getFavouriteObsRangeByStation, getLatestR1hMapObs, getLatestR1hFavObs } = require('../utils/db');
+const {
+  db,
+  insertMapObsMany,
+  getLatestMapTimestamp,
+  getClosestMapTimestamp,
+  getMapObsByTimestamp,
+  deleteOldMapObservations,
+  getLatestFavouritePerStation,
+  getSecondLatestFavouriteTimestamp,
+  getFavouriteObsByTimestamp,
+  getClosestFavouritePerStation,
+  getFavouriteObsRangeByStation,
+  getLatestR1hMapObs,
+  getLatestR1hFavObs,
+} = require('../utils/db');
 const { parseFMIMultipointcoverage } = require('../utils/fmiParser');
 const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 
@@ -18,11 +32,13 @@ const { fetchDailyAggregates } = require('../utils/dailyValuesFetcher');
 // ---------------------------------------------------------
 const fetchNewFMIData = async (url) => {
   //logger.debug(`Fetching weather data from FMI API with URL: ${url}`);
-  const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+  const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then((r) =>
+    r.text()
+  );
   const observations = await parseFMIMultipointcoverage(xml, config.favouriteParameters);
   logger.info(`Fetched and processed ${observations.length} observations from FMI API.`);
   return observations;
-}
+};
 
 // Build r_1h carry-forward map from rows [{fmisid, r_1h}, ...]
 const buildR1hMap = (rows) => {
@@ -37,10 +53,11 @@ const buildR1hMap = (rows) => {
 const fetchR1hObservations = async (endTime) => {
   const startTime = new Date(endTime.getTime() - 70 * 60 * 1000);
   const url = `${config.FMIWeatherURL.replace(/parameters=[^&]+/, 'parameters=r_1h')}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
-  const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+  const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then((r) =>
+    r.text()
+  );
   return parseFMIMultipointcoverage(xml, 'r_1h');
 };
-
 
 // ---------------------------------------------------------
 // Functions for showing Redis memory info
@@ -57,8 +74,7 @@ const redisMemoryInfo = async () => {
   } catch (err) {
     logger.error(`Error fetching Redis memory info: ${err.message}`);
   }
-}
-
+};
 
 // ---------------------------------------------------------
 // Function for URL time construction
@@ -101,9 +117,7 @@ const constructURL = (timestamp = null, { fmisid, starttime, endtime, parameters
   let url = `${baseURL}starttime=${startTime.toISOString()}&endtime=${endTime.toISOString()}&`;
   if (fmisid) url += `fmisid=${fmisid}&`;
   return url;
-}
-
-
+};
 
 // ---------------------------------------------------------
 // Classify a timestamp as 'current' (≤30 min ago), 'historical' (>30 min ago),
@@ -122,45 +136,45 @@ const classifyTime = (timestamp) => {
   return 'historical';
 };
 
-
 // ---------------------------------------------------------
 // Converts a raw observation object from FMI parser or SQLite row to the
 // station response format with epochtime, dewpoint difference and type fields.
 // ---------------------------------------------------------
 const obsToStation = (obs) => {
   const epochtime = Math.floor(new Date(obs.timestamp).getTime() / 1000);
-  const t2mdewpoint = (obs.t2m !== null && obs.dewpoint !== null)
-    ? parseFloat((obs.t2m - obs.dewpoint).toFixed(2))
-    : null;
+  const t2mdewpoint =
+    obs.t2m !== null && obs.dewpoint !== null
+      ? parseFloat((obs.t2m - obs.dewpoint).toFixed(2))
+      : null;
   return {
-    fmisid:      obs.fmisid,
-    station:     obs.station,
-    lat:         obs.lat,
-    lon:         obs.lon,
-    time:        obs.timestamp,
+    fmisid: obs.fmisid,
+    station: obs.station,
+    lat: obs.lat,
+    lon: obs.lon,
+    time: obs.timestamp,
     epochtime,
-    type:        'synop',
-    ri_10min:    obs.ri_10min,
-    ws_10min:    obs.ws_10min,
-    wg_10min:    obs.wg_10min,
-    wd_10min:    obs.wd_10min,
-    vis:         obs.vis,
-    wawa:        obs.wawa,
-    t2m:         obs.t2m,
-    n_man:       obs.n_man,
-    rr_1h:       obs.r_1h,
-    snow_aws:    obs.snow_aws,
-    pressure:    obs.pressure,
-    rh:          obs.rh,
-    dewpoint:    obs.dewpoint,
+    type: 'synop',
+    ri_10min: obs.ri_10min,
+    ws_10min: obs.ws_10min,
+    wg_10min: obs.wg_10min,
+    wd_10min: obs.wd_10min,
+    vis: obs.vis,
+    wawa: obs.wawa,
+    t2m: obs.t2m,
+    n_man: obs.n_man,
+    rr_1h: obs.r_1h,
+    snow_aws: obs.snow_aws,
+    pressure: obs.pressure,
+    rh: obs.rh,
+    dewpoint: obs.dewpoint,
     t2mdewpoint,
-    wg_1d:       obs.wg_1d      ?? null,
-    ws_1d:       obs.ws_1d      ?? null,
-    tmax:        obs.tmax       ?? null,
-    tmin:        obs.tmin       ?? null,
-    rr_1d:       obs.rr_1d      ?? null,
-    wg_max_dir:  obs.wg_max_dir ?? null,
-    ws_max_dir:  obs.ws_max_dir ?? null,
+    wg_1d: obs.wg_1d ?? null,
+    ws_1d: obs.ws_1d ?? null,
+    tmax: obs.tmax ?? null,
+    tmin: obs.tmin ?? null,
+    rr_1d: obs.rr_1d ?? null,
+    wg_max_dir: obs.wg_max_dir ?? null,
+    ws_max_dir: obs.ws_max_dir ?? null,
   };
 };
 
@@ -170,14 +184,13 @@ const obsToStation = (obs) => {
 // ---------------------------------------------------------
 const computeLatestPerStation = (observations) => {
   const byStation = {};
-  observations.forEach(obs => {
+  observations.forEach((obs) => {
     if (!byStation[obs.fmisid] || obs.timestamp > byStation[obs.fmisid].timestamp) {
       byStation[obs.fmisid] = obs;
     }
   });
   return Object.values(byStation).map(obsToStation);
 };
-
 
 // ---------------------------------------------------------
 // GET /api/weather/latest
@@ -189,7 +202,7 @@ const computeLatestPerStation = (observations) => {
 // without timestamp: returns the latest observation for each station (from SQLite if data is fresh enough, else from FMI API)
 // ---------------------------------------------------------
 weatherRouter.get('/latest', async (req, res) => {
-  logger.info("GET /api/weather/latest");
+  logger.info('GET /api/weather/latest');
   const timestamp = req.query.time;
 
   if (timestamp && timestamp !== 'now' && new Date(timestamp) > new Date()) {
@@ -197,9 +210,7 @@ weatherRouter.get('/latest', async (req, res) => {
     return res.status(400).send({ error: 'No data available for future timestamps' });
   }
 
-
   // When time param is given:
-
 
   // time given: SQLite if close enough, else FMI API
   if (timestamp && timestamp !== 'now') {
@@ -210,14 +221,18 @@ weatherRouter.get('/latest', async (req, res) => {
 
     if (closest && diffMs <= 10 * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(closest.timestamp);
-      logger.info(`SQLite hit for time=${timestamp}, snapshot at ${closest.timestamp} (diff: ${Math.round(diffMs / 60000)} min, ${rows.length} stations)`);
+      logger.info(
+        `SQLite hit for time=${timestamp}, snapshot at ${closest.timestamp} (diff: ${Math.round(diffMs / 60000)} min, ${rows.length} stations)`
+      );
       let r1hMap = {};
       try {
         r1hMap = buildR1hMap(await fetchR1hObservations(new Date(closest.timestamp)));
       } catch (err) {
         logger.error(`Could not fetch r_1h carry-forward: ${err.message}`);
       }
-      return res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
+      return res.send(
+        rows.map((row) => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null }))
+      );
     }
 
     // Not in SQLite, fetch the observations for the requested timestamp from FMI API.
@@ -245,10 +260,13 @@ weatherRouter.get('/latest', async (req, res) => {
     } catch (err) {
       logger.error(`Could not fetch r_1h carry-forward: ${err.message}`);
     }
-    const obsWithDaily = observations.map(obs => ({ ...obs, ...dailyByFmisid[obs.fmisid], r_1h: obs.r_1h ?? r1hMap[obs.fmisid] ?? null }));
+    const obsWithDaily = observations.map((obs) => ({
+      ...obs,
+      ...dailyByFmisid[obs.fmisid],
+      r_1h: obs.r_1h ?? r1hMap[obs.fmisid] ?? null,
+    }));
     return res.send(computeLatestPerStation(obsWithDaily));
   }
-
 
   // No time param given, or it is "now":
 
@@ -261,9 +279,13 @@ weatherRouter.get('/latest', async (req, res) => {
     const dataAgeMs = Date.now() - new Date(latestRow.timestamp).getTime();
     if (dataAgeMs < (config.currentDataMaxAgeMinutes + fetchDelayMinutes) * 60 * 1000) {
       const rows = getMapObsByTimestamp.all(latestRow.timestamp);
-      logger.info(`SQLite data fresh (age: ${Math.round(dataAgeMs / 1000)}s), returning ${rows.length} stations`);
+      logger.info(
+        `SQLite data fresh (age: ${Math.round(dataAgeMs / 1000)}s), returning ${rows.length} stations`
+      );
       const r1hMap = buildR1hMap(getLatestR1hMapObs.all());
-      return res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
+      return res.send(
+        rows.map((row) => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null }))
+      );
     }
   }
 
@@ -297,16 +319,16 @@ weatherRouter.get('/latest', async (req, res) => {
   const freshRow = getLatestMapTimestamp.get();
   const rows = getMapObsByTimestamp.all(freshRow.timestamp);
   const r1hMap = buildR1hMap(getLatestR1hMapObs.all());
-  res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
+  res.send(
+    rows.map((row) => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null }))
+  );
 });
-
-
 
 // ---------------------------------------------------------
 // GET /api/weather/xml endpoint for fetching weather station data from FMI API and returning it as XML (depricated - fix later)
 // ---------------------------------------------------------
 weatherRouter.get('/xml', async (req, res) => {
-  logger.info("GET /api/weather/xml");
+  logger.info('GET /api/weather/xml');
   const timestamp = req.query.time || 'now';
   const { fmisid, starttime, endtime, parameters } = req.query;
   const timeType = classifyTime(timestamp);
@@ -343,13 +365,15 @@ weatherRouter.get('/xml', async (req, res) => {
   }
 
   // Fetch from FMI API
-  logger.info(`No cached data found, fetching from FMI API (timestamp: ${timestamp}, fmisid: ${fmisid ?? 'all'})`);
+  logger.info(
+    `No cached data found, fetching from FMI API (timestamp: ${timestamp}, fmisid: ${fmisid ?? 'all'})`
+  );
   const url = constructURL(current ? null : timestamp, { fmisid, starttime, endtime, parameters });
   logger.info(`Constructed URL: ${url}`);
 
   const xmlData = await fetch(url)
-    .then(r => r.text())
-    .catch(err => {
+    .then((r) => r.text())
+    .catch((err) => {
       logger.error(`Error fetching weather data from FMI API: ${err.message}`);
       return null;
     });
@@ -371,7 +395,7 @@ weatherRouter.get('/xml', async (req, res) => {
 
   res.set('Content-Type', 'application/xml');
   res.send(xmlData);
-})
+});
 
 // ---------------------------------------------------------
 // GET /api/weather/favourites - returns latest observation for all favourite stations
@@ -381,7 +405,7 @@ weatherRouter.get('/xml', async (req, res) => {
 // Same format as /latest
 // ---------------------------------------------------------
 weatherRouter.get('/favourites', (req, res) => {
-  logger.info("GET /api/weather/favourites");
+  logger.info('GET /api/weather/favourites');
   const time = req.query.time;
   let rows;
   let usedTimestamp;
@@ -390,9 +414,9 @@ weatherRouter.get('/favourites', (req, res) => {
     // if time is given and it is not "now", return the closest observations to that time, if they are within 5 minutes of the requested time.
     if (time && time !== 'now') {
       const reqMs = new Date(time).getTime();
-      rows = getClosestFavouritePerStation.all(time).filter(row =>
-        Math.abs(new Date(row.timestamp).getTime() - reqMs) <= 5 * 60 * 1000
-      );
+      rows = getClosestFavouritePerStation
+        .all(time)
+        .filter((row) => Math.abs(new Date(row.timestamp).getTime() - reqMs) <= 5 * 60 * 1000);
       usedTimestamp = time;
     } else {
       // Use the second most recent timestamp to avoid showing an empty latest batch
@@ -417,8 +441,10 @@ weatherRouter.get('/favourites', (req, res) => {
 
   const r1hMap = buildR1hMap(getLatestR1hFavObs.all(usedTimestamp));
   logger.info(`Returning ${rows.length} favourite station observations`);
-  res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
-})
+  res.send(
+    rows.map((row) => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null }))
+  );
+});
 
 // ---------------------------------------------------------
 // GET /api/weather/favourites/graph
@@ -433,7 +459,7 @@ weatherRouter.get('/favourites/graph', (req, res) => {
     return res.status(400).send({ error: 'Missing fmisid' });
   }
 
-  const end = (time && time !== 'now') ? new Date(time) : new Date();
+  const end = time && time !== 'now' ? new Date(time) : new Date();
   if (isNaN(end.getTime())) {
     return res.status(400).send({ error: 'Invalid time parameter' });
   }
@@ -461,7 +487,9 @@ weatherRouter.get('/favourites/graph', (req, res) => {
 
   const r1hMap = buildR1hMap(getLatestR1hFavObs.all(end.toISOString()));
   logger.info(`Returning ${rows.length} cached favourite graph rows for fmisid=${stationId}`);
-  res.send(rows.map(row => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null })));
+  res.send(
+    rows.map((row) => obsToStation({ ...row, r_1h: row.r_1h ?? r1hMap[row.fmisid] ?? null }))
+  );
 });
 
 // ---------------------------------------------------------
@@ -469,6 +497,6 @@ weatherRouter.get('/favourites/graph', (req, res) => {
 // ---------------------------------------------------------
 weatherRouter.get('/', (req, res) => {
   return res.status(404).send({ error: 'Not found' });
-})
+});
 
-module.exports = weatherRouter
+module.exports = weatherRouter;

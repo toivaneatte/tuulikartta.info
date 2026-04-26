@@ -3,11 +3,11 @@ const { createClient } = require('redis');
 const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://redis:6379',
   socket: {
-    reconnectStrategy: false
-  }
+    reconnectStrategy: false,
+  },
 });
 
-redisClient.on('error', err => {
+redisClient.on('error', (err) => {
   console.warn('Redis unavailable, continuing without cache');
 });
 

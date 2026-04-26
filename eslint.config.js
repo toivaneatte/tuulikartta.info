@@ -3,7 +3,12 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['node_modules/**', 'backend/node_modules/**', 'cypress/screenshots/**', 'cypress/videos/**'],
+    ignores: [
+      'node_modules/**',
+      'backend/node_modules/**',
+      'cypress/screenshots/**',
+      'cypress/videos/**',
+    ],
   },
   js.configs.recommended,
   {

@@ -13,7 +13,11 @@ const getMidnight = (date) => {
   const datePart = date.toLocaleDateString('en-CA', { timeZone: 'Europe/Helsinki' });
   const noonUTC = new Date(`${datePart}T12:00:00Z`);
   const helsinkiHour = parseInt(
-    new Intl.DateTimeFormat('en', { timeZone: 'Europe/Helsinki', hour: '2-digit', hour12: false }).format(noonUTC),
+    new Intl.DateTimeFormat('en', {
+      timeZone: 'Europe/Helsinki',
+      hour: '2-digit',
+      hour12: false,
+    }).format(noonUTC),
     10
   );
   const offsetHours = helsinkiHour - 12; // 2 for UTC+2 (winter), 3 for UTC+3 (summer)
@@ -38,7 +42,9 @@ const fetchDailyAggregates = async (endTimestamp) => {
 
   let observations;
   try {
-    const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+    const xml = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then((r) =>
+      r.text()
+    );
     observations = await parseFMIMultipointcoverage(xml, config.dailyAggregateParameters);
   } catch (err) {
     logger.error(`Error fetching daily aggregates: ${err.message}`);
@@ -63,8 +69,13 @@ const fetchDailyAggregates = async (endTimestamp) => {
   // Calculate running aggregates per station per timestamp
   const aggregated = [];
   for (const fmisid of Object.keys(byStation)) {
-    let wg_1d = null, ws_1d = null, tmax = null, tmin = null, rr_1d = 0;
-    let wg_max_dir = null, ws_max_dir = null;
+    let wg_1d = null,
+      ws_1d = null,
+      tmax = null,
+      tmin = null,
+      rr_1d = 0;
+    let wg_max_dir = null,
+      ws_max_dir = null;
 
     for (const obs of byStation[fmisid]) {
       if (obs.wg_10min !== null) {

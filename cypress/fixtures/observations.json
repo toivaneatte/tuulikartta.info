@@ -4,7 +4,7 @@
     "station": "Test Station 1",
     "type": "synop",
     "lat": 61.4978,
-    "lon": 23.7610,
+    "lon": 23.761,
     "epochtime": 1711891200,
     "ws_10min": 5.2,
     "wg_10min": 7.1,

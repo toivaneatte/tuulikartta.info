@@ -7,12 +7,15 @@ Description: Controller for radiation-related endpoints. Currently includes:
 
 */
 
-const radiationRouter = require('express').Router()
+const radiationRouter = require('express').Router();
 const logger = require('../utils/logger');
 const config = require('../config');
 const setTimeService = require('../services/setTime');
 const { getRValues } = require('../services/fetchRValues');
-const { parseFMIMultipointcoverage, parseNuclideMultipointcoverage } = require('../utils/fmiParser');
+const {
+  parseFMIMultipointcoverage,
+  parseNuclideMultipointcoverage,
+} = require('../utils/fmiParser');
 
 const DEBUG = config.debugMode;
 /*
@@ -29,7 +32,7 @@ TODO:
 // GET /api/radiation/rvalue endpoint for fetching R values from space.fmi API
 // ---------------------------------------------------------
 radiationRouter.get('/rvalue', async (req, res) => {
-  logger.info("GET /api/radiation/rvalue");
+  logger.info('GET /api/radiation/rvalue');
   try {
     const rValues = await getRValues();
     logger.info(`Fetched R values, number of observations: ${rValues.length}`);
@@ -37,8 +40,8 @@ radiationRouter.get('/rvalue', async (req, res) => {
     res.set('Content-Type', 'application/json');
     res.send(rValues);
   } catch (error) {
-    logger.error("Error in /api/radiation/rvalue endpoint:", error);
-    res.status(500).json({ error: "R-luvut timeout" });
+    logger.error('Error in /api/radiation/rvalue endpoint:', error);
+    res.status(500).json({ error: 'R-luvut timeout' });
   }
 });
 
@@ -46,19 +49,21 @@ radiationRouter.get('/rvalue', async (req, res) => {
 // GET /api/radiation/exteral endpoint for fetching external radiation data from STUK FMI API
 // ---------------------------------------------------------
 radiationRouter.get('/external', async (req, res) => {
-  logger.info("GET /api/radiation/external");
+  logger.info('GET /api/radiation/external');
   // get the URL from config
   let URL = config.STUKRadiationURL;
 
   //start by making time stamp
-  const timestamp = req.query.time || "now";
-  
+  const timestamp = req.query.time || 'now';
+
   URL += setTimeService.setTime(timestamp, false); // isGraph = false for map data
   // logger.debug("Constructed URL for external radiation: " + URL);
 
   // fetch actual data from API
   try {
-    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(
+      (r) => r.text()
+    );
 
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
@@ -70,10 +75,9 @@ radiationRouter.get('/external', async (req, res) => {
 
     res.set('Content-Type', 'application/json');
     res.send(result);
-
   } catch (error) {
-    logger.error("Error in /api/radiation/external endpoint:", error);
-    res.status(500).json({ error: "Ulkoinen säteily timeout" });
+    logger.error('Error in /api/radiation/external endpoint:', error);
+    res.status(500).json({ error: 'Ulkoinen säteily timeout' });
   }
 });
 
@@ -81,35 +85,40 @@ radiationRouter.get('/external', async (req, res) => {
 // GET /api/radiation/exteral endpoint for fetching external radiation data for one station from STUK FMI API
 // ---------------------------------------------------------
 radiationRouter.get('/external/:stationId', async (req, res) => {
-  logger.info("GET /api/radiation/external");
+  logger.info('GET /api/radiation/external');
   // get the URL from config
   let URL = `${config.STUKRadiationGraphURL}fmisid=${req.params.stationId}&`;
 
   //start by making time stamp
-  const timestamp = req.query.time || "now";
-  
+  const timestamp = req.query.time || 'now';
+
   // add timestamp to URL
   URL += setTimeService.setTime(timestamp, true); // isGraph = true for graph data
-  logger.debug("GET /api/radiation/external - URL: " + URL);
+  logger.debug('GET /api/radiation/external - URL: ' + URL);
 
   // fetch actual data from API
   try {
-    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(
+      (r) => r.text()
+    );
 
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
     }
 
     // Parse the XML response using the utility function
-    const result = await parseFMIMultipointcoverage(responseXml, 'DR_PT10M_avg,epochtime', 'radiation');
+    const result = await parseFMIMultipointcoverage(
+      responseXml,
+      'DR_PT10M_avg,epochtime',
+      'radiation'
+    );
     logger.info(`Parsed external radiation data, number of observations: ${result.length}`);
 
     res.set('Content-Type', 'application/json');
     res.send(result);
-
   } catch (error) {
-    logger.error("Error in /api/radiation/external endpoint:", error);
-    res.status(500).json({ error: "Säteilydata timeout" });
+    logger.error('Error in /api/radiation/external endpoint:', error);
+    res.status(500).json({ error: 'Säteilydata timeout' });
   }
 });
 
@@ -117,19 +126,21 @@ radiationRouter.get('/external/:stationId', async (req, res) => {
 // GET /api/radiation/nuclides endpoint for fetching nuclide data from STUK FMI API
 // ---------------------------------------------------------
 radiationRouter.get('/nuclides', async (req, res) => {
-  logger.info("GET /api/radiation/nuclides");
+  logger.info('GET /api/radiation/nuclides');
   // get the URL from config
   let URL = config.STUKNuclidesURL;
 
   //start by making time stamp
-  const timestamp = req.query.time || "now";
-  
+  const timestamp = req.query.time || 'now';
+
   URL += setTimeService.setDayRange(timestamp, true, 90); // isGraph = true for graph data
   //logger.debug("Constructed URL for nuclides: " + URL);
 
   // fetch actual data from API
-  try{
-    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(r => r.text());
+  try {
+    const responseXml = await fetch(URL, { signal: AbortSignal.timeout(config.apiTimeoutMs) }).then(
+      (r) => r.text()
+    );
 
     if (!responseXml) {
       throw new Error(`HTTP error: ${responseXml.status}`);
@@ -141,10 +152,9 @@ radiationRouter.get('/nuclides', async (req, res) => {
 
     res.set('Content-Type', 'application/json');
     res.send(result);
-
   } catch (error) {
-    logger.error("Error in /api/radiation/nuclides endpoint:", error);
-    res.status(500).json({ error: "Ilman radioaktiivisuus timeout" });
+    logger.error('Error in /api/radiation/nuclides endpoint:', error);
+    res.status(500).json({ error: 'Ilman radioaktiivisuus timeout' });
   }
 });
 
@@ -152,7 +162,7 @@ radiationRouter.get('/nuclides', async (req, res) => {
 // Other endpoints return 404 Not Found
 // ---------------------------------------------------------
 radiationRouter.use((req, res) => {
-  res.status(404).json({ error: "Endpoint not found" });
+  res.status(404).json({ error: 'Endpoint not found' });
 });
 
 module.exports = radiationRouter;
