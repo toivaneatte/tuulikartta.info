@@ -46,6 +46,18 @@ docker compose -f docker-compose.dev.yml up -d
 
 The server will start on the configured port (default: 3000).
 
+## Favourite Stations Background Fetcher
+
+Favourite station weather data is fetched automatically in the background using a node-cron job defined in `utils/favouriteFetcher.js`. The fetcher runs on a configurable schedule and stores observations in the `favourite_observations` SQLite table.
+
+Key behaviour:
+- **Schedule**: controlled by `fetchFavouritePeriod` in `config.js` (cron expression, e.g. `*/10 * * * *`)
+- **Stations**: only stations listed in `favouriteStations` with `onOff: 1` are fetched
+- **Fetch window**: each run fetches the last N+2 minutes (interval + 2 min overlap to avoid missing data between runs)
+- **Initial backfill**: on first start (or if SQLite has no recent data), fetches the last `favouriteInitialBackfillHours` hours of history
+- **Retention**: rows older than `favouriteRetentionDays` days are deleted after each run
+- **Daily aggregates**: daily aggregate values (max gust, min/max temperature etc.) are recalculated after each fetch
+
 ## API Endpoints
 
 ### `GET /api/weather/latest`

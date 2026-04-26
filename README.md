@@ -69,9 +69,12 @@ The project offers configuration options for those who have the need to change t
 
 ## Fetching data from external APIs
 
-Observations to be displayed on the map are fetched via the backend, except for magnetic field data (which just has not been refactored to backend). varmaan tarkempi selitys minkä tiedostojen kautta api-haku tehdään backendissä?
+Observations to be displayed on the map are fetched via the backend, except for magnetic field data (which just has not been refactored to backend). 
+Backend API requests are handled in backend/controllers/, parsed in backend/utils/fmiParser.js and backend/services/, and routed through php/getdata.php which calls the backend endpoints in parallel.
 
-Synop data: regular weather data, data is fetched for previous midnight until asked timestamp so that values for the day (e.g. max value) can be calculated.
+Synop data: regular weather data. All observations are fetched for a configurable time window (mapObservationsWindowMinutes in config). Daily aggregate values (e.g. daily max gust, min/max temperature) are calculated separately from a midnight-to-now fetch. 
+
+Favourite station synop data is fetched on a configurable cron schedule and stored in SQLite cache for a configurable time period.
 
 R data: R-values, describe fluctuations in the earth's magnetic field and tell how likely northern lights are to appear. The API only returns the newest data, history and graphs would have to be implemented using backend cache.
 
