@@ -7,7 +7,7 @@ var saa = saa || {};
 
 (function (weatherGraph, undefined) {
   // ---------------------------------------------------------
-  // Expand div that contains graphs
+  // Expand div that contains graphs, this function does not seem to be used
   // ---------------------------------------------------------
 
   weatherGraph.opengraphbox = function () {
@@ -32,7 +32,7 @@ var saa = saa || {};
   };
 
   // ---------------------------------------------------------
-  // Expand div that contains graphs
+  // Expand div that contains graphs, this function does not seem to be used
   // ---------------------------------------------------------
 
   weatherGraph.expandGraph = function (fmisid, lat, lon, type) {
@@ -43,7 +43,7 @@ var saa = saa || {};
   };
 
   // ---------------------------------------------------------
-  // Get data for wind graph
+  // Get data for graph, this function is called in event-handlers.js on popupopen
   // ---------------------------------------------------------
 
   weatherGraph.getObservationGraph = function (fmisid, type, timestamp) {
@@ -77,9 +77,9 @@ var saa = saa || {};
   };
 
   // ---------------------------------------------------------
-  // Construct weather graph frame
+  // Construct weather graph frame, this function does not seem to be used
   // ---------------------------------------------------------
-  // this entire thing does not seem to be used?
+ 
   weatherGraph.constructWeatherGraph = function (container, fmisid) {
     // remove old content
     document.getElementById('graph-box').innerHTML = '';
@@ -104,6 +104,7 @@ var saa = saa || {};
 
     $('#graph-box').html(html);
   };
+  // ---------------------------------------------------------
 
   weatherGraph.formatTimeLabel = function (value) {
     // add leading zero if needed

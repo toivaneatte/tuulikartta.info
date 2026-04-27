@@ -226,7 +226,7 @@ var saa = globalThis.saa;
       autoPan: false,
     });
     map.addControl(sidebar);
-    sidebar.setContent(Tuulikartta.populateSidebar(radarLayerOpacity)); //tämä on omassa tiedostossa
+    sidebar.setContent(Tuulikartta.populateSidebar(radarLayerOpacity)); // populate-sidebar.js
 
     /* settings control */
     var customControl = L.Control.extend({
@@ -239,7 +239,7 @@ var saa = globalThis.saa;
           'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-source'
         );
 
-        // moved eventhandler setting to event-handlers.js
+        // eventhandler is set in event-handlers.js
         Tuulikartta.settingsHandler(container, sidebar);
 
         container.title = translations[window.selectedLanguage]['settings'];
@@ -286,7 +286,7 @@ var saa = globalThis.saa;
     });
     map.addControl(new lightningControl());
 
-    /* table control */ // tässä aiempi kommentti oli radar control ?
+    /* table control */
     var tableDataControl = L.Control.extend({
       options: {
         position: 'topright',
@@ -358,7 +358,6 @@ var saa = globalThis.saa;
       },
     });
     map.addControl(new favouritesControl());
-    //TÄHÄN ASTI KOMMENTOINTIA
     var infoControl = L.Control.extend({
       options: {
         position: 'topleft',
@@ -377,8 +376,6 @@ var saa = globalThis.saa;
     });
     map.addControl(new infoControl());
   };
-
-  // tässä oli populate sidebar
 
   Tuulikartta.initWMS = function () {
     var dataWMS = 'https://data.fmi.fi/fmi-apikey/f01a92b7-c23a-47b0-95d7-cbcb4a60898b/wms';
@@ -826,6 +823,7 @@ var saa = globalThis.saa;
             );
             marker.type = saa.Tuulikartta.data[i]['type'];
             // missing fmisid required for graph call
+            // but we have only the newest data points so no graph can be drawn anyway
           }
         }
       }
@@ -1410,8 +1408,6 @@ var saa = globalThis.saa;
       }
     }
   };
-
-  // tässä oli ennen populateInfoWindow
 
   window.resolveGraphStartposition = function (value) {
     if (value === 'ws_10min' || value === 'wg_10min' || value === 'ws_1d' || value === 'wg_1d')

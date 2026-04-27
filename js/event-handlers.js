@@ -15,7 +15,6 @@ var saa = globalThis.saa;
   // ---------------------------------------------------------
 
   Tuulikartta.initEventHandlers = function () {
-    // nämä ilmeisesti jQuerylla kirjoitettu
 
     // Select weather parameter
     $('#select-wind-parameter').change(function () {
@@ -42,7 +41,7 @@ var saa = globalThis.saa;
       );
     });
 
-    // Popup open handler
+    // Popup open handler, meaning when clicking a weather station marker
     saa.Tuulikartta.map.on('popupopen', function (e) {
       var currentParameter = $('#select-wind-parameter').val();
       if (currentParameter) {
@@ -278,7 +277,6 @@ var saa = globalThis.saa;
       saa.lightning.init(saa.Tuulikartta.timeStamp);
     });
   };
-  // ja nämä on perus javascriptiä
 
   // eventhandler for settings button
   Tuulikartta.settingsHandler = function (container, sidebar) {
