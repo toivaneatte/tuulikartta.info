@@ -47,7 +47,39 @@ To run this project you need at least Docker and Docker Compose as well as some 
 
 ## Testing
 
-jotain testauksesta tänne...
+Testing currently focuses on frontend/unit logic and browser-level end-to-end flows.
+
+### Unit tests (Mocha + Chai)
+
+Run all unit tests from the project root:
+
+`npm test`
+
+This runs Mocha with the shared setup file (`test/setup.js`) and executes tests under `test/`.
+
+### E2E tests (Cypress)
+
+Run Cypress in interactive mode:
+
+`npx cypress open`
+
+Run Cypress in headless mode:
+
+`npx cypress run`
+
+E2E specs are located in `cypress/e2e/`.
+
+### Linting (ESLint) and formatting (Prettier)
+
+ESLint is configured for code quality and Prettier for consistent formatting.
+
+Run the linter with:
+
+`npm run lint`
+
+And Prettier with:
+
+`npm run format`
 
 ## Update or configure project parameters
 
