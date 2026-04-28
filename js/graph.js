@@ -1207,7 +1207,7 @@ var saa = saa || {};
             title: {
               align: 'high',
               offset: 0,
-              text: 'pT',
+              text: 'nT',
               rotation: 0,
               y: -14,
               x: -10,
@@ -1248,7 +1248,7 @@ var saa = saa || {};
               color: '#FF6B6B',
               data: data.obs.magn_x,
               tooltip: {
-                valueSuffix: ' pT',
+                valueSuffix: ' nT',
               },
             },
             {
@@ -1257,7 +1257,7 @@ var saa = saa || {};
               color: '#4ECDC4',
               data: data.obs.magn_y,
               tooltip: {
-                valueSuffix: ' pT',
+                valueSuffix: ' nT',
               },
             },
             {
@@ -1266,7 +1266,7 @@ var saa = saa || {};
               color: '#95E1D3',
               data: data.obs.magn_z,
               tooltip: {
-                valueSuffix: ' pT',
+                valueSuffix: ' nT',
               },
             },
           ],

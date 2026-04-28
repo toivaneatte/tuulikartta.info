@@ -114,7 +114,7 @@ Magnetometer data: strength of earth's magnetic field. Sets url time differently
 
 Road observation data: currently only the most recent data is fetched. Doesn't have implementation for the history as there needs to be a way to go around the API call limits for it. Doesn't have graphs due to it.
 
-Data for the graphs is fetched directly by the frontend from the APIs, has not been refactored to use backend. Data is handled in weather-graph-ts.php and graphs are drawn in graph.js. The HTML base element for the graphs (showing station info etc) is made in populateInfoWindow in populate-sidebar.js.
+Graph data is handled in weather-graph-ts.php and graphs are drawn in graph.js. Synop data is stored in cache and this data is used for synop graphs, graphs for other data types depend on fetching the data from the APIs. The HTML base element for the graphs (showing station info etc) is made in populateInfoWindow in populate-sidebar.js.
 
 ## Data flow 
 
