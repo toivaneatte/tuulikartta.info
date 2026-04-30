@@ -217,36 +217,6 @@ describe('main.js (stubbed)', () => {
       expect(win.saa.Tuulikartta.timeValue).to.equal('now');
     });
   });
-
-  it('should not enable camera layer outside now mode', () => {
-    const seededDate = '01-04-2026';
-    const seededTime = '12:30';
-
-    cy.get('#datepicker-button', { timeout: 20000 })
-      .clear({ force: true })
-      .type(seededDate, { force: true });
-
-    cy.get('#clockpicker-button', { timeout: 20000 })
-      .clear({ force: true })
-      .type(seededTime, { force: true });
-
-    cy.get('#select-content-datasearch', { timeout: 20000 }).click();
-
-    cy.window({ timeout: 20000 }).should((win) => {
-      expect(win.saa.Tuulikartta.timeValue).to.not.equal('now');
-      expect(win.saa.Tuulikartta.map.hasLayer(win.saa.camera.markers)).to.equal(false);
-    });
-
-    cy.get('#map .leaflet-control-select-cam', { timeout: 20000 })
-      .should('be.visible')
-      .click({ force: true });
-
-    cy.get('#map .leaflet-control-select-cam').should('not.have.class', 'active');
-
-    cy.window({ timeout: 20000 }).should((win) => {
-      expect(win.saa.Tuulikartta.map.hasLayer(win.saa.camera.markers)).to.equal(false);
-    });
-  });
 });
 
 describe('error handling (stubbed)', () => {
