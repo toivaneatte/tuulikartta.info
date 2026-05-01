@@ -5,8 +5,6 @@ Display and visualize finnish meteorological observations.
 Course work for COMP.SE.610/620 Spring 2026 Software Engineering Project 1 and 2.
 Original work of Ville Oravilkka: https://github.com/nakkim/tuulikartta.info.
 
-Mahdollisesti joku kuva tähän?
-
 ## Features
 
 - Basic synop weather data from The Finnish Meteorological Institute FMI (Wind, Temp, Rain, etc,...)
