@@ -10,9 +10,10 @@ Mahdollisesti joku kuva tähän?
 ## Features
 
 - Basic synop weather data from The Finnish Meteorological Institute FMI (Wind, Temp, Rain, etc,...)
-- R-values from FMI
+- R-values from RWC
 - External Radiation data from FMI Radiation and Nuclear Safety Authority (STUK)
 - Radionuclide activity from FMI STUK
+- Magnetometer data from FMI, NOTE: the data from the API may differ from the description on FMI's site, needs to be checked.
 - Road weather observations from Digitraffic
 - Road weather cameras from Digitraffic
 - Different visual graphs (Wind, Temp, Snow, etc,...)
