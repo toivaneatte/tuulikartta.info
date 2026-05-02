@@ -24,46 +24,54 @@ const parseFMIMultipointcoverage = async (xmlString, parameters, type = null) =>
   const paramList = parameters.split(',');
   const results = [];
 
-  members.forEach(member => {
+  members.forEach((member) => {
     const obs = member['omso:GridSeriesObservation'][0];
 
     // Station names + fmisids
-    const stationMembers = obs['om:featureOfInterest'][0]
-      ['sams:SF_SpatialSamplingFeature'][0]['sam:sampledFeature'][0]
-      ['target:LocationCollection'][0]['target:member'];
+    const stationMembers =
+      obs['om:featureOfInterest'][0]['sams:SF_SpatialSamplingFeature'][0]['sam:sampledFeature'][0][
+        'target:LocationCollection'
+      ][0]['target:member'];
 
-    const stations = stationMembers.map(s => {
+    const stations = stationMembers.map((s) => {
       const loc = s['target:Location'][0];
       return {
         name: loc['gml:name'][0]._,
-        fmisid: parseInt(loc['gml:identifier'][0]._, 10)
+        fmisid: parseInt(loc['gml:identifier'][0]._, 10),
       };
     });
 
     // Station coordinates as strings, for example: "61.418 23.604"
-    const pointMembers = obs['om:featureOfInterest'][0]
-      ['sams:SF_SpatialSamplingFeature'][0]['sams:shape'][0]
-      ['gml:MultiPoint'][0]['gml:pointMember'];
+    const pointMembers =
+      obs['om:featureOfInterest'][0]['sams:SF_SpatialSamplingFeature'][0]['sams:shape'][0][
+        'gml:MultiPoint'
+      ][0]['gml:pointMember'];
 
-    const coords = pointMembers.map(p =>
-      p['gml:Point'][0]['gml:pos'][0].trim()
-    );
+    const coords = pointMembers.map((p) => p['gml:Point'][0]['gml:pos'][0].trim());
 
     //  Positions block: each line is "lat lon epoch"
-    const positionsRaw = obs['om:result'][0]
-      ['gmlcov:MultiPointCoverage'][0]['gml:domainSet'][0]
-      ['gmlcov:SimpleMultiPoint'][0]['gmlcov:positions'][0];
+    const positionsRaw =
+      obs['om:result'][0]['gmlcov:MultiPointCoverage'][0]['gml:domainSet'][0][
+        'gmlcov:SimpleMultiPoint'
+      ][0]['gmlcov:positions'][0];
 
-    const positionRows = positionsRaw.trim().split('\n')
-      .map(r => r.trim()).filter(r => r.length > 0);
+    const positionRows = positionsRaw
+      .trim()
+      .split('\n')
+      .map((r) => r.trim())
+      .filter((r) => r.length > 0);
 
     // 4. Values block: each line has one value per parameter
-    const valuesRaw = obs['om:result'][0]
-      ['gmlcov:MultiPointCoverage'][0]['gml:rangeSet'][0]
-      ['gml:DataBlock'][0]['gml:doubleOrNilReasonTupleList'][0];
+    const valuesRaw =
+      obs['om:result'][0]['gmlcov:MultiPointCoverage'][0]['gml:rangeSet'][0]['gml:DataBlock'][0][
+        'gml:doubleOrNilReasonTupleList'
+      ][0];
 
-    const valueRows = valuesRaw.trim().split('\n')
-      .map(r => r.trim()).filter(r => r.length > 0);
+    const valueRows = valuesRaw
+      .trim()
+      .split('\n')
+      .map((r) => r.trim())
+      .filter((r) => r.length > 0);
 
     // 5. Combine: one result row per position row
     positionRows.forEach((posRow, i) => {
@@ -74,14 +82,11 @@ const parseFMIMultipointcoverage = async (xmlString, parameters, type = null) =>
       const timestamp = new Date(epoch * 1000).toISOString();
 
       // Match station by coordinate proximity
-      const stationIdx = coords.findIndex(c => {
+      const stationIdx = coords.findIndex((c) => {
         const cp = c.split(/\s+/);
-        return Math.abs(parseFloat(cp[0]) - lat) < 0.01 &&
-               Math.abs(parseFloat(cp[1]) - lon) < 0.01;
+        return Math.abs(parseFloat(cp[0]) - lat) < 0.01 && Math.abs(parseFloat(cp[1]) - lon) < 0.01;
       });
-      const station = stationIdx >= 0
-        ? stations[stationIdx]
-        : stations[i % stations.length];
+      const station = stationIdx >= 0 ? stations[stationIdx] : stations[i % stations.length];
 
       // Parse measurement values for this row
       const vals = valueRows[i]?.split(/\s+/) ?? [];
@@ -100,7 +105,7 @@ const parseFMIMultipointcoverage = async (xmlString, parameters, type = null) =>
         lat,
         lon,
         type,
-        ...measurements
+        ...measurements,
       });
     });
   });
@@ -109,20 +114,16 @@ const parseFMIMultipointcoverage = async (xmlString, parameters, type = null) =>
 };
 
 /**
- * 
- * @param {*} xmlString 
- * @returns 
+ *
+ * @param {*} xmlString
+ * @returns
  */
 const parseNuclideMultipointcoverage = async (xmlString) => {
   const parsedData = await xmlParser.parseStringPromise(xmlString);
 
-  const membersRaw = parsedData?.["wfs:FeatureCollection"]?.["wfs:member"];
+  const membersRaw = parsedData?.['wfs:FeatureCollection']?.['wfs:member'];
 
-  const members = Array.isArray(membersRaw)
-    ? membersRaw
-    : membersRaw
-    ? [membersRaw]
-    : [];
+  const members = Array.isArray(membersRaw) ? membersRaw : membersRaw ? [membersRaw] : [];
 
   const airRadioByKey = {};
 
@@ -130,36 +131,27 @@ const parseNuclideMultipointcoverage = async (xmlString) => {
   logger.debug(`Parsing nuclide multipointcoverage, number of members: ${members.length}`);
   for (const member of members) {
     // Extract core fields once per member, since they are needed for all parameters
-    const obs = member["omso:PointObservation"]?.[0];
+    const obs = member['omso:PointObservation']?.[0];
     if (!obs) continue;
 
-    const foi =
-      obs["om:featureOfInterest"]?.[0]?.[
-        "sams:SF_SpatialSamplingFeature"
-      ]?.[0];
+    const foi = obs['om:featureOfInterest']?.[0]?.['sams:SF_SpatialSamplingFeature']?.[0];
 
-    const location =
-      foi?.["sam:sampledFeature"]?.[0]?.["target:Location"]?.[0];
+    const location = foi?.['sam:sampledFeature']?.[0]?.['target:Location']?.[0];
 
-    const name = location?.["gml:name"]?.[0]?._ || "";
-    const fmisidRaw = location?.["gml:identifier"]?.[0]?._;
+    const name = location?.['gml:name']?.[0]?._ || '';
+    const fmisidRaw = location?.['gml:identifier']?.[0]?._;
     const fmisid = fmisidRaw ? parseInt(fmisidRaw) : null;
 
     const timeValue =
-      obs["om:phenomenonTime"]?.[0]?.["gml:TimePeriod"]?.[0]?.[
-        "gml:endPosition"
-      ]?.[0] || "";
+      obs['om:phenomenonTime']?.[0]?.['gml:TimePeriod']?.[0]?.['gml:endPosition']?.[0] || '';
 
-    let epochTime = timeValue
-      ? Math.floor(new Date(timeValue).getTime() / 1000)
-      : null;
+    let epochTime = timeValue ? Math.floor(new Date(timeValue).getTime() / 1000) : null;
 
     // --- Coordinates ---
     let lat = null;
     let lon = null;
 
-    const pos =
-      foi?.["sams:shape"]?.[0]?.["gml:Point"]?.[0]?.["gml:pos"]?.[0];
+    const pos = foi?.['sams:shape']?.[0]?.['gml:Point']?.[0]?.['gml:pos']?.[0];
 
     if (pos) {
       const parts = pos.trim().split(/\s+/);
@@ -176,8 +168,7 @@ const parseNuclideMultipointcoverage = async (xmlString) => {
     if (lat == null || lon == null) continue;
 
     // --- Key ---
-    const key =
-      fmisid !== null ? fmisid : `${parseFloat(lat)},${parseFloat(lon)}`;
+    const key = fmisid !== null ? fmisid : `${parseFloat(lat)},${parseFloat(lon)}`;
 
     // --- Init station if needed ---
     if (!airRadioByKey[key]) {
@@ -188,10 +179,10 @@ const parseNuclideMultipointcoverage = async (xmlString) => {
         lon,
         time: timeValue,
         epochtime: epochTime,
-        type: "air_radio",
-        "Pb-210": null,
-        "Be-7": null,
-        "Cs-137": null,
+        type: 'air_radio',
+        'Pb-210': null,
+        'Be-7': null,
+        'Cs-137': null,
         _ep_Pb210: null,
         _ep_Be7: null,
         _ep_Cs137: null,
@@ -200,23 +191,21 @@ const parseNuclideMultipointcoverage = async (xmlString) => {
 
     // --- Parameters & values ---
     const fields =
-      obs["om:result"]?.[0]?.["gmlcov:MultiPointCoverage"]?.[0]?.[
-        "gmlcov:rangeType"
-      ]?.[0]?.["swe:DataRecord"]?.[0]?.["swe:field"] || [];
+      obs['om:result']?.[0]?.['gmlcov:MultiPointCoverage']?.[0]?.['gmlcov:rangeType']?.[0]?.[
+        'swe:DataRecord'
+      ]?.[0]?.['swe:field'] || [];
 
     const tupleText =
-      obs["om:result"]?.[0]?.["gmlcov:MultiPointCoverage"]?.[0]?.[
-        "gml:rangeSet"
-      ]?.[0]?.["gml:DataBlock"]?.[0]?.[
-        "gml:doubleOrNilReasonTupleList"
-      ]?.[0] || "";
+      obs['om:result']?.[0]?.['gmlcov:MultiPointCoverage']?.[0]?.['gml:rangeSet']?.[0]?.[
+        'gml:DataBlock'
+      ]?.[0]?.['gml:doubleOrNilReasonTupleList']?.[0] || '';
 
     const values = tupleText.trim() ? tupleText.trim().split(/\s+/) : [];
 
     const nuclideEpochs = {
-      "Pb-210": "_ep_Pb210",
-      "Be-7": "_ep_Be7",
-      "Cs-137": "_ep_Cs137",
+      'Pb-210': '_ep_Pb210',
+      'Be-7': '_ep_Be7',
+      'Cs-137': '_ep_Cs137',
     };
 
     for (let i = 0; i < fields.length; i++) {
@@ -225,7 +214,7 @@ const parseNuclideMultipointcoverage = async (xmlString) => {
 
       let val = values[i] ?? null;
 
-      if (val === "" || String(val).toLowerCase() === "nan") {
+      if (val === '' || String(val).toLowerCase() === 'nan') {
         val = null;
       } else if (!isNaN(val)) {
         val = parseFloat(val);

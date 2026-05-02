@@ -8,37 +8,6 @@ Description: Service for parsing road observation data from the Digitraffic API.
 const logger = require('../utils/logger');
 const config = require('../config');
 
-// Helper function to get historic data
-function mergeHistoricData(metaData, stationData, historicData) {
-
-  const props = metaData.properties;
-  const stationId = props.id;
-
-  const mergedData = {
-    station: props.name,
-    fmisid: stationId,
-    lat: metaData.geometry.coordinates[1],
-    lon: metaData.geometry.coordinates[0],
-    type: "road",
-    time: null,
-    epochtime: null,
-    sensorValues: []
-  };
-
-  for (const sensor of stationData.sensorValues) {
-    for (const historicSensor of historicData.values) {
-      if (historicSensor.id === sensor.id) {
-        mergedData.sensorValues.push({
-          name: sensor.name,
-          value: historicSensor.value,
-          measuredTime: sensor.measuredTime
-        });
-      }
-    }
-  }
-  return mergedData;
-}
-
 /**
  *  Parse road observations from the metadata and data responses from the Digitraffic API. This is used for the /api/road/obs endpoint.
  * @param {*} stations  - the metadata response from the Digitraffic API containing the list of stations and their properties
@@ -47,26 +16,42 @@ function mergeHistoricData(metaData, stationData, historicData) {
  * @returns  - an array of observation objects for the stations, each containing the station information and the relevant sensor values
  */
 async function parseRoadObs(stations, data, timestamp) {
+  // Normalize requested time so we can compare numeric timestamps correctly.
+  let targetTime =
+    timestamp === 'now'
+      ? Date.now()
+      : typeof timestamp === 'string'
+        ? Date.parse(timestamp)
+        : timestamp;
+
+  if (Number.isNaN(targetTime)) {
+    logger.warn(`parseRoadObs: invalid timestamp '${timestamp}', using current time`);
+    targetTime = Date.now();
+  }
+
   // Index data by station id for easier lookup
   const indexedData = {};
   if (data.stations) {
-    for( const station of data.stations ) {
+    for (const station of data.stations) {
       indexedData[station.id] = station.sensorValues;
     }
   }
 
-  // Mapping the data to a more usable format
+  // Mapping the data to match FMI format
   const roadParamMap = {
-    "SADE_INTENSITEETTI": "ri_10min",
-    "KESKITUULI": "ws_10min",
-    "MAKSIMITUULI": "wg_10min",
-    "TUULENSUUNTA": "wd_10min",
-    "NÄKYVYYS_M": "vis",
-    "VALLITSEVA_SÄÄ": "wawa",
-    "ILMA": "t2m",
-    "LUMEN_MÄÄRÄ1": "snow_aws",
-    "KASTEPISTE": "dewpoint",
-    "KASTEPISTE_ERO_ILMA": "t2mdewpoint"
+    SADE_INTENSITEETTI: 'ri_10min',
+    KESKITUULI: 'ws_10min',
+    MAKSIMITUULI: 'wg_10min',
+    TUULENSUUNTA: 'wd_10min',
+    NÄKYVYYS_M: 'vis',
+    VALLITSEVA_SÄÄ: 'wawa',
+    ILMA: 't2m',
+    LUMEN_MÄÄRÄ1: 'snow_aws',
+    KASTEPISTE: 'dewpoint',
+    KASTEPISTE_ERO_ILMA: 't2mdewpoint',
+    ILMAN_LÄMPÖTILA_24H_MIN: 'tmin',
+    ILMAN_LÄMPÖTILA_24H_MAX: 'tmax',
+    SADESUMMA_LIUKUVA_24H: 'rr_1d',
   };
 
   result = [];
@@ -75,15 +60,15 @@ async function parseRoadObs(stations, data, timestamp) {
     const props = station.properties;
     const stationId = props.id;
 
-    if ( props.collectionStatus !== "GATHERING") continue; // skip stations that are not gathering data
-    if ( !indexedData[stationId] ) continue; // skip stations that have no data
+    if (props.collectionStatus !== 'GATHERING') continue; // skip stations that are not gathering data
+    if (!indexedData[stationId]) continue; // skip stations that have no data
 
     const entry = {
       station: props.name,
       fmisid: stationId,
       lat: station.geometry.coordinates[1],
       lon: station.geometry.coordinates[0],
-      type: "road",
+      type: 'road',
       time: null,
       epochtime: null,
 
@@ -96,16 +81,22 @@ async function parseRoadObs(stations, data, timestamp) {
       t2m: null,
       snow_aws: null,
       dewpoint: null,
-      t2mdewpoint: null
+      t2mdewpoint: null,
+      tmin: null,
+      tmax: null,
+      rr_1d: null,
     };
-    
+
     let hasRecentSensor = false;
     for (const sensor of indexedData[stationId]) {
       if (!sensor.measuredTime) continue; // skip if no measured time
       const sensorTime = new Date(sensor.measuredTime).getTime();
 
-      // skip older than 24h
-      if (timestamp - sensorTime > 24 * 60 * 60 * 1000) continue;
+      // skip older than 24h relative to the requested timestamp
+      if (targetTime - sensorTime > 24 * 60 * 60 * 1000) continue;
+
+      // skip sensor values recorded after the requested timestamp
+      if (sensorTime > targetTime) continue;
 
       hasRecentSensor = true;
       const mappedName = roadParamMap[sensor.name];
@@ -133,12 +124,10 @@ async function parseRoadObs(stations, data, timestamp) {
  */
 async function parseSingleRoadObs(meta, data, timestamp) {
   // Index data by station id for easier lookup
-  if ( meta.properties.sensors && data.sensorValues ) {
-    for ( const metaSensor of meta.properties.sensors ) {
+  if (meta.properties.sensors && data.sensorValues) {
+    for (const metaSensor of meta.properties.sensors) {
       // find the matching sensor in data by id
-      const sensorMap = Object.fromEntries(
-        data.sensorValues.map(s => [s.id, s])
-      );
+      const sensorMap = Object.fromEntries(data.sensorValues.map((s) => [s.id, s]));
       const match = sensorMap[metaSensor.id];
 
       // if there is a match, add the measured time to meta
@@ -157,8 +146,9 @@ async function parseSingleRoadObs(meta, data, timestamp) {
   }
 
   return meta;
-};
+}
 
 module.exports = {
-  mergeHistoricData, parseRoadObs, parseSingleRoadObs
+  parseRoadObs,
+  parseSingleRoadObs,
 };

@@ -1,298 +1,295 @@
-html, body {
-    height: 100%;
-    width: 100%;
+html,
+body {
+  height: 100%;
+  width: 100%;
 
-    margin: 0;
+  margin: 0;
 
-    overflow: auto;
+  overflow: auto;
 
-    font-family: 'Roboto, sans-serif';
+  font-family: 'Roboto, sans-serif';
 }
 
-th, td {
-    padding-left: 5px;
-    padding-right: 5px;
+th,
+td {
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 body:before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: -1;
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
 
-    display: block;
-    background-image: url('background.png');
-    background-size:cover;
-    width: 100%;
-    height: 100%;
+  display: block;
+  background-image: url('background.png');
+  background-size: cover;
+  width: 100%;
+  height: 100%;
 
-    -webkit-filter: blur(20px);
-    -moz-filter: blur(20px);
-    -o-filter: blur(20px);
-    -ms-filter: blur(20px);
-    filter: blur(20px);
+  -webkit-filter: blur(20px);
+  -moz-filter: blur(20px);
+  -o-filter: blur(20px);
+  -ms-filter: blur(20px);
+  filter: blur(20px);
 }
 
 body {
-    overflow: auto;
-    position: relative;
+  overflow: auto;
+  position: relative;
 }
 
 .wrap {
-    padding: 10px 20px 0px 20px;
-
+  padding: 10px 20px 0px 20px;
 }
 
 /* https://stackoverflow.com/questions/202557/what-is-the-best-absolute-width-for-a-webpage 
    https://stackoverflow.com/questions/20039765/how-to-apply-a-css-3-blur-filter-to-a-background-image */
 
 #main-navigation-wrapper {
-    overflow: auto;
+  overflow: auto;
 
-    z-index: 10;
+  z-index: 10;
 
-    /*height: 70px;*/
-    width: 90%;
-    max-width: 960px;
+  /*height: 70px;*/
+  width: 90%;
+  max-width: 960px;
 
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 20px;
 
-    border: 1px solid grey;
-    border-radius: 5px 5px 0 0;
+  border: 1px solid grey;
+  border-radius: 5px 5px 0 0;
 
-    background-color: white;
+  background-color: white;
 
-    -webkit-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
-    -moz-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
-    box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
-}    
-
-#main-breadcrumb-wrapper {
-    overflow: auto;
-    z-index: 10;
-    /*height: 70px;*/
-    width: 90%;
-    max-width: 960px;
-
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 15px;
-    margin-bottom: 3px;
-} 
-
-#main-content-wrapper {
-    position: relative;
-    overflow: auto;
-
-    z-index: 10;
-
-    /*height: 100%;*/
-    min-height: 750px;
-    width: 90%;
-    max-width: 960px;
-
-    /*text-align: justify;*/
-    
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 1px;
-    margin-bottom: 50px;
-
-    border: 1px solid grey;
-    border-radius: 0 0 5px 5px;
-
-    background-color: white;
-
-    -webkit-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
-    -moz-box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
-    box-shadow: 6px 10px 34px 0px rgba(0,0,0,0.47);
+  -webkit-box-shadow: 6px 10px 34px 0px rgba(0, 0, 0, 0.47);
+  -moz-box-shadow: 6px 10px 34px 0px rgba(0, 0, 0, 0.47);
+  box-shadow: 6px 10px 34px 0px rgba(0, 0, 0, 0.47);
 }
 
+#main-breadcrumb-wrapper {
+  overflow: auto;
+  z-index: 10;
+  /*height: 70px;*/
+  width: 90%;
+  max-width: 960px;
 
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 15px;
+  margin-bottom: 3px;
+}
+
+#main-content-wrapper {
+  position: relative;
+  overflow: auto;
+
+  z-index: 10;
+
+  /*height: 100%;*/
+  min-height: 750px;
+  width: 90%;
+  max-width: 960px;
+
+  /*text-align: justify;*/
+
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1px;
+  margin-bottom: 50px;
+
+  border: 1px solid grey;
+  border-radius: 0 0 5px 5px;
+
+  background-color: white;
+
+  -webkit-box-shadow: 6px 10px 34px 0px rgba(0, 0, 0, 0.47);
+  -moz-box-shadow: 6px 10px 34px 0px rgba(0, 0, 0, 0.47);
+  box-shadow: 6px 10px 34px 0px rgba(0, 0, 0, 0.47);
+}
 
 /* navigation bar */
 /* http://css-snippets.com/simple-horizontal-navigation/ */
 
 .nav ul {
-    list-style: none;
-    background-color: #1b95e0;
-    text-align: center;
-    padding: 0;
-    margin: 0;
+  list-style: none;
+  background-color: #1b95e0;
+  text-align: center;
+  padding: 0;
+  margin: 0;
 }
 .nav li {
-    font-size: 1.1em;
-    line-height: 40px;
-    height: 100%;
-    border-bottom: 1px solid #888;
+  font-size: 1.1em;
+  line-height: 40px;
+  height: 100%;
+  border-bottom: 1px solid #888;
 }
 
 .nav a {
-    text-decoration: none;
-    color: #fff;
-    display: block;
-    transition: .3s background-color;
+  text-decoration: none;
+  color: #fff;
+  display: block;
+  transition: 0.3s background-color;
 }
 
 .nav a:hover {
-    text-decoration: none;
-    background-color: #fff;
-    color: black;
+  text-decoration: none;
+  background-color: #fff;
+  color: black;
 }
 
 .nav a.active {
-    background-color: #fff;
-    text-decoration: none;
-    color: #444;
-    cursor: default;
+  background-color: #fff;
+  text-decoration: none;
+  color: #444;
+  cursor: default;
 }
 
 @media screen and (min-width: 600px) {
-    .nav li {
-        width: 130px;
-        border-bottom: none;
-        height: 100%;
-        line-height: 50px;
-        font-size: 1.1em;
-    }
+  .nav li {
+    width: 130px;
+    border-bottom: none;
+    height: 100%;
+    line-height: 50px;
+    font-size: 1.1em;
+  }
 
-    .nav li {
-        display: inline-block;
-        margin-right: -4px;
-    }
+  .nav li {
+    display: inline-block;
+    margin-right: -4px;
+  }
 }
 
 footer {
-    font-size: 0.8em;
-    /*position: absolute;*/
-    position: relative;
-    bottom: 0;
+  font-size: 0.8em;
+  /*position: absolute;*/
+  position: relative;
+  bottom: 0;
 
-    margin-top: 30px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+  margin-top: 30px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 
-    width: 100%;
+  width: 100%;
 
-    text-align: center;
+  text-align: center;
 
-    background-color: #efefef;
-
+  background-color: #efefef;
 }
 
 footer a {
-    text-decoration: none;
+  text-decoration: none;
 
-    color: #0066ff;
+  color: #0066ff;
 }
 
 footer p {
-    margin: 5px 0 0 0;
+  margin: 5px 0 0 0;
 }
 
 @media screen and (max-width: 965px) {
-    footer {
-        position: relative;
-    }
+  footer {
+    position: relative;
+  }
 }
 
 .media-content {
-    margin: 10px 0 35px 0;
-    padding: 2px 0 2px 0;
-    max-height: 30px;
+  margin: 10px 0 35px 0;
+  padding: 2px 0 2px 0;
+  max-height: 30px;
 }
 
 .media-button {
-    margin: 0 5px 0 5px;
-    display:inline-block;
-    border:0;
-    width:50px;
-    height:50px;
-    position: relative;
-    -webkit-transition: all 200ms ease-in;
-    -webkit-transform: scale(1); 
-    -ms-transition: all 200ms ease-in;
-    -ms-transform: scale(1); 
-    -moz-transition: all 200ms ease-in;
-    -moz-transform: scale(1);
-    transition: all 200ms ease-in;
-    transform: scale(1);   
+  margin: 0 5px 0 5px;
+  display: inline-block;
+  border: 0;
+  width: 50px;
+  height: 50px;
+  position: relative;
+  -webkit-transition: all 200ms ease-in;
+  -webkit-transform: scale(1);
+  -ms-transition: all 200ms ease-in;
+  -ms-transform: scale(1);
+  -moz-transition: all 200ms ease-in;
+  -moz-transform: scale(1);
+  transition: all 200ms ease-in;
+  transform: scale(1);
 }
 
 .media-button-img {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .media-button:hover {
-    /* box-shadow: 0px 0px 10px #000000; */
-    z-index: 2;
-    -webkit-transition: all 200ms ease-in;
-    -webkit-transform: scale(1.1);
-    -ms-transition: all 200ms ease-in;
-    -ms-transform: scale(1.2);   
-    -moz-transition: all 200ms ease-in;
-    -moz-transform: scale(1.2);
-    transition: all 200ms ease-in;
-    transform: scale(1.2);
+  /* box-shadow: 0px 0px 10px #000000; */
+  z-index: 2;
+  -webkit-transition: all 200ms ease-in;
+  -webkit-transform: scale(1.1);
+  -ms-transition: all 200ms ease-in;
+  -ms-transform: scale(1.2);
+  -moz-transition: all 200ms ease-in;
+  -moz-transform: scale(1.2);
+  transition: all 200ms ease-in;
+  transform: scale(1.2);
 }
-
 
 /* Style the list */
 ul.breadcrumb {
-    margin-bottom: 0px;
-    list-style: none;
+  margin-bottom: 0px;
+  list-style: none;
 }
 
 ul.breadcrumb li {
-    display: inline;
+  display: inline;
 }
 
-ul.breadcrumb li+li:before {
-    padding: 8px;
-    color: black;
-    content: "/\00a0";
+ul.breadcrumb li + li:before {
+  padding: 8px;
+  color: black;
+  content: '/\00a0';
 }
 
 ul.breadcrumb li a {
-    color: #0275d8;
-    text-decoration: none;
+  color: #0275d8;
+  text-decoration: none;
 }
 
 ul.breadcrumb li a:hover {
-    color: #01447e;
-    text-decoration: underline;
+  color: #01447e;
+  text-decoration: underline;
 }
-
 
 /* Create two equal columns that floats next to each other */
 .legend-column {
-    float: left;
-    width: 50%;
-    height: 220px; /* Should be removed. Only for demonstration */
-    margin-bottom: 30px;
-  }
-
-  .legend-column th, .legend-column td {
-    padding-left: 5px;
-    padding-right: 5px;
+  float: left;
+  width: 50%;
+  height: 220px; /* Should be removed. Only for demonstration */
+  margin-bottom: 30px;
 }
-  
-  /* Clear floats after the columns */
-  .löegend-row:after {
-    content: "";
-    display: table;
-    clear: both;
+
+.legend-column th,
+.legend-column td {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+/* Clear floats after the columns */
+.löegend-row:after {
+  content: '';
+  display: table;
+  clear: both;
+}
+
+/* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+@media screen and (max-width: 600px) {
+  .legend-column {
+    width: 100%;
   }
-  
-  /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
-  @media screen and (max-width: 600px) {
-    .legend-column {
-      width: 100%;
-    }
-  }
+}

@@ -69,15 +69,20 @@ nodeCron.schedule(config.fetchFavouritePeriod, async () => {
   const since10min = new Date();
   since10min.setMinutes(since10min.getMinutes() - 10);
   const hasRecentData = countRecentRows.get({ since: since10min.toISOString() }).c > 0;
-  const windowMinutes = hasRecentData ? fetchWindowMinutes : 24 * 60;
-  if (!hasRecentData) logger.info('No recent data found — fetching 24h backfill');
+  const initialBackfillHours = Number.isFinite(config.favouriteInitialBackfillHours)
+    ? config.favouriteInitialBackfillHours
+    : 72;
+  const windowMinutes = hasRecentData ? fetchWindowMinutes : initialBackfillHours * 60;
+  if (!hasRecentData)
+    logger.info(`No recent data found — fetching ${initialBackfillHours}h backfill`);
 
   // Build URL with explicit parameters and only enabled stations
   const startTime = new Date();
   startTime.setMinutes(startTime.getMinutes() - windowMinutes);
   const startISO = startTime.toISOString();
 
-  let baseURL = 'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature' +
+  let baseURL =
+    'http://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature' +
     `&storedquery_id=fmi::observations::weather::multipointcoverage` +
     `&parameters=${config.favouriteParameters}` +
     `&timestep=10` +
@@ -91,8 +96,8 @@ nodeCron.schedule(config.fetchFavouritePeriod, async () => {
 
   // Fetch raw XML from FMI API
   const xml = await fetch(baseURL)
-    .then(r => r.text())
-    .catch(err => {
+    .then((r) => r.text())
+    .catch((err) => {
       logger.error(`Error in Cron fetching data from FMI API: ${err}`);
       return null;
     });
@@ -113,7 +118,9 @@ nodeCron.schedule(config.fetchFavouritePeriod, async () => {
 
   try {
     const { inserted, updated } = insertMany(observations);
-    logger.info(`Parsed ${observations.length} observations, inserted ${inserted} new, updated ${updated} existing`);
+    logger.info(
+      `Parsed ${observations.length} observations, inserted ${inserted} new, updated ${updated} existing`
+    );
   } catch (err) {
     logger.error(`Error inserting observations into SQLite: ${err.message}`);
     return;

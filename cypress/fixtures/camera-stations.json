@@ -1,0 +1,26 @@
+{
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [24.9384, 60.1699]
+      },
+      "properties": {
+        "id": "TEST_STATION_1",
+        "name": "CAM_TEST_STATION",
+        "dataUpdatedTime": "2026-03-31T10:00:00Z",
+        "nearestWeatherStationId": null,
+        "presets": [
+          {
+            "id": "p1",
+            "presentationName": "Front",
+            "imageUrl": "https://example.com/cam1.jpg",
+            "measuredTime": "2026-03-31T10:00:00Z",
+            "inCollection": true
+          }
+        ]
+      }
+    }
+  ]
+}

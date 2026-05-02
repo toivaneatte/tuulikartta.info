@@ -20,7 +20,6 @@ try {
         $settings["storedquery_id"] = "livi::observations::road::default::multipointcoverage";
         $settings["fmisid"]         = $fmisid;
 
-
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
         $observationData = [];
         foreach ( $obs as $key => $observation ) {
@@ -44,6 +43,29 @@ try {
     }
     if ($type == 'synop') {
 
+      $obs = [];
+      // If cached timeseries is too short, use FMI fallback for a full graph window
+      $minCachedPointsForGraph = 24;
+      $requestTime = $timestamp ?? 'now';
+      $backendUrl = "http://backend:3000/api/weather/favourites/graph?fmisid=" . urlencode($fmisid) . "&time=" . urlencode($timestamp ?? 'now');
+      $backendResponse = @file_get_contents($backendUrl);
+      if ($backendResponse !== false) {
+        $cachedObs = json_decode($backendResponse, true);
+        if (is_array($cachedObs) && count($cachedObs) >= $minCachedPointsForGraph) {
+          $obs = $cachedObs;
+          error_log("[weather-graph-ts] synop graph source=cache fmisid={$fmisid} time={$requestTime} points=" . count($cachedObs));
+        } else {
+          $count = is_array($cachedObs) ? count($cachedObs) : 0;
+          error_log("[weather-graph-ts] synop cache too small fmisid={$fmisid} time={$requestTime} points={$count} min={$minCachedPointsForGraph}");
+        }
+      } else {
+        error_log("[weather-graph-ts] synop cache request failed fmisid={$fmisid} time={$requestTime}");
+      }
+
+      // Fallback to direct FMI fetch if this station has no cached data yet
+      // or if cached data has too few points for a sensible graph
+      if (empty($obs)) {
+
         $settings = array();
         $settings["stationtype"]    = "synop";
         $settings["parameters"]     = "ws_10min,wg_10min,wd_10min,t2m,n_man,r_1h,vis";
@@ -51,7 +73,9 @@ try {
         $settings["timestep"]       = "10";
         $settings["fmisid"]         = $fmisid;
 
+        error_log("[weather-graph-ts] synop graph source=fmi fmisid={$fmisid} time={$requestTime}");
         $obs = $dataMiner->multipointcoverage($timestamp,$settings,true);
+      }
 
         $snowSettings = array();
         $snowSettings["parameters"]     = "snow";

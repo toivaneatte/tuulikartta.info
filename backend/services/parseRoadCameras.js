@@ -10,7 +10,7 @@ async function parseRoadCameras(meta, data, timestamp) {
   if (!meta?.features || !data?.stations) return meta;
 
   // Create lookup table for stations (O(1) access)
-  const dataLookup = Object.fromEntries(data.stations.map(s => [s.id, s]));
+  const dataLookup = Object.fromEntries(data.stations.map((s) => [s.id, s]));
 
   // Merge data into features
   for (const feature of meta.features) {
@@ -26,7 +26,7 @@ async function parseRoadCameras(meta, data, timestamp) {
 
     // Merge presets if they exist
     if (feature.properties.presets && freshData.presets) {
-      const presetLookup = Object.fromEntries(freshData.presets.map(p => [p.id, p]));
+      const presetLookup = Object.fromEntries(freshData.presets.map((p) => [p.id, p]));
 
       for (const preset of feature.properties.presets) {
         const match = presetLookup[preset.id];
@@ -46,7 +46,7 @@ async function parseSingleRoadCamera(meta, data, timestamp) {
   }
 
   // Create a lookup table for presets for O(1) access
-  const presetLookup = Object.fromEntries(data.presets.map(p => [p.id, p]));
+  const presetLookup = Object.fromEntries(data.presets.map((p) => [p.id, p]));
 
   // Merge measuredTime from fresh data into metadata presets
   for (const metaPreset of meta.properties.presets) {
@@ -65,5 +65,6 @@ async function parseSingleRoadCamera(meta, data, timestamp) {
 }
 
 module.exports = {
-  parseRoadCameras, parseSingleRoadCamera
+  parseRoadCameras,
+  parseSingleRoadCamera,
 };

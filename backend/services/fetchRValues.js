@@ -13,8 +13,8 @@ async function getRValues() {
   const url = config.SpaceFMIURL;
 
   try {
-    const response = await fetch(url)
-    
+    const response = await fetch(url, { signal: AbortSignal.timeout(config.apiTimeoutMs) });
+
     if (!response.ok) {
       throw new Error(`HTTP error: ${response.status}`);
     }
@@ -28,38 +28,37 @@ async function getRValues() {
 
     for (const item of dataArray) {
       const tmp = {
-        station: item["Asema"],
-        lat: item["Leveyspiiri"],
-        lon: item["Pituuspiiri"],
-        time: item["Aika"],
-        type: "R",
-        rVal: item["R-luku"],
-        upperLim: item["Ylempi raja-arvo"],
-        lowerLim: item["Alempi raja-arvo"],
-        rProb: null
+        station: item['Asema'],
+        lat: item['Leveyspiiri'],
+        lon: item['Pituuspiiri'],
+        time: item['Aika'],
+        type: 'R',
+        rVal: item['R-luku'],
+        upperLim: item['Ylempi raja-arvo'],
+        lowerLim: item['Alempi raja-arvo'],
+        rProb: null,
       };
 
-      const prob = item["Revontulten todennäköisyys"];
+      const prob = item['Revontulten todennäköisyys'];
 
-      if (prob === "Revontulet epätodennäköisiä") {
-        tmp.rProb = "low";
-      } else if (prob === "Revontulet mahdollisia") {
-        tmp.rProb = "medium";
-      } else if (prob === "Revontulet todennäköisiä") {
-        tmp.rProb = "high";
+      if (prob === 'Revontulet epätodennäköisiä') {
+        tmp.rProb = 'low';
+      } else if (prob === 'Revontulet mahdollisia') {
+        tmp.rProb = 'medium';
+      } else if (prob === 'Revontulet todennäköisiä') {
+        tmp.rProb = 'high';
       }
 
       result.push(tmp);
     }
 
     return result;
-
-    } catch (error) {
-    console.error("Error fetching R values:", error);
+  } catch (error) {
+    console.error('Avaruussäädata ei saatavilla:', error);
     throw error;
   }
 }
 
 module.exports = {
-  getRValues
+  getRValues,
 };

@@ -6,21 +6,22 @@ Description: Simple logger utility for the backend. Currently just wraps console
 const config = require('../config');
 const DEBUG = config.debugMode;
 
-const info = (...params) => { 
-    console.log(...params)
-}
-  
+const info = (...params) => {
+  console.log(...params);
+};
+
 const error = (...params) => {
-  console.error(...params)
-}
+  console.error(...params);
+};
 
 const debug = (...params) => {
   if (DEBUG) {
     console.debug(...params);
   }
-}
-
+};
 
 module.exports = {
-  info, error, debug
-}
+  info,
+  error,
+  debug,
+};

@@ -69,17 +69,21 @@ logger.info('SQLite schema ready');
 // Add daily aggregate columns to map_observations and favourite_observations if they don't exist yet
 const dailyColumns = ['wg_1d', 'ws_1d', 'tmax', 'tmin', 'rr_1d', 'wg_max_dir', 'ws_max_dir'];
 for (const col of dailyColumns) {
-  try { db.exec(`ALTER TABLE map_observations ADD COLUMN ${col} REAL`); } catch (e) {}
-  try { db.exec(`ALTER TABLE favourite_observations ADD COLUMN ${col} REAL`); } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE map_observations ADD COLUMN ${col} REAL`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE favourite_observations ADD COLUMN ${col} REAL`);
+  } catch (e) {}
 }
 
 // Delete observations older than retentionDays. Returns number of deleted rows.
 const deleteOldObservations = (retentionDays) => {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - retentionDays);
-  const result = db.prepare(
-    `DELETE FROM favourite_observations WHERE timestamp < ?`
-  ).run(cutoff.toISOString());
+  const result = db
+    .prepare(`DELETE FROM favourite_observations WHERE timestamp < ?`)
+    .run(cutoff.toISOString());
   return result.changes;
 };
 
@@ -107,7 +111,7 @@ const getLatestMapTimestamp = db.prepare(`
 // Returns the closest distinct timestamp to the given ISO string
 const getClosestMapTimestamp = db.prepare(`
   SELECT timestamp FROM map_observations
-  ORDER BY ABS(strftime('%s', timestamp) - strftime('%s', ?))
+  ORDER BY ABS(julianday(SUBSTR(timestamp, 1, 19)) - julianday(SUBSTR(?, 1, 19)))
   LIMIT 1
 `);
 
@@ -124,6 +128,18 @@ const getLatestFavouritePerStation = db.prepare(`
   )
 `);
 
+// Returns the second most recent distinct timestamp from favourite_observations
+const getSecondLatestFavouriteTimestamp = db.prepare(`
+  SELECT DISTINCT timestamp FROM favourite_observations
+  ORDER BY timestamp DESC
+  LIMIT 1 OFFSET 1
+`);
+
+// Returns all favourite observations for a given exact timestamp
+const getFavouriteObsByTimestamp = db.prepare(`
+  SELECT * FROM favourite_observations WHERE timestamp = ?
+`);
+
 // Returns the closest observation per fmisid to a given ISO timestamp
 const getClosestFavouritePerStation = db.prepare(`
   SELECT fo.* FROM favourite_observations fo
@@ -133,6 +149,13 @@ const getClosestFavouritePerStation = db.prepare(`
     ORDER BY ABS(strftime('%s', timestamp) - strftime('%s', ?))
     LIMIT 1
   )
+`);
+
+// Returns favourite observations for a single station in a time range (inclusive)
+const getFavouriteObsRangeByStation = db.prepare(`
+  SELECT * FROM favourite_observations
+  WHERE fmisid = ? AND timestamp >= ? AND timestamp <= ?
+  ORDER BY timestamp ASC
 `);
 
 // Updates daily aggregate columns for a specific fmisid + timestamp row
@@ -179,9 +202,9 @@ const getLatestR1hFavObs = db.prepare(`
 // Delete map_observations older than retentionMinutes
 const deleteOldMapObservations = (retentionMinutes) => {
   const cutoff = new Date(Date.now() - retentionMinutes * 60 * 1000);
-  const result = db.prepare(
-    `DELETE FROM map_observations WHERE timestamp < ?`
-  ).run(cutoff.toISOString());
+  const result = db
+    .prepare(`DELETE FROM map_observations WHERE timestamp < ?`)
+    .run(cutoff.toISOString());
   return result.changes;
 };
 
@@ -195,7 +218,10 @@ module.exports = {
   deleteOldMapObservations,
   updateMapObsDailyValues,
   getLatestFavouritePerStation,
+  getSecondLatestFavouriteTimestamp,
+  getFavouriteObsByTimestamp,
   getClosestFavouritePerStation,
+  getFavouriteObsRangeByStation,
   updateFavouriteDailyValues,
   getFavouriteObsSince,
   getLatestR1hMapObs,

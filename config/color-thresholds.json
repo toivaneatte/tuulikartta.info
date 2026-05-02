@@ -1,10 +1,10 @@
 {
   "doseRate": [
-    { "min": null, "max": 0.10, "hex": "#d4ffff" },
-    { "min": 0.10, "max": 0.20, "hex": "#ccffcc" },
-    { "min": 0.20, "max": 0.30, "hex": "#ffff99" },
-    { "min": 0.30, "max": 0.40, "hex": "#ffcc00" },
-    { "min": 0.40, "max": null, "hex": "#ff3300" } 
+    { "min": null, "max": 0.1, "hex": "#d4ffff" },
+    { "min": 0.1, "max": 0.2, "hex": "#ccffcc" },
+    { "min": 0.2, "max": 0.3, "hex": "#ffff99" },
+    { "min": 0.3, "max": 0.4, "hex": "#ffcc00" },
+    { "min": 0.4, "max": null, "hex": "#ff3300" }
   ],
   "doseRateDefault": "#ccffcc"
 }
