@@ -104,5 +104,6 @@ window.onclick = function (event) {
 saa.Tuulikartta.handleUrlParams(latitude, longitude, zoomlevel, selectedParam);
 
 saa.Tuulikartta.initMap();
+saa.Tuulikartta.initMoonControl();
 saa.Tuulikartta.initEventHandlers();
 saa.Tuulikartta.updateRadarData();
