@@ -286,6 +286,31 @@ var saa = globalThis.saa;
     });
     map.addControl(new lightningControl());
 
+    /* traffic layer control */
+    var trafficLayerControl = L.Control.extend({
+      options: {
+        position: 'topright',
+      },
+      onAdd: function (map) {
+        var container = L.DomUtil.create(
+          'div',
+          'leaflet-bar leaflet-control leaflet-control-custom leaflet-control-select-traffic'
+        );
+        container.onclick = function () {
+          if (saa.Tuulikartta.map.hasLayer(saa.traffic.layerGroup)) {
+            saa.traffic.stop();
+            $(this).removeClass('active');
+          } else {
+            saa.traffic.init();
+            $(this).addClass('active');
+          }
+        };
+        container.title = translations[window.selectedLanguage]['trafficTitle'];
+        return container;
+      },
+    });
+    map.addControl(new trafficLayerControl());
+
     /* table control */
     var tableDataControl = L.Control.extend({
       options: {
